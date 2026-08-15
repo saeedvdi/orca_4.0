@@ -5,8 +5,6 @@
 #include "MooseEnum.h"
 #include "MooseTypes.h"
 
-class SinglePhaseFluidProperties;
-
 class OrcaTHMaterial : public ADMaterial
 {
 public:
@@ -39,15 +37,11 @@ private:
   const bool _has_temperature;
   const ADVariableValue * const _T;
 
-  const MooseEnum _fluid_properties_model;
-  const bool _use_fp;
-  const SinglePhaseFluidProperties * const _fp;
   const MooseEnum _porosity_model;
   const MooseEnum _permeability_model;
   const MooseEnum _fluid_density_model;
   const MooseEnum _thermal_conductivity_model;
   const MooseEnum _effective_thermal_expansion_model;
-  const MooseEnum _fluid_thermal_expansion_model;
 
   const Real _Kf_in;
   const RealTensorValue _kappa_in;

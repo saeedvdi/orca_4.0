@@ -1,7 +1,6 @@
 #include "OrcaTHMaterial.h"
 
 #include "MooseError.h"
-#include "SinglePhaseFluidProperties.h"
 #include "metaphysicl/raw_type.h"
 
 registerMooseObject("OrcaApp", OrcaTHMaterial);
@@ -50,15 +49,20 @@ OrcaTHMaterial::validParams()
     params.addRangeCheckedParam<Real>("fluid_thermal_expansion_ref", 0.0, "fluid_thermal_expansion_ref >= 0.0",
         "Reference fluid volumetric thermal expansion coefficient beta_ref (1/K).");
   
-    // Fluid density and viscosity computations. Have the optional computation from fluid_properties module
-    // but for the using of the module, you have to activate its compilation in the makefile
-    params.addParam<MooseEnum>(
+    // Retain the former selectors temporarily so existing user-model input files still parse.
+    // External fluid-properties UserObjects are intentionally unsupported: this material is self-contained.
+    params.addDeprecatedParam<MooseEnum>(
         "fluid_properties_model",
         MooseEnum("fluid_properties user", "user"),
-        "fluid_properties: query SinglePhaseFluidProperties userobject for all fluid properties."
-        "user: the defined reference material properties for the fluid");
-    params.addParam<UserObjectName>("fp", UserObjectName(""), 
-        "SinglePhaseFluidProperties userobject name (required if fluid_properties_model=fluid_properties).");
+        "Legacy fluid-property model selector. Only 'user' is supported.",
+        "OrcaTHMaterial now computes fluid properties directly from its local input parameters; "
+        "remove fluid_properties_model from the input file.");
+    params.addDeprecatedParam<UserObjectName>(
+        "fp",
+        UserObjectName(""),
+        "Legacy external fluid-properties UserObject name.",
+        "External fluid-properties UserObjects are no longer supported by OrcaTHMaterial; remove fp "
+        "and provide the fluid-property parameters directly.");
     params.addParam<MooseEnum>(
         "fluid_density_model",
         MooseEnum("temperature_pressure_dependent constant", "temperature_pressure_dependent"),
@@ -90,11 +94,12 @@ OrcaTHMaterial::validParams()
         "user: alpha_eff = effective_thermal_expansion_coeff (user-provided constant). "
         "constant: use old alpha_eff (stateful), helpful for stabilization/testing.");
 
-    params.addParam<MooseEnum>(
+    params.addDeprecatedParam<MooseEnum>(
         "fluid_thermal_expansion_model",
-        MooseEnum("fluid_properties user", "fluid_properties"),
-        "fluid_properties: use beta_from_p_T(p, T) from SinglePhaseFluidProperties. "
-        "user: use the provided volumetric_fluid_thermal_expansion coefficient.");
+        MooseEnum("fluid_properties user", "user"),
+        "Legacy fluid thermal-expansion selector. Only 'user' is supported.",
+        "OrcaTHMaterial now uses volumetric_fluid_thermal_expansion directly; remove "
+        "fluid_thermal_expansion_model from the input file.");
 
     // Thermal conductivity model
     params.addParam<RealTensorValue>(
@@ -157,17 +162,11 @@ OrcaTHMaterial::OrcaTHMaterial(const InputParameters & parameters)
     _T(_has_temperature ? &adCoupledValue("temperature") : nullptr),
 
     // Model selection
-    _fluid_properties_model(getParam<MooseEnum>("fluid_properties_model")),
-    _use_fp(_fluid_properties_model == "fluid_properties"),
-    _fp(_use_fp && getParam<UserObjectName>("fp") != UserObjectName("")
-            ? &getUserObject<SinglePhaseFluidProperties>("fp")
-            : nullptr),
     _porosity_model(getParam<MooseEnum>("porosity_model")),
     _permeability_model(getParam<MooseEnum>("permeability_model")),
     _fluid_density_model(getParam<MooseEnum>("fluid_density_model")),
     _thermal_conductivity_model(getParam<MooseEnum>("thermal_conductivity_model")),
     _effective_thermal_expansion_model(getParam<MooseEnum>("effective_thermal_expansion_model")),
-    _fluid_thermal_expansion_model(getParam<MooseEnum>("fluid_thermal_expansion_model")),
 
     // inputs
     _Kf_in(getParam<Real>("fluid_bulk_modulus")),
@@ -255,19 +254,20 @@ OrcaTHMaterial::OrcaTHMaterial(const InputParameters & parameters)
     _solid_bulk_compliance(declareADProperty<Real>("solid_bulk_compliance_qp")),
     _biot_modulus_available(declareProperty<Real>("biot_modulus_available_qp"))
 {
-    // Enforce fp presence and usage
-    if (_use_fp)
-    {
-        if (!_fp)
-        paramError("fp", "You must provide 'fp' (SinglePhaseFluidProperties userobject).");
+    if (getParam<MooseEnum>("fluid_properties_model") != "user")
+        paramError("fluid_properties_model",
+                   "The external fluid_properties model is no longer supported. Provide the fluid "
+                   "property parameters directly to OrcaTHMaterial.");
 
-        if (!_has_temperature)
-        paramError("temperature", "Temperature must be coupled when using SinglePhaseFluidProperties.");
+    if (getParam<UserObjectName>("fp") != UserObjectName(""))
+        paramError("fp",
+                   "External fluid-properties UserObjects are no longer supported. Provide the fluid "
+                   "property parameters directly to OrcaTHMaterial.");
 
-        if (_fluid_density_model != "temperature_pressure_dependent")
-        paramError("fluid_density_model",
-                    "Only temperature_pressure_dependent is supported when using SinglePhaseFluidProperties.");
-    }
+    if (getParam<MooseEnum>("fluid_thermal_expansion_model") != "user")
+        paramError("fluid_thermal_expansion_model",
+                   "The external fluid_properties model is no longer supported. Set "
+                   "volumetric_fluid_thermal_expansion directly.");
 
     // If alpha model is user_constant, ensure user actually set a meaningful value
     if (_effective_thermal_expansion_model == "user" && !parameters.isParamSetByUser("effective_thermal_expansion_coeff"))
@@ -372,12 +372,7 @@ OrcaTHMaterial::computeDensityViscosity()
     const ADReal p = _p[_qp];
     const ADReal T = (_has_temperature ? (*_T)[_qp] : ADReal(0.0));
 
-    if (_fluid_properties_model == "fluid_properties")
-    {
-        _rho_f[_qp] = _fp->rho_from_p_T(p, T);
-        _mu[_qp] = _fp->mu_from_p_T(p, T);
-    }
-    else if (_fluid_density_model == "temperature_pressure_dependent")
+    if (_fluid_density_model == "temperature_pressure_dependent")
     {
         if (!_has_temperature)
             paramError("temperature", "Temperature must be coupled for temperature-dependent user density.");
@@ -446,19 +441,8 @@ OrcaTHMaterial::computeSpecificHeats()
         return;
     }
 
-    const ADReal p = _p[_qp];
-    const ADReal T = (*_T)[_qp];
-    if (_fluid_properties_model == "fluid_properties")
-    {
-        _cp_f[_qp] = _fp->cp_from_p_T(p, T);
-        _cv_f[_qp] = _fp->cv_from_p_T(p, T);
-    }
-    else
-    {
-        // user model: keep constants already set in computeQpProperties
-        _cp_f[_qp] = (_cp_f_in ? *_cp_f_in : _cp_f[_qp]);
-        _cv_f[_qp] = (_cv_f_in ? *_cv_f_in : _cv_f[_qp]);
-    }
+    _cp_f[_qp] = *_cp_f_in;
+    _cv_f[_qp] = *_cv_f_in;
 }
 
 void
@@ -476,18 +460,9 @@ OrcaTHMaterial::computeInternalEnergy()
         return;
     }
 
-    const ADReal p = _p[_qp];
     const ADReal T = (*_T)[_qp];
-
-    if (_fluid_properties_model == "fluid_properties")
-    {
-        _fluid_internal_energy[_qp] = _fp->e_from_p_T(p, T);
-    }
-    else // (fluid_properties_model == "user")
-    {
-        _cv_f[_qp] = (_cv_f_in ? *_cv_f_in : _cv_f[_qp]);
-        _fluid_internal_energy[_qp] = _cv_f[_qp] * (T - ADReal(_T_ref));
-    }
+    _cv_f[_qp] = *_cv_f_in;
+    _fluid_internal_energy[_qp] = _cv_f[_qp] * (T - ADReal(_T_ref));
 }
 
 void
@@ -506,17 +481,8 @@ OrcaTHMaterial::computeEnthalpy()
     }
 
     const ADReal p = _p[_qp];
-    const ADReal T = (*_T)[_qp];
-
-    if (_fluid_properties_model == "fluid_properties")
-    {
-        _fluid_enthalpy[_qp] = _fp->h_from_p_T(p, T);
-    }
-    else // (fluid_properties_model == "user")
-    {
-        _fluid_enthalpy[_qp] =
-            _fluid_internal_energy[_qp] + _pp_coefficient[_qp] * ((p - ADReal(_p_ref)) / _rho_f[_qp]);
-    }
+    _fluid_enthalpy[_qp] =
+        _fluid_internal_energy[_qp] + _pp_coefficient[_qp] * ((p - ADReal(_p_ref)) / _rho_f[_qp]);
 }
 
 void
@@ -534,12 +500,7 @@ OrcaTHMaterial::computeEntropy()
         return;
     }
 
-    const ADReal p = _p[_qp];
-    const ADReal T = (*_T)[_qp];
-    if (_fluid_properties_model == "fluid_properties")
-        _s[_qp] = _fp->s_from_p_T(p, T);
-    else
-        _s[_qp] = (_s_in ? *_s_in : _s[_qp]);
+    _s[_qp] = *_s_in;
 }
 
 void
@@ -594,12 +555,7 @@ OrcaTHMaterial::computeFluidThermalConductivity()
         return;
     }
 
-    const ADReal p = _p[_qp];
-    const ADReal T = (*_T)[_qp];
-    if (_fluid_properties_model == "fluid_properties")
-        _k_fluid[_qp] = _fp->k_from_p_T(p, T);
-    else
-        _k_fluid[_qp] = (_k_fluid_in ? *_k_fluid_in : _k_fluid[_qp]);
+    _k_fluid[_qp] = *_k_fluid_in;
 }
 
 void
@@ -639,24 +595,8 @@ OrcaTHMaterial::computeFluidThermalExpansionCoefficient()
     if (!_compute_alpha_fluid_T)
         return;
 
-    if (_fluid_thermal_expansion_model == "user")
-    {
-        // use the provided constant coefficient
+    if (_has_temperature)
         _alpha_fluid_T[_qp] = _fluid_coeff[_qp];
-        return;
-    }
-
-    if (!_has_temperature)
-        paramError("temperature",
-                "Temperature must be coupled when using fluid_properties model for thermal expansion.");
-
-    if (!_use_fp || !_fp)
-        paramError("fluid_thermal_expansion_model",
-                "fluid_properties model selected but SinglePhaseFluidProperties is not available.");
-
-    const ADReal p = _p[_qp];
-    const ADReal T = (*_T)[_qp];
-    _alpha_fluid_T[_qp] = _fp->beta_from_p_T(p, T);
 }
 
 // compute biot modulus
