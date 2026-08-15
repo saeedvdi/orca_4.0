@@ -1,8 +1,10 @@
 #include "ADOrcaBartonBandisContactTractionFastAD.h"
+#include "OrcaNormalClosure.h"
 #include "MooseException.h"
 #include "metaphysicl/raw_type.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 registerMooseObject("OrcaApp", ADOrcaBartonBandisContactTractionFastAD);
 registerMooseObjectAliased("OrcaApp",
@@ -164,6 +166,41 @@ ADOrcaBartonBandisContactTractionFastAD::validParams()
       "Before activation, its maximum is reset to the instantaneous reversible opening.");
 
   params.addRangeCheckedParam<Real>(
+      "reversible_normal_compliance",
+      0.0,
+      "reversible_normal_compliance >= 0.0",
+      "OUTPUT ONLY: slip-activated elastic joint-normal compliance C_n [m/Pa]. Adds "
+      "C_n <sigma_ref - sigma'_n>_+ to the reported normal opening, so the reconstruction can "
+      "show the elastic reclosure the pre-seated power-law closure cannot produce. Zero "
+      "(default) reproduces the previous output exactly. Contact traction, displacement, "
+      "aperture, permeability and flow are unchanged.");
+  params.addRangeCheckedParam<Real>(
+      "reversible_normal_reference_stress",
+      0.0,
+      "reversible_normal_reference_stress >= 0.0",
+      "Effective normal stress [Pa] at which the reversible opening above vanishes -- normally "
+      "sigma'_n at the end of the unloading branch. Only used when "
+      "reversible_normal_compliance > 0.");
+  params.addRangeCheckedParam<Real>(
+      "reversible_normal_opening_activation_slip",
+      0.0,
+      "reversible_normal_opening_activation_slip >= 0.0",
+      "Cumulative plastic slip [m] below which the reversible compliance above is suppressed. A "
+      "mated, unslipped joint is far stiffer normally than one whose asperities shear has "
+      "mismatched; this keeps the pre-failure branch on the power-law closure alone.");
+  params.addRangeCheckedParam<Real>(
+      "reversible_normal_opening_activation_distance",
+      1.0e-5,
+      "reversible_normal_opening_activation_distance > 0.0",
+      "Slip [m] over which the reversible compliance is switched on once the activation slip is "
+      "passed.");
+  params.addRangeCheckedParam<Real>(
+      "reversible_normal_opening_activation_exponent",
+      1.0,
+      "reversible_normal_opening_activation_exponent > 0.0",
+      "Exponent of the activation ramp 1 - exp(-(ds/d)^n).");
+
+  params.addRangeCheckedParam<Real>(
       "jrc", 10.0, "jrc >= 0.0", "Laboratory-scale joint roughness coefficient JRC0.");
   params.addRangeCheckedParam<Real>(
       "jcs", 1e8, "jcs > 0.0", "Laboratory-scale joint wall compressive strength JCS0 [Pa].");
@@ -210,6 +247,22 @@ ADOrcaBartonBandisContactTractionFastAD::validParams()
       85.0,
       "max_friction_angle_degrees > 0.0 & max_friction_angle_degrees < 89.9",
       "Upper cap on peak friction angle [degrees].");
+  params.addParam<bool>(
+      "use_state_dependent_fault_pressure_coefficient",
+      false,
+      "OPT-IN (task #24). If true, this material exports an AD 'fault_pressure_area_coefficient' "
+      "property (alpha = sigma_0/(sigma_0+sigma_n)) that OrcaCZMFluidPressureInterfaceKernel can "
+      "read via alpha_property_name, replacing a flat empirical fault_pressure_coefficient with "
+      "a state-dependent one. False (default) reproduces legacy behavior exactly.");
+  params.addRangeCheckedParam<Real>(
+      "fault_pressure_area_reference_stress",
+      1.897751e8,
+      "fault_pressure_area_reference_stress > 0.0",
+      "Characteristic stress sigma_0 [Pa] in alpha = sigma_0/(sigma_0+sigma_n). Only used when "
+      "use_state_dependent_fault_pressure_coefficient = true. Must be calibrated per sample so "
+      "alpha = 0.86 (the empirically-validated constant value) at that sample's own initial "
+      "(Pi=8 MPa) effective normal stress -- the default is only SW-S4's calibration and must "
+      "not be left at default for other samples. See the MC material's identical parameter.");
 
   params.addParam<bool>("use_dilatancy", true, "If true, apply BB shear dilation during slip.");
   params.addRangeCheckedParam<Real>("dilation_factor",
@@ -322,6 +375,14 @@ ADOrcaBartonBandisContactTractionFastAD::ADOrcaBartonBandisContactTractionFastAD
         getParam<Real>("reported_reversible_normal_opening_retention_fraction")),
     _reported_reversible_normal_opening_retention_activation_slip(
         getParam<Real>("reported_reversible_normal_opening_retention_activation_slip")),
+    _reversible_normal_compliance(getParam<Real>("reversible_normal_compliance")),
+    _reversible_normal_reference_stress(getParam<Real>("reversible_normal_reference_stress")),
+    _reversible_normal_opening_activation_slip(
+        getParam<Real>("reversible_normal_opening_activation_slip")),
+    _reversible_normal_opening_activation_distance(
+        getParam<Real>("reversible_normal_opening_activation_distance")),
+    _reversible_normal_opening_activation_exponent(
+        getParam<Real>("reversible_normal_opening_activation_exponent")),
     _jrc0(getParam<Real>("jrc")),
     _jcs0(getParam<Real>("jcs")),
     _residual_friction_angle_deg(getParam<Real>("residual_friction_angle_degrees")),
@@ -344,6 +405,10 @@ ADOrcaBartonBandisContactTractionFastAD::ADOrcaBartonBandisContactTractionFastAD
     _allow_negative_roughness_angle(getParam<bool>("allow_negative_roughness_angle")),
     _min_friction_angle_deg(getParam<Real>("min_friction_angle_degrees")),
     _max_friction_angle_deg(getParam<Real>("max_friction_angle_degrees")),
+    _use_state_dependent_fault_pressure_coefficient(
+        getParam<bool>("use_state_dependent_fault_pressure_coefficient")),
+    _fault_pressure_area_reference_stress(
+        getParam<Real>("fault_pressure_area_reference_stress")),
     _dilation_factor(getParam<Real>("dilation_factor")),
     _min_dilation_angle_deg(getParam<Real>("min_dilation_angle_degrees")),
     _max_dilation_angle_deg(getParam<Real>("max_dilation_angle_degrees")),
@@ -406,7 +471,9 @@ ADOrcaBartonBandisContactTractionFastAD::ADOrcaBartonBandisContactTractionFastAD
     _bb_peak_friction_coefficient(
         declareProperty<Real>(_base_name + "bb_peak_friction_coefficient")),
     _bb_dilation_angle_degrees(declareProperty<Real>(_base_name + "bb_dilation_angle_degrees")),
-    _bb_dilation_coefficient(declareProperty<Real>(_base_name + "bb_dilation_coefficient"))
+    _bb_dilation_coefficient(declareProperty<Real>(_base_name + "bb_dilation_coefficient")),
+    _fault_pressure_area_coefficient(
+        declareADProperty<Real>(_base_name + "fault_pressure_area_coefficient"))
 {
   if (_min_friction_angle_deg > _max_friction_angle_deg)
     paramError("min_friction_angle_degrees", "Must be <= max_friction_angle_degrees.");
@@ -458,6 +525,7 @@ ADOrcaBartonBandisContactTractionFastAD::initQpStatefulProperties()
   _bb_peak_friction_coefficient[_qp] = std::tan(_residual_friction_angle_deg * M_PI / 180.0);
   _bb_dilation_angle_degrees[_qp] = 0.0;
   _bb_dilation_coefficient[_qp] = 0.0;
+  _fault_pressure_area_coefficient[_qp] = ADReal(1.0);
 }
 
 // =============================================================================
@@ -591,9 +659,34 @@ ADOrcaBartonBandisContactTractionFastAD::updateReportedNormalOpening(const ADRea
       (retain_opening_history ? _reported_reversible_normal_opening_retention_fraction : 0.0) *
           (maximum_reversible_opening - raw_reversible_opening);
 
+  // Slip-activated elastic joint-normal compliance, on top of whatever the closure law
+  // produced. d_elastic = a(s) C_n <sigma_ref - sigma'_n>_+, with a(s) ramping from 0 to 1
+  // once the joint has slipped: a mated joint is stiff normally, a sheared one is not. The
+  // power-law closure is pre-seated onto its asymptote at these stresses and cannot supply
+  // this branch, which is why the Barton-Bandis runs reported a flat post-peak dilation
+  // while the experiment measured tens of micrometres of reclosure. C_n = 0 (default) is a
+  // no-op, so decks that do not set it are bit-identical.
+  Real elastic_opening = 0.0;
+  if (_reversible_normal_compliance > 0.0)
+  {
+    Real activation = 1.0;
+    if (_reversible_normal_opening_activation_slip > 0.0)
+    {
+      const Real activated_slip =
+          std::max(Real(0.0), cumulative_slip - _reversible_normal_opening_activation_slip);
+      activation = 1.0 - std::exp(-std::pow(activated_slip /
+                                                _reversible_normal_opening_activation_distance,
+                                            _reversible_normal_opening_activation_exponent));
+    }
+    const Real overstress =
+        _reversible_normal_reference_stress - _bb_compressive_normal_stress[_qp];
+    elastic_opening =
+        activation * _reversible_normal_compliance * std::max(Real(0.0), overstress);
+  }
+
   _maximum_reversible_normal_opening[_qp] = maximum_reversible_opening;
-  _reversible_normal_opening[_qp] = reversible_opening;
-  _normal_opening_total[_qp] = irreversible_opening + reversible_opening;
+  _reversible_normal_opening[_qp] = reversible_opening + elastic_opening;
+  _normal_opening_total[_qp] = irreversible_opening + reversible_opening + elastic_opening;
 }
 
 ADReal
@@ -638,56 +731,20 @@ ADOrcaBartonBandisContactTractionFastAD::computeNormalStressAndTangent(const ADR
                                                                        ADReal & sigma_n,
                                                                        ADReal & kn_tangent) const
 {
-  if (MetaPhysicL::raw_value(closure) <= 0.0)
-  {
-    sigma_n = 0.0;
-    kn_tangent = 0.0;
-    return;
-  }
-  if (_use_hyperbolic_normal_closure && _normal_closure_stress_exponent != 1.0)
-  {
-    // Power-law BB closure: sigma_n = sigma_0 * (cl/(V_m - cl))^(1/p), sigma_0 = K_ni*V_m.
-    // Below cl_lin the value is linearized (sigma_n proportional to cl) so the tangent stays
-    // bounded at contact activation (x^(1/p-1) is singular at cl -> 0 for p > 1).
-    using std::pow;
-    const Real p = _normal_closure_stress_exponent;
-    const Real sigma0 = _initial_normal_stiffness * _maximum_closure;
-    const Real closure_cap = _maximum_closure_fraction * _maximum_closure;
-    const Real cl_lin = 1.0e-9;
-    const ADReal cl = std::min(ADReal(closure_cap), std::max(ADReal(0.0), closure));
-    if (MetaPhysicL::raw_value(cl) < cl_lin)
-    {
-      const Real x_lin = cl_lin / (_maximum_closure - cl_lin);
-      const Real sn_lin = sigma0 * std::pow(x_lin, 1.0 / p);
-      sigma_n = ADReal(sn_lin / cl_lin) * cl;
-      kn_tangent = ADReal(sn_lin / cl_lin);
-    }
-    else
-    {
-      const ADReal x = cl / (ADReal(_maximum_closure) - cl);
-      sigma_n = ADReal(sigma0) * pow(x, ADReal(1.0 / p));
-      kn_tangent = MetaPhysicL::raw_value(closure) >= closure_cap
-                       ? ADReal(0.0)
-                       : ADReal(sigma0 / p) * pow(x, ADReal(1.0 / p - 1.0)) *
-                             ADReal(_maximum_closure) /
-                             ((ADReal(_maximum_closure) - cl) * (ADReal(_maximum_closure) - cl));
-    }
-  }
-  else if (_use_hyperbolic_normal_closure)
-  {
-    const Real closure_cap = _maximum_closure_fraction * _maximum_closure;
-    const ADReal cl = std::min(ADReal(closure_cap), std::max(ADReal(0.0), closure));
-    const ADReal denom = std::max(ADReal(1.0e-12), ADReal(1.0) - cl / ADReal(_maximum_closure));
-    sigma_n = ADReal(_initial_normal_stiffness) * cl / denom;
-    kn_tangent = MetaPhysicL::raw_value(closure) >= closure_cap
-                     ? ADReal(0.0)
-                     : ADReal(_initial_normal_stiffness) / (denom * denom);
-  }
-  else
-  {
-    sigma_n = ADReal(_initial_normal_stiffness) * std::max(ADReal(0.0), closure);
-    kn_tangent = ADReal(_initial_normal_stiffness);
-  }
+  // Single shared implementation of the Barton--Bandis power-law closure (see
+  // OrcaNormalClosure.h). This class previously carried its own copy, which had already
+  // drifted from the utility (a hard cl_lin = 1e-9 instead of min(1e-9, 0.01*V_m)).
+  const auto response = OrcaNormalClosure::evaluateFromClosure<ADReal>(
+      closure,
+      _use_hyperbolic_normal_closure,
+      _initial_normal_stiffness, // legacy linear penalty == K_ni for this family
+      _initial_normal_stiffness,
+      _maximum_closure,
+      _maximum_closure_fraction,
+      _normal_closure_stress_exponent);
+
+  sigma_n = response.pressure;
+  kn_tangent = response.tangent;
 }
 
 void
@@ -710,7 +767,7 @@ ADOrcaBartonBandisContactTractionFastAD::computeBartonBandisProperties(
   {
     ADReal sbar = std::max(ADReal(0.0), cumulative_slip / ADReal(_peak_shear_displacement));
     sbar = std::min(ADReal(1.0), sbar);
-    jrc_mobilized *= pow(sbar, ADReal(_mobilized_jrc_exponent));
+    jrc_mobilized *= pow(sbar, Real(_mobilized_jrc_exponent));
   }
   const ADReal ratio = std::max(ADReal(1.0e-30), ADReal(_jcs_scaled_const) / sigma_eff);
   roughness_angle_deg = jrc_mobilized * log10AD(ratio);
@@ -769,50 +826,19 @@ ADOrcaBartonBandisContactTractionFastAD::computeNormalStressAndTangentReal(Real 
                                                                            Real & sigma_n,
                                                                            Real & kn_tangent) const
 {
-  if (closure <= 0.0)
-  {
-    sigma_n = 0.0;
-    kn_tangent = 0.0;
-    return;
-  }
-  if (_use_hyperbolic_normal_closure && _normal_closure_stress_exponent != 1.0)
-  {
-    // Power-law BB closure (mirrors the AD version; see comments there).
-    const Real p = _normal_closure_stress_exponent;
-    const Real sigma0 = _initial_normal_stiffness * _maximum_closure;
-    const Real closure_cap = _maximum_closure_fraction * _maximum_closure;
-    const Real cl_lin = 1.0e-9;
-    const Real cl = std::min(closure_cap, std::max(Real(0.0), closure));
-    if (cl < cl_lin)
-    {
-      const Real x_lin = cl_lin / (_maximum_closure - cl_lin);
-      const Real sn_lin = sigma0 * std::pow(x_lin, 1.0 / p);
-      sigma_n = (sn_lin / cl_lin) * cl;
-      kn_tangent = sn_lin / cl_lin;
-    }
-    else
-    {
-      const Real x = cl / (_maximum_closure - cl);
-      sigma_n = sigma0 * std::pow(x, 1.0 / p);
-      kn_tangent = (closure >= closure_cap)
-                       ? 0.0
-                       : (sigma0 / p) * std::pow(x, 1.0 / p - 1.0) * _maximum_closure /
-                             ((_maximum_closure - cl) * (_maximum_closure - cl));
-    }
-  }
-  else if (_use_hyperbolic_normal_closure)
-  {
-    const Real closure_cap = _maximum_closure_fraction * _maximum_closure;
-    const Real cl = std::min(closure_cap, std::max(Real(0.0), closure));
-    const Real denom = std::max(Real(1.0e-12), Real(1.0) - cl / _maximum_closure);
-    sigma_n = _initial_normal_stiffness * cl / denom;
-    kn_tangent = (closure >= closure_cap) ? 0.0 : _initial_normal_stiffness / (denom * denom);
-  }
-  else
-  {
-    sigma_n = _initial_normal_stiffness * std::max(Real(0.0), closure);
-    kn_tangent = _initial_normal_stiffness;
-  }
+  // Real instantiation of the SAME shared law used by the AD path above, so the NR loop and
+  // the IFT pass can never disagree.
+  const auto response = OrcaNormalClosure::evaluateFromClosure<Real>(
+      closure,
+      _use_hyperbolic_normal_closure,
+      _initial_normal_stiffness,
+      _initial_normal_stiffness,
+      _maximum_closure,
+      _maximum_closure_fraction,
+      _normal_closure_stress_exponent);
+
+  sigma_n = response.pressure;
+  kn_tangent = response.tangent;
 }
 
 void
@@ -1074,6 +1100,9 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
     _bb_peak_friction_coefficient[_qp] = std::tan(_residual_friction_angle_deg * M_PI / 180.0);
     _bb_dilation_angle_degrees[_qp] = 0.0;
     _bb_dilation_coefficient[_qp] = 0.0;
+    // Fully open joint: no solid contact area to shield the fluid, so the entire nominal area
+    // is pressure-exposed (alpha=1), matching the MC material's identical open-state value.
+    _fault_pressure_area_coefficient[_qp] = ADReal(1.0);
     _interface_traction_inc[_qp] = ADRealVectorValue(0.0, 0.0, 0.0) - traction_old;
     updateReportedNormalOpening(jump(0), irrev_dil_old, cumslip_old);
     return;
@@ -1136,6 +1165,13 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
   _bb_peak_friction_coefficient[_qp] = mu_old_r;
   _bb_dilation_angle_degrees[_qp] = da_old_r;
   _bb_dilation_coefficient[_qp] = dc_old_r;
+  // Provisional (start-of-step) value; overwritten below with the converged sn_final once the
+  // return map settles, same two-pass pattern as the other diagnostics on this code path.
+  _fault_pressure_area_coefficient[_qp] =
+      _use_state_dependent_fault_pressure_coefficient
+          ? ADReal(_fault_pressure_area_reference_stress) /
+                (ADReal(_fault_pressure_area_reference_stress) + sn_old_ad)
+          : ADReal(1.0);
 
   // -----------------------------------------------------------------------
   // Stick check (using start-of-step tau_limit)
@@ -1186,9 +1222,23 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
     // Dilation and contact pressure are coupled. Resolve that inexpensive scalar fixed point for
     // each gamma so the bracketed residual is deterministic (the legacy loop evaluated R with the
     // dilation coefficient left over from the previous Newton iterate).
+    //
+    // Convergence criterion: the iterate is tan(psi), an O(0.01..1) quantity. The previous
+    // test used an ABSOLUTE 1e-12 against dc_scale = max(1, |dc|) = 1, while the update was
+    // damped by 0.5 -- a linear contraction of rate 1/2. Reaching 1e-12 from a typical
+    // initial mismatch of ~0.1 therefore needs ~37 iterations, but the loop was capped at 25,
+    // so the fixed point reported spurious non-convergence and threw whenever the dilation
+    // coefficient moved appreciably between steps. That exception cuts dt, which is a
+    // plausible contributor to the dt collapse seen in the SW-S4 Barton-Bandis decks.
+    //
+    // Fixed by (a) making the tolerance relative to |dc| with a sensible floor, (b) using
+    // direct substitution -- which is exact in one iteration whenever the dilation angle does
+    // not depend on sigma_n, i.e. the whole use_decoupled_dilation family -- falling back to
+    // damping only if the residual fails to contract, and (c) raising the iteration cap.
     Real dc_iter = dc_old_r;
+    Real dc_residual_old = std::numeric_limits<Real>::max();
     bool dilation_converged = !_use_dilatancy;
-    for (unsigned int j = 0; j < 25; ++j)
+    for (unsigned int j = 0; j < 50; ++j)
     {
       dil_new_r = computeDilationIncrementReal(dc_iter, gamma, closure_old_raw);
       const Real cl_new_unregularized =
@@ -1208,13 +1258,19 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
                                         dc_new_r,
                                         tl_new_r);
 
-      const Real dc_scale = std::max(Real(1.0), std::abs(dc_new_r));
-      if (std::abs(dc_new_r - dc_iter) <= Real(1e-12) * dc_scale)
+      const Real dc_scale = std::max(Real(1.0e-6), std::abs(dc_new_r));
+      const Real dc_residual = std::abs(dc_new_r - dc_iter);
+      if (dc_residual <= Real(1e-11) * dc_scale)
       {
         dilation_converged = true;
         break;
       }
-      dc_iter = Real(0.5) * (dc_iter + dc_new_r);
+
+      // Direct substitution while it contracts; damped bisection if it stalls or oscillates.
+      dc_iter = (dc_residual < Real(0.5) * dc_residual_old)
+                    ? dc_new_r
+                    : Real(0.5) * (dc_iter + dc_new_r);
+      dc_residual_old = dc_residual;
     }
 
     if (!dilation_converged)
@@ -1468,6 +1524,8 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
     _bb_peak_friction_coefficient[_qp] = mu_new_r;
     _bb_dilation_angle_degrees[_qp] = 0.0;
     _bb_dilation_coefficient[_qp] = 0.0;
+    // Dilation drove the joint fully open: same alpha=1 open-state convention as above.
+    _fault_pressure_area_coefficient[_qp] = ADReal(1.0);
     _interface_traction_inc[_qp] = ADRealVectorValue(0.0, 0.0, 0.0) - traction_old;
     updateReportedNormalOpening(jump(0), irrev_dil_new, cumslip_conv);
     return;
@@ -1501,6 +1559,12 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
   _bb_peak_friction_coefficient[_qp] = mu_new_r;
   _bb_dilation_angle_degrees[_qp] = da_new_r;
   _bb_dilation_coefficient[_qp] = dc_new_r;
+  // Converged (end-of-step) value, using the same sn_final consumed by the traction update.
+  _fault_pressure_area_coefficient[_qp] =
+      _use_state_dependent_fault_pressure_coefficient
+          ? ADReal(_fault_pressure_area_reference_stress) /
+                (ADReal(_fault_pressure_area_reference_stress) + sn_final)
+          : ADReal(1.0);
 
   _interface_traction_inc[_qp] = traction_new - traction_old;
   updateReportedNormalOpening(jump(0), irrev_dil_new, cumslip_conv);

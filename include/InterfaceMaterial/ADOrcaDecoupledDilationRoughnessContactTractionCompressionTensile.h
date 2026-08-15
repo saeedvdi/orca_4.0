@@ -27,6 +27,34 @@ roughnessPowerInterpolation(const T & roughness,
   const T normalized_roughness = normalizedResidualRoughness(roughness, residual_roughness);
   return T(smooth_value) + T(rough_value - smooth_value) * pow(normalized_roughness, T(exponent));
 }
+
+/**
+ * p * base^(p-1): the power-rule factor in d/dx [base^p], evaluated SAFELY at base == 0.
+ *
+ * Both MetaPhysicL pow overloads produce a NaN derivative at base == 0:
+ *   pow(dual, dual) -> derivative contains b' * log(a) = 0 * (-inf)
+ *   pow(dual, Real) -> derivative contains b * a^(b-1) = 0 * (+inf)   [when b == 0]
+ *
+ * and base == 0 is reached EXACTLY, not just approached, whenever a normalized state
+ * variable saturates: e.g. the normalized roughness (R - R_res)/(1 - R_res) once
+ * R + (R0 - R_res) exp(-gamma/L_R) underflows to R_res in double precision. That happens
+ * after only a couple of slipping steps for a short roughness decay distance, and it
+ * poisons the JACOBIAN while leaving the residual finite -- which surfaces as
+ * DIVERGED_NANORINF at linear-solve iteration 0, at every time-step size.
+ *
+ * p == 1 is returned exactly (the factor is 1, and pow(base, 0) must never be evaluated).
+ * Otherwise the base is floored so the derivative stays bounded for non-integer p.
+ */
+template <typename T>
+T
+powerRuleFactor(const T & base, const Real p, const Real base_floor = 1.0e-12)
+{
+  using std::pow;
+  if (p == 1.0)
+    return T(1.0);
+  return T(p) * pow(std::max(base, T(base_floor)), p - 1.0);
+}
+
 }
 
 /**
@@ -83,6 +111,7 @@ private:
     ADReal normal_plastic_jump;
     ADReal irreversible_dilation;
     ADReal normal_contact_pressure;
+    ADReal fault_pressure_area_coefficient;
     ADReal limit_tau;
     ADReal rate_state_theta;   // rate-and-state state variable theta [s] (carried between steps)
 
@@ -131,6 +160,7 @@ private:
     ADReal dilation_slope;
     ADReal dilation_support;
     ADReal normal_pressure;
+    ADReal fault_pressure_area_coefficient;
     ADReal normal_pressure_memory;
     ADReal raw_strength;
     ADReal retained_strength;
@@ -225,6 +255,8 @@ private:
   const bool _use_hyperbolic_normal_closure;
   const Real _initial_normal_stiffness;
   const Real _maximum_closure;
+  const Real _fault_pressure_area_reference_stress;
+  const bool _use_state_dependent_fault_pressure_coefficient;
   const Real _maximum_closure_fraction;
   const Real _normal_closure_stress_exponent;
   const Real _normal_closure_offset;
@@ -349,6 +381,13 @@ private:
   const MaterialProperty<Real> & _normal_plastic_jump_old;
   ADMaterialProperty<Real> & _irreversible_dilation;
   ADMaterialProperty<Real> & _normal_contact_pressure;
+  // Physically-derived fault-pressure area-coefficient alpha: the fraction of the nominal
+  // fracture area exposed to fluid, alpha = K_ni / K(closure), where K(closure) is the local
+  // tangent stiffness of the normal-closure law (see OrcaNormalClosure). alpha -> 1 at zero
+  // closure (fully open, textbook Biot=1 limit) and alpha -> 0 as closure -> V_m (near-total
+  // asperity contact). No new fitted constants: reuses initial_normal_stiffness/maximum_closure/
+  // normal_closure_stress_exponent already calibrated for the mechanical closure law itself.
+  ADMaterialProperty<Real> & _fault_pressure_area_coefficient;
 
   // Reversible elastic normal opening d_rev, and the reported total normal opening
   // (irreversible g_np + reversible d_rev). Output-only diagnostics.

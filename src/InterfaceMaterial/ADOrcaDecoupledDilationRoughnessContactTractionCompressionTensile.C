@@ -58,6 +58,27 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::validParams()
                                     1e-4,
                                     "maximum_closure > 0.0",
                                     "Maximum mechanical closure V_m [m].");
+  params.addRangeCheckedParam<Real>(
+      "fault_pressure_area_reference_stress",
+      1.897751e8,
+      "fault_pressure_area_reference_stress > 0.0",
+      "Characteristic stress sigma_0 [Pa] in the fault-pressure area coefficient "
+      "alpha = sigma_0 / (sigma_0 + sigma_n). NOT derived from K_ni*V_m (that "
+      "characterizes the closure law's near-zero-stress compliance, ~15-18x too "
+      "small here to reproduce a slip event -- see CHANGELOG_SINCE_CODE_FIXES.md "
+      "sec 10.8/10.9). This is a genuine new fitted constant, calibrated per sample "
+      "so alpha = 0.86 (the empirically-validated constant value) at that sample's "
+      "own initial confining effective normal stress; it must be set explicitly per "
+      "deck, not left at this default, which is only SW-S4's calibration.");
+  params.addParam<bool>(
+      "use_state_dependent_fault_pressure_coefficient",
+      false,
+      "OPT-IN (task #24). Activates the state-dependent alpha = sigma_0/(sigma_0+sigma_n) "
+      "WITHOUT requiring use_hyperbolic_normal_closure = true, so samples still on the legacy "
+      "linear-penalty normal-closure law (e.g. SW-S3) can get state-dependent pore-pressure "
+      "coupling without a full closure-law refit. use_hyperbolic_normal_closure = true continues "
+      "to also activate alpha on its own, unchanged, for backward compatibility with the "
+      "SW-S4/T1/T2 decks already calibrated against that coupling (task #22).");
   params.addRangeCheckedParam<Real>("maximum_closure_fraction",
                                     0.999,
                                     "maximum_closure_fraction > 0.0 & maximum_closure_fraction < 1.0",
@@ -438,6 +459,10 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::
     _use_hyperbolic_normal_closure(getParam<bool>("use_hyperbolic_normal_closure")),
     _initial_normal_stiffness(getParam<Real>("initial_normal_stiffness")),
     _maximum_closure(getParam<Real>("maximum_closure")),
+    _fault_pressure_area_reference_stress(
+        getParam<Real>("fault_pressure_area_reference_stress")),
+    _use_state_dependent_fault_pressure_coefficient(
+        getParam<bool>("use_state_dependent_fault_pressure_coefficient")),
     _maximum_closure_fraction(getParam<Real>("maximum_closure_fraction")),
     _normal_closure_stress_exponent(getParam<Real>("normal_closure_stress_exponent")),
     _normal_closure_offset(getParam<Real>("normal_closure_offset")),
@@ -541,6 +566,8 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::
     _normal_plastic_jump_old(getMaterialPropertyOld<Real>(_base_name + "normal_plastic_jump")),
     _irreversible_dilation(declareADProperty<Real>(_base_name + "irreversible_dilation")),
     _normal_contact_pressure(declareADProperty<Real>(_base_name + "normal_contact_pressure")),
+    _fault_pressure_area_coefficient(
+        declareADProperty<Real>(_base_name + "fault_pressure_area_coefficient")),
     _reversible_normal_opening(declareADProperty<Real>(_base_name + "reversible_normal_opening")),
     _normal_opening_total(declareADProperty<Real>(_base_name + "normal_opening_total")),
     _maximum_reversible_normal_opening(
@@ -636,6 +663,7 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::initQpStatefu
   _normal_plastic_jump[_qp] = 0.0;
   _irreversible_dilation[_qp] = 0.0;
   _normal_contact_pressure[_qp] = 0.0;
+  _fault_pressure_area_coefficient[_qp] = 1.0;
   _reversible_normal_opening[_qp] = 0.0;
   _normal_opening_total[_qp] = 0.0;
   _maximum_reversible_normal_opening[_qp] = 0.0;
@@ -717,6 +745,7 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::oldLocalState
   state.normal_plastic_jump = ADReal(_normal_plastic_jump_old[_qp]);
   state.irreversible_dilation = state.normal_plastic_jump;
   state.normal_contact_pressure = 0.0;
+  state.fault_pressure_area_coefficient = ADReal(1.0);
   state.limit_tau = 0.0;
   state.rate_state_theta = ADReal(_rate_state_theta_old[_qp]);
 
@@ -765,6 +794,7 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::storeFinalSta
   _normal_plastic_jump[_qp] = state.normal_plastic_jump;
   _irreversible_dilation[_qp] = state.irreversible_dilation;
   _normal_contact_pressure[_qp] = state.normal_contact_pressure;
+  _fault_pressure_area_coefficient[_qp] = state.fault_pressure_area_coefficient;
 
   // Reversible (elastic) joint-normal opening, computed from the converged effective normal stress:
   // d_rev = C_n * <sigma_ref - sigma'_n>_+  (opening as sigma'_n falls below the reference, closing as
@@ -1051,12 +1081,13 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::strengthFromR
 
   const ADReal dnormalized_dgamma = droughness_dgamma / ADReal(1.0 - _residual_roughness);
   dfriction_dgamma = ADReal(_friction_coefficient_rough - _friction_coefficient_smooth) *
-                     ADReal(_friction_roughness_exponent) *
-                     pow(normalized_roughness, ADReal(_friction_roughness_exponent - 1.0)) *
+                     OrcaCompressionTensile::powerRuleFactor(normalized_roughness,
+                                                             _friction_roughness_exponent) *
                      dnormalized_dgamma;
-  dcohesion_dgamma =
-      ADReal(_cohesion_rough - _cohesion_smooth) * ADReal(_cohesion_roughness_exponent) *
-      pow(normalized_roughness, ADReal(_cohesion_roughness_exponent - 1.0)) * dnormalized_dgamma;
+  dcohesion_dgamma = ADReal(_cohesion_rough - _cohesion_smooth) *
+                     OrcaCompressionTensile::powerRuleFactor(normalized_roughness,
+                                                             _cohesion_roughness_exponent) *
+                     dnormalized_dgamma;
 }
 
 void
@@ -1077,7 +1108,7 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::dilationFromS
   }
 
   const ADReal x = cumulative_slip / ADReal(_dilation_decay_distance);
-  const ADReal xm = pow(x, ADReal(_dilation_decay_exponent));
+  const ADReal xm = pow(x, Real(_dilation_decay_exponent));
   state = exp(-xm);
   angle_deg = ADReal(_dilation_angle_residual_degrees) +
               ADReal(_dilation_angle_peak_degrees - _dilation_angle_residual_degrees) * state;
@@ -1085,9 +1116,9 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::dilationFromS
   const ADReal angle_rad = angle_deg * ADReal(orca_pi / 180.0);
   slope = tan(angle_rad);
 
-  const ADReal dstate_dkappa = -state * ADReal(_dilation_decay_exponent) *
-                               pow(x, ADReal(_dilation_decay_exponent - 1.0)) /
-                               ADReal(_dilation_decay_distance);
+  const ADReal dstate_dkappa =
+      -state * OrcaCompressionTensile::powerRuleFactor(x, _dilation_decay_exponent) /
+      ADReal(_dilation_decay_distance);
   const ADReal dangle_dkappa =
       ADReal(_dilation_angle_peak_degrees - _dilation_angle_residual_degrees) * dstate_dkappa;
   dslope_dgamma = (ADReal(1.0) + slope * slope) * ADReal(orca_pi / 180.0) * dangle_dkappa;
@@ -1103,10 +1134,9 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::dilationSuppo
   {
     const ADReal denom = pressure + ADReal(_dilation_support_reference);
     const ADReal z = pressure / denom;
-    low = pow(z, ADReal(_dilation_support_exponent));
+    low = pow(z, Real(_dilation_support_exponent));
     const ADReal dzdp = ADReal(_dilation_support_reference) / (denom * denom);
-    dlow = ADReal(_dilation_support_exponent) * pow(z, ADReal(_dilation_support_exponent - 1.0)) *
-           dzdp;
+    dlow = OrcaCompressionTensile::powerRuleFactor(z, _dilation_support_exponent) * dzdp;
   }
 
   ADReal high = 1.0;
@@ -1115,10 +1145,9 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::dilationSuppo
   {
     const ADReal denom = pressure + ADReal(_dilation_high_normal_reference);
     const ADReal z = ADReal(_dilation_high_normal_reference) / denom;
-    high = pow(z, ADReal(_dilation_high_normal_exponent));
+    high = pow(z, Real(_dilation_high_normal_exponent));
     const ADReal dzdp = -ADReal(_dilation_high_normal_reference) / (denom * denom);
-    dhigh = ADReal(_dilation_high_normal_exponent) *
-            pow(z, ADReal(_dilation_high_normal_exponent - 1.0)) * dzdp;
+    dhigh = OrcaCompressionTensile::powerRuleFactor(z, _dilation_high_normal_exponent) * dzdp;
   }
 
   support = low * high;
@@ -1161,7 +1190,7 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::dilationTarge
 
   const ADReal x = cumulative_slip / ADReal(_irreversible_dilation_distance);
   return ADReal(_max_irreversible_dilation) *
-         (ADReal(1.0) - exp(-pow(x, ADReal(_irreversible_dilation_exponent))));
+         (ADReal(1.0) - exp(-pow(x, Real(_irreversible_dilation_exponent))));
 }
 
 ADReal
@@ -1173,9 +1202,8 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::dilationTarge
 
   const ADReal x = cumulative_slip / ADReal(_irreversible_dilation_distance);
   return ADReal(_max_irreversible_dilation) *
-         exp(-pow(x, ADReal(_irreversible_dilation_exponent))) *
-         ADReal(_irreversible_dilation_exponent) *
-         pow(x, ADReal(_irreversible_dilation_exponent - 1.0)) /
+         exp(-pow(x, Real(_irreversible_dilation_exponent))) *
+         OrcaCompressionTensile::powerRuleFactor(x, _irreversible_dilation_exponent) /
          ADReal(_irreversible_dilation_distance);
 }
 
@@ -1219,6 +1247,42 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::evaluateFrict
                                                            _normal_closure_offset);
   s.normal_pressure = normal_response.pressure;
   const ADReal dp_dgnp = normal_response.tangent;
+
+  // Physically-motivated fault-pressure area-coefficient: a saturating hyperbola in the current
+  // effective normal (contact) stress, alpha = sigma_0 / (sigma_0 + sigma_n). Multi-asperity
+  // contact theory (e.g. Greenwood-Williamson) predicts real contact area grows monotonically
+  // and saturates with applied normal load, which sigma_n/(sigma_0+sigma_n) does by construction
+  // (0 at sigma_n=0, ->1 as sigma_n->infinity).
+  //
+  // sigma_0 is fault_pressure_area_reference_stress, a genuine NEW fitted constant -- NOT
+  // K_ni*V_m. Two earlier attempts at a "zero new constants" sigma_0 both failed for the same
+  // underlying reason (reusing a constant from the WRONG part of the closure-law physics):
+  //   1. K_ni/K(closure), a closure-space stiffness ratio: gave alpha~0.02, because
+  //      normal_closure_offset_mech is calibrated to ~97% of maximum_closure_mech (a
+  //      pre-seating offset tuned to match a measured INITIAL STIFFNESS, not a contact-area
+  //      statement), pinning the closure ratio near saturation from t=0 regardless of loading.
+  //   2. sigma_0 = K_ni*V_m (this material's earlier version, see git history): characterizes
+  //      the closure law's near-zero-stress compliance (~11 MPa for SW-S4), not real-contact-
+  //      area saturation. SW-S4 operates at 15-35 MPa effective normal stress throughout, deep
+  //      in that hyperbola's flat tail, so alpha stayed pinned near 0.24-0.25 for the entire
+  //      run instead of tracking near the empirically-validated constant 0.86 -- weak enough
+  //      pore-pressure coupling that the model never reproduced the SW-S4 slip event at all
+  //      (shear slip stayed at 0.000 mm through the whole run; see CHANGELOG sec 10.9).
+  // fault_pressure_area_reference_stress is calibrated per sample so alpha = 0.86 at that
+  // sample's own initial confining effective normal stress (SW-S4: sigma_0 = 189.775 MPa,
+  // from the local constant-alpha=0.86 reference run's ~30.89 MPa initial effective normal
+  // stress). It must be set explicitly per deck -- see the validParams default-value warning
+  // above. Task #22 / feature branch feature/state-dependent-fault-pressure-coefficient.
+  //
+  // Gate: use_hyperbolic_normal_closure (legacy, SW-S4/T1/T2) OR
+  // use_state_dependent_fault_pressure_coefficient (task #24 -- lets a sample still on the
+  // legacy linear-penalty closure, e.g. SW-S3, opt into state-dependent alpha without also
+  // switching its normal-closure law and needing a full V_m/K_ni/p refit).
+  s.fault_pressure_area_coefficient =
+      (_use_hyperbolic_normal_closure || _use_state_dependent_fault_pressure_coefficient)
+          ? ADReal(_fault_pressure_area_reference_stress) /
+                (ADReal(_fault_pressure_area_reference_stress) + s.normal_pressure)
+          : ADReal(1.0);
 
   ADReal dmemory_dp;
   normalPressureMemory(s.normal_pressure,
@@ -1284,55 +1348,10 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::evaluateFrict
 
   s.raw_dilation_increment = raw_dilation_increment;
 
-  const ADReal branch_tau = tau_trial - ADReal(_penalty_tangent) * gamma;
-  s.frictional_sliding_work = damage_fraction * branch_tau * gamma;
-
-  ADReal limited_dilation_increment = 0.0;
-  ADReal dlimited_dgamma = 0.0;
-  ADReal dlimited_dgnp = 0.0;
-  if (_use_dilatancy && MetaPhysicL::raw_value(raw_dilation_increment) > 0.0)
-  {
-    const ADReal denominator = s.normal_pressure + ADReal(_stress_regularization);
-    const ADReal coefficient = ADReal(1.0 - _dissipation_margin);
-    const ADReal admissible_increment = coefficient * s.frictional_sliding_work / denominator;
-
-    if (MetaPhysicL::raw_value(admissible_increment) > 0.0)
-    {
-      const ADReal dsliding_work_dgamma =
-          damage_fraction * (branch_tau - ADReal(_penalty_tangent) * gamma);
-      const ADReal dlimit_dgamma = coefficient * dsliding_work_dgamma / denominator;
-      const ADReal dlimit_dgnp =
-          -coefficient * s.frictional_sliding_work * dp_dgnp / (denominator * denominator);
-
-      // Enforce p*Delta g_np <= (1-epsilon_D)*d*tau*gamma with a semismooth min
-      // active set. This keeps Delta g_np nonnegative exactly; the active limiter branch
-      // contributes its derivatives to the F2 row of the local Jacobian.
-      if (MetaPhysicL::raw_value(raw_dilation_increment) <=
-          MetaPhysicL::raw_value(admissible_increment))
-      {
-        limited_dilation_increment = raw_dilation_increment;
-        dlimited_dgamma = draw_dgamma;
-        dlimited_dgnp = draw_dgnp;
-      }
-      else
-      {
-        limited_dilation_increment = admissible_increment;
-        dlimited_dgamma = dlimit_dgamma;
-        dlimited_dgnp = dlimit_dgnp;
-      }
-    }
-  }
-
-  s.dilation_increment = limited_dilation_increment;
-  s.normal_plastic_jump = normal_plastic_jump;
-  s.dilation_residual =
-      normal_plastic_jump - old_state.normal_plastic_jump - limited_dilation_increment;
-  s.ddil_dgamma = -dlimited_dgamma;
-  s.ddil_dgnp = ADReal(1.0) - dlimited_dgnp;
-
-  s.dilation_work = s.normal_pressure * limited_dilation_increment;
-  s.frictional_dilatant_dissipation = s.frictional_sliding_work - s.dilation_work;
-
+  // ---------------------------------------------------------------------------------------
+  // Frictional strength Y(gamma, g_np). Evaluated BEFORE the dilation limiter because the
+  // limiter's dissipation budget is the Coulomb friction work Y*gamma (see below).
+  // ---------------------------------------------------------------------------------------
   s.raw_strength = s.cohesion + s.friction * s.normal_pressure_memory;
   const ADReal dYraw_dgamma = dc_dgamma + dmu_dgamma * s.normal_pressure_memory;
   const ADReal dYraw_dgnp = s.friction * dmemory_dgnp;
@@ -1396,6 +1415,71 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::evaluateFrict
   dstrength_dgamma = strength_floor_weight * dstrength_dgamma;
   dstrength_dgnp = strength_floor_weight * dstrength_dgnp;
 
+  // ---------------------------------------------------------------------------------------
+  // Dilation dissipation limiter: p * Delta g_np <= (1 - epsilon_D) * d * Y * gamma.
+  //
+  // The budget is the COULOMB FRICTION work d*Y*gamma, not the total branch traction times
+  // slip. Previously this used branch_tau = tau_trial - K_t*gamma, which at convergence equals
+  // Y + eta_t*gamma/dt + tau_rsf -- so the viscous overstress and the rate-and-state term
+  // inflated the admissible dilation work. With the SW-S4 settings (eta_t = 5e12 Pa.s/m at
+  // V ~ 1e-7 m/s) that is a ~0.5 MPa inflation against a 3-12 MPa strength, i.e. a purely
+  // numerical regularization parameter was leaking into the dilation physics -- and the
+  // limiter is what actually controls dn/ds in these decks.
+  //
+  // frictional_sliding_work is also the reported dissipation diagnostic, so it now reports
+  // true frictional work.
+  // ---------------------------------------------------------------------------------------
+  s.frictional_sliding_work = damage_fraction * s.strength * gamma;
+
+  ADReal limited_dilation_increment = 0.0;
+  ADReal dlimited_dgamma = 0.0;
+  ADReal dlimited_dgnp = 0.0;
+  if (_use_dilatancy && MetaPhysicL::raw_value(raw_dilation_increment) > 0.0)
+  {
+    const ADReal denominator = s.normal_pressure + ADReal(_stress_regularization);
+    const ADReal coefficient = ADReal(1.0 - _dissipation_margin);
+    const ADReal admissible_increment = coefficient * s.frictional_sliding_work / denominator;
+
+    if (MetaPhysicL::raw_value(admissible_increment) > 0.0)
+    {
+      // d(d*Y*gamma)/dgamma = d*(Y + gamma*dY/dgamma);  d(...)/dg_np = d*gamma*dY/dg_np.
+      const ADReal dsliding_work_dgamma =
+          damage_fraction * (s.strength + gamma * dstrength_dgamma);
+      const ADReal dsliding_work_dgnp = damage_fraction * gamma * dstrength_dgnp;
+
+      const ADReal dlimit_dgamma = coefficient * dsliding_work_dgamma / denominator;
+      const ADReal dlimit_dgnp =
+          coefficient * dsliding_work_dgnp / denominator -
+          coefficient * s.frictional_sliding_work * dp_dgnp / (denominator * denominator);
+
+      // Semismooth min active set. This keeps Delta g_np nonnegative exactly; the active
+      // limiter branch contributes its derivatives to the F2 row of the local Jacobian.
+      if (MetaPhysicL::raw_value(raw_dilation_increment) <=
+          MetaPhysicL::raw_value(admissible_increment))
+      {
+        limited_dilation_increment = raw_dilation_increment;
+        dlimited_dgamma = draw_dgamma;
+        dlimited_dgnp = draw_dgnp;
+      }
+      else
+      {
+        limited_dilation_increment = admissible_increment;
+        dlimited_dgamma = dlimit_dgamma;
+        dlimited_dgnp = dlimit_dgnp;
+      }
+    }
+  }
+
+  s.dilation_increment = limited_dilation_increment;
+  s.normal_plastic_jump = normal_plastic_jump;
+  s.dilation_residual =
+      normal_plastic_jump - old_state.normal_plastic_jump - limited_dilation_increment;
+  s.ddil_dgamma = -dlimited_dgamma;
+  s.ddil_dgnp = ADReal(1.0) - dlimited_dgnp;
+
+  s.dilation_work = s.normal_pressure * limited_dilation_increment;
+  s.frictional_dilatant_dissipation = s.frictional_sliding_work - s.dilation_work;
+
   // H3 fix: the frictional overstress rate must use the substep time increment dt*substep_fraction,
   // consistent with the cohesive Duvaut-Lions relaxation in updateCohesiveState. gamma here is the
   // plastic slip accumulated within the current substep, so dividing by the full step _dt would
@@ -1427,8 +1511,7 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::evaluateFrict
     const ADReal V = gamma / ADReal(substep_dt);
     const ADReal theta_old = old_state.rate_state_theta;
     const ADReal state_factor =
-        pow(ADReal(_rate_and_state_V0) * theta_old / ADReal(_rate_and_state_Dc),
-            ADReal(_rate_and_state_b / _rate_and_state_a));
+        pow(ADReal(_rate_and_state_V0) * theta_old / ADReal(_rate_and_state_Dc), Real(_rate_and_state_b / _rate_and_state_a));
     const ADReal z = V / (ADReal(2.0) * ADReal(_rate_and_state_V0)) * state_factor;
     const ADReal root = sqrt(z * z + ADReal(1.0));
     // Reference to steady sliding at V0: z_ref = (V0/2V0)*(V0*(Dc/V0)/Dc)^(b/a) = 1/2, a constant, so
@@ -1501,6 +1584,7 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::storeFriction
   state.normal_plastic_jump = friction.normal_plastic_jump;
   state.irreversible_dilation = friction.normal_plastic_jump;
   state.normal_contact_pressure = friction.normal_pressure;
+  state.fault_pressure_area_coefficient = friction.fault_pressure_area_coefficient;
   state.limit_tau = friction.strength;
   state.rate_state_theta = friction.rate_state_theta;
 
@@ -1604,8 +1688,16 @@ ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::updateSubstep
                                                  old_state,
                                                  damage_fraction, substep_fraction);
 
+  // Scale-aware yield tolerance. This MUST be the same criterion the local Newton loop below
+  // uses (res_tol), otherwise trial states whose residual falls between the absolute floor and
+  // the scale-aware tolerance are routed into the return map, converge at gamma = 0 on the
+  // first iteration, and are then reported as Slip with zero plastic slip.
+  const Real stick_res_tol =
+      _local_newton_stress_tolerance +
+      1.0e-9 * std::max(MetaPhysicL::raw_value(tau_trial), _stress_regularization);
+
   if (MetaPhysicL::raw_value(tau_trial) <= _tangential_traction_tolerance ||
-      MetaPhysicL::raw_value(friction.residual) <= _local_newton_stress_tolerance)
+      MetaPhysicL::raw_value(friction.residual) <= stick_res_tol)
   {
     traction(0) -= friction.normal_pressure;
     traction(1) += damage_fraction * tangential_trial_1;

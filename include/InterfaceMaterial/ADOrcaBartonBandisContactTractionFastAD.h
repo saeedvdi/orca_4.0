@@ -209,6 +209,20 @@ protected:
   const Real _reported_reversible_normal_opening_retention_fraction;
   const Real _reported_reversible_normal_opening_retention_activation_slip;
 
+  // ---- Slip-activated reversible joint-normal compliance (OUTPUT ONLY) ----
+  // The reconstruction above can only report opening the mechanics actually produced. The
+  // power-law closure is pre-seated (c/V_m = 0.96-0.997 at the reported initial sigma'_n),
+  // so it is effectively rigid over the post-slip unloading branch and reports no rebound
+  // even when the experiment measures tens of micrometres of it. This adds the same
+  // slip-activated elastic term the Mohr-Coulomb law carries, so the two laws report the
+  // same physical quantity and can be compared. See
+  // ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile::storeFinalState.
+  const Real _reversible_normal_compliance;
+  const Real _reversible_normal_reference_stress;
+  const Real _reversible_normal_opening_activation_slip;
+  const Real _reversible_normal_opening_activation_distance;
+  const Real _reversible_normal_opening_activation_exponent;
+
   // ---- BB shear/strength parameters ----
   const Real _jrc0;
   const Real _jcs0;
@@ -224,6 +238,24 @@ protected:
   const bool _allow_negative_roughness_angle;
   const Real _min_friction_angle_deg;
   const Real _max_friction_angle_deg;
+
+  // ---- Physically-motivated fault-pressure area coefficient (OPT-IN; default false = legacy) ----
+  // alpha = sigma_0 / (sigma_0 + sigma_n), a saturating hyperbola in the current effective
+  // contact stress (Greenwood-Williamson-style real-contact-area growth: 0 at sigma_n=0, ->1 as
+  // sigma_n->infinity), multiplying OrcaCZMFluidPressureInterfaceKernel's
+  // pressure_traction_coefficient via alpha_property_name = fault_pressure_area_coefficient.
+  // Ports the state-dependent alpha already implemented and locally validated on the MC contact
+  // law (ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile, task #22) to this
+  // Barton-Bandis law, so the BBFast decks (10/11/12/13) can get the same physically-motivated,
+  // state-dependent pore-pressure coupling instead of the flat empirical constant
+  // fault_pressure_coefficient = 0.86. sigma_0 (fault_pressure_area_reference_stress) is a
+  // fitted-per-sample reference stress, calibrated so alpha = 0.86 at that sample's own initial
+  // (Pi=8 MPa) effective normal stress -- see the MC material's identical parameter for the
+  // derivation and the two failed "zero new constants" attempts (K_ni/K(closure), K_ni*V_m).
+  // Default false reproduces legacy behavior exactly: this property is declared but simply
+  // unused unless a deck's interface kernel blocks set alpha_property_name explicitly. Task #24.
+  const bool _use_state_dependent_fault_pressure_coefficient;
+  const Real _fault_pressure_area_reference_stress;
 
   // ---- Dilatancy parameters ----
   const Real _dilation_factor;
@@ -312,4 +344,7 @@ protected:
   MaterialProperty<Real> & _bb_peak_friction_coefficient;
   MaterialProperty<Real> & _bb_dilation_angle_degrees;
   MaterialProperty<Real> & _bb_dilation_coefficient;
+
+  // Must remain AD: consumed by OrcaCZMFluidPressureInterfaceKernel::alpha_property_name as AD.
+  ADMaterialProperty<Real> & _fault_pressure_area_coefficient;
 };

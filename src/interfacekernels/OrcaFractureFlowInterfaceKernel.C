@@ -9,19 +9,29 @@ OrcaFractureFlowInterfaceKernel::validParams()
 
   params.addClassDescription(
       "In-plane Reynolds/cubic-law fracture flow equation applied at a CZM sideset, using the "
-      "transmissivity and hydraulic aperture from OrcaCZMCubicLawAperture. The Element side "
+      "fracture_transmissivity and hydraulic_aperture material properties. The Element side "
       "carries the fracture's flow equation (transport + aperture-rate storage); the Neighbor "
       "side is tied to it by a pressure-continuity penalty.");
 
   params.addParam<std::string>("base_name", "Material property base name");
   params.addRangeCheckedParam<Real>(
-      "pressure_penalty_length", 1.0e-4, "pressure_penalty_length > 0",
+      "pressure_penalty_length",
+      1.0e-4,
+      "pressure_penalty_length > 0",
       "Length scale converting the fracture mobility into a pressure-continuity penalty "
       "conductance (m). Smaller enforces tighter continuity at the cost of conditioning.");
   params.addParam<bool>(
-      "multiply_by_fluid_density", false,
+      "multiply_by_fluid_density",
+      false,
       "If true, compute mass flux/storage (rho*...). If false (default), volumetric form, "
       "matching the convention used in the bulk Orca Darcy/storage kernels.");
+  params.addRangeCheckedParam<Real>(
+      "fluid_compressibility",
+      0.0,
+      "fluid_compressibility >= 0.0",
+      "Fluid compressibility 1/K_f (1/Pa) used by the VOLUMETRIC form only, where the fracture "
+      "storage is d(a_h)/dt + a_h/K_f * dp/dt. In the mass form the compressive storage is "
+      "carried exactly by d(rho*a_h)/dt and this parameter is ignored.");
 
   return params;
 }
@@ -36,9 +46,18 @@ OrcaFractureFlowInterfaceKernel::OrcaFractureFlowInterfaceKernel(const InputPara
     _transmissivity(getADMaterialPropertyByName<Real>(_base_name + "fracture_transmissivity")),
     _aperture(getADMaterialPropertyByName<Real>(_base_name + "hydraulic_aperture")),
     _aperture_old(getMaterialPropertyOldByName<Real>(_base_name + "hydraulic_aperture")),
+    _fluid_compressibility(getParam<Real>("fluid_compressibility")),
     _rho_f(_multiply_by_fluid_density ? &getADMaterialPropertyByName<Real>("fluid_density_qp")
-                                       : nullptr)
+                                      : nullptr),
+    _rho_f_old(_multiply_by_fluid_density
+                   ? &getMaterialPropertyOldByName<Real>("fluid_density_qp")
+                   : nullptr),
+    _p_dot(_var.adUDot())
 {
+  if (_multiply_by_fluid_density && _fluid_compressibility > 0.0)
+    paramWarning("fluid_compressibility",
+                 "Ignored in the mass form (multiply_by_fluid_density = true): the compressive "
+                 "storage is already carried exactly by d(rho*a_h)/dt.");
 }
 
 ADReal
@@ -57,8 +76,17 @@ OrcaFractureFlowInterfaceKernel::computeQpResidual(Moose::DGResidualType type)
   {
     case Moose::Element:
     {
-      // Storage from the time rate of the mechanical (dilation/closure-driven) aperture.
-      const ADReal storage = gamma * (_aperture[_qp] - _aperture_old[_qp]) / _dt;
+      // Fracture storage. The fluid content per unit fracture area is rho*a_h, so the exact
+      // mass storage d(rho*a_h)/dt carries BOTH the aperture change (dilation/closure) and the
+      // compressive storage a_h*rho/K_f * dp/dt -- the latter was previously omitted.
+      // In the volumetric form the density is unavailable, so the compressive part is added
+      // explicitly from fluid_compressibility (default 0 = previous behaviour).
+      ADReal storage;
+      if (_rho_f)
+        storage = ((*_rho_f)[_qp] * _aperture[_qp] - (*_rho_f_old)[_qp] * _aperture_old[_qp]) / _dt;
+      else
+        storage = (_aperture[_qp] - _aperture_old[_qp]) / _dt +
+                  ADReal(_fluid_compressibility) * _aperture[_qp] * _p_dot[_qp];
 
       // In-plane (tangential) Reynolds/cubic-law transport along the fracture.
       const ADRealVectorValue grad_p_t = tangentialGradient(_grad_u[_qp]);

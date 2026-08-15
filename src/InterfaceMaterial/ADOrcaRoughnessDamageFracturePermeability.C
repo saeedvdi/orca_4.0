@@ -147,6 +147,15 @@ ADOrcaRoughnessDamageFracturePermeability::validParams()
       "effective_normal_compression_name",
       "effective_normal_compression",
       "Diagnostic output property for compression-positive effective normal stress (Pa).");
+  params.addParam<bool>(
+      "compute_effective_normal_compression",
+      false,
+      "Couple effective_normal_traction_name and export the compression-positive effective "
+      "normal stress as a DIAGNOSTIC even when no aperture term consumes it. Without this the "
+      "diagnostic is identically zero whenever normal_stress_aperture_compliance = 0 and "
+      "use_nonlinear_normal_closure = false -- which silently zeroed the sigma'_n validation "
+      "panel once the redundant second closure model was removed from the aperture law. "
+      "Requires the named traction property to exist.");
   params.addParam<Real>("dilation_scale",
                         1.0,
                         "Scale factor on cumulative irreversible dilation contribution. "
@@ -280,7 +289,8 @@ ADOrcaRoughnessDamageFracturePermeability::ADOrcaRoughnessDamageFracturePermeabi
             : nullptr),
     _effective_normal_traction(
         (getParam<Real>("normal_stress_aperture_compliance") > 0.0 ||
-         getParam<bool>("use_nonlinear_normal_closure"))
+         getParam<bool>("use_nonlinear_normal_closure") ||
+         getParam<bool>("compute_effective_normal_compression"))
             ? &getADMaterialPropertyByName<Real>(
                   _base_name + getParam<MaterialPropertyName>("effective_normal_traction_name"))
             : nullptr),
@@ -311,6 +321,7 @@ ADOrcaRoughnessDamageFracturePermeability::ADOrcaRoughnessDamageFracturePermeabi
     _normal_stress_aperture_compliance(getParam<Real>("normal_stress_aperture_compliance")),
     _reference_effective_normal_stress(getParam<Real>("reference_effective_normal_stress")),
     _use_nonlinear_normal_closure(getParam<bool>("use_nonlinear_normal_closure")),
+    _compute_effective_normal_compression(getParam<bool>("compute_effective_normal_compression")),
     _nonlinear_closure_type(getParam<MooseEnum>("nonlinear_closure_type")),
     _bb_max_aperture_closure(getParam<Real>("bb_max_aperture_closure")),
     _bb_initial_normal_stiffness(getParam<Real>("bb_initial_normal_stiffness")),
@@ -352,6 +363,28 @@ ADOrcaRoughnessDamageFracturePermeability::initQpStatefulProperties()
   _cumulative_dilation[_qp] = 0.0;
   _normal_stress_aperture[_qp] = 0.0;
   _effective_normal_compression[_qp] = 0.0;
+
+  // The hydraulic aperture is stateful whenever a consumer requests its old value -- in
+  // particular OrcaFractureFlowInterfaceKernel, whose storage term is (a_h - a_h_old)/dt.
+  // Leaving it unset here made a_h_old = 0 on the first step, so that term injected the ENTIRE
+  // reference aperture as a spurious fluid source in one time step (observed as a 14x spike in
+  // the first-step injection flux of the SW-S4 decks).
+  //
+  // At the reference state the stress-aperture term vanishes by construction
+  // (stress_aperture(reference_effective_normal_stress) = 0) and no dilation or gouge has
+  // accumulated, so a_h(t=0) = a_h0 + self_propping(R=1), subject to the same bounds as
+  // computeQpProperties. (R = 1 is the undamaged joint; the contact material's roughness
+  // property is not yet available during stateful initialization.)
+  Real a_h0 = _a_h0 + _self_propping_scale;
+  if (a_h0 < _min_aperture)
+    a_h0 = _min_aperture;
+  if (_max_aperture > 0.0 && a_h0 > _max_aperture)
+    a_h0 = _max_aperture;
+
+  _hydraulic_aperture[_qp] = ADReal(a_h0);
+  _fracture_permeability[_qp] = ADReal(a_h0 * a_h0 / 12.0);
+  if (_compute_transmissivity && _transmissivity)
+    (*_transmissivity)[_qp] = ADReal(a_h0 * a_h0 * a_h0 / (12.0 * _fluid_viscosity));
 }
 
 void
@@ -405,13 +438,15 @@ ADOrcaRoughnessDamageFracturePermeability::computeQpProperties()
 
   ADReal effective_normal_compression = 0.0;
   ADReal stress_aperture = 0.0;
-  if (_effective_normal_traction &&
-      (_normal_stress_aperture_compliance > 0.0 || _use_nonlinear_normal_closure))
+  if (_effective_normal_traction)
   {
     const ADReal traction_n = (*_effective_normal_traction)[_qp];
     effective_normal_compression =
         MetaPhysicL::raw_value(traction_n) < 0.0 ? -traction_n : ADReal(0.0);
-    stress_aperture = computeStressAperture(effective_normal_compression);
+    // The aperture CONTRIBUTION is still gated on the aperture terms being enabled; only the
+    // diagnostic above is unconditional.
+    if (_normal_stress_aperture_compliance > 0.0 || _use_nonlinear_normal_closure)
+      stress_aperture = computeStressAperture(effective_normal_compression);
   }
   _effective_normal_compression[_qp] = effective_normal_compression;
   _normal_stress_aperture[_qp] = stress_aperture;

@@ -102,7 +102,7 @@ ADOrcaBartonBandisContactTractionFastADHardening::computeBartonBandisProperties(
   const ADReal mu_p = friction_coefficient;  // BB peak from base
   const ADReal x = std::max(ADReal(0.0),
                             cumulative_slip / ADReal(_characteristic_slip_distance));
-  const ADReal W = exp(-pow(x, ADReal(_slip_weakening_exponent)));
+  const ADReal W = exp(-pow(x, Real(_slip_weakening_exponent)));
   friction_coefficient = mu_r + (mu_p - mu_r) * W;
   shear_strength       = sigma_n * friction_coefficient;
   // Re-apply the base-class residual self-propping floor: slip-weakening above overwrote

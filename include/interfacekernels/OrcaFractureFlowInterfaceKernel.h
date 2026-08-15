@@ -5,7 +5,7 @@
 /**
  * Adds the fracture's own (in-plane) Reynolds/cubic-law flow equation to the
  * pore_pressure system at a CZM sideset, using the transmissivity and
- * hydraulic aperture computed by OrcaCZMCubicLawAperture.
+ * hydraulic aperture supplied by the active fracture-permeability material.
  *
  * By convention, the "Element" side of the sideset carries the fracture flow
  * equation (in-plane transport + storage from the time rate of the hydraulic
@@ -43,8 +43,16 @@ protected:
   const ADMaterialProperty<Real> & _aperture;
   const MaterialProperty<Real> & _aperture_old;
 
-  /// Optional fluid density (mass form only)
+  /// Fluid compressibility 1/K_f (1/Pa), used by the volumetric form only. In the mass form
+  /// the fluid compressibility is carried exactly by the density, so this is not needed.
+  const Real _fluid_compressibility;
+
+  /// Optional fluid density, current and old (mass form only)
   const ADMaterialProperty<Real> * const _rho_f;
+  const MaterialProperty<Real> * const _rho_f_old;
+
+  /// dp/dt on the Element side, used by the volumetric-form compressive storage
+  const ADVariableValue & _p_dot;
 
   /// Project a bulk gradient onto the tangent plane of the interface
   ADRealVectorValue tangentialGradient(const ADRealVectorValue & grad) const;

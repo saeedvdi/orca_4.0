@@ -1,13 +1,13 @@
 #!/bin/bash
-#SBATCH --job-name=67_11_sw4_mc_dS0p15_s28_w12_m0
+#SBATCH --job-name=68_02_sw4_bbfast_tail6p75_eta3p25_m0_cyclic
 #SBATCH --account=def-biaoli66
 #SBATCH --time=12:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=32
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32G
-#SBATCH --output=logs/67_11_sw4_mc_dS0p15_s28_w12_m0_%j.out
-#SBATCH --error=logs/67_11_sw4_mc_dS0p15_s28_w12_m0_%j.err
+#SBATCH --output=logs/68_02_sw4_bbfast_tail6p75_eta3p25_m0_cyclic_%j.out
+#SBATCH --error=logs/68_02_sw4_bbfast_tail6p75_eta3p25_m0_cyclic_%j.err
 
 cd /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4
 
@@ -15,4 +15,4 @@ cd /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Example
 unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
 mkdir -p results_csv results_exodus results_checkpoint
 
-srun --mpi=pmi2 -n 32 /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/orca-opt -i 67_11_sw4_mc_dS0p15_s28_w12_m0.i
+srun --mpi=pmi2 -n 32 /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/orca-opt -i 68_02_sw4_bbfast_tail6p75_eta3p25_m0_cyclic.i

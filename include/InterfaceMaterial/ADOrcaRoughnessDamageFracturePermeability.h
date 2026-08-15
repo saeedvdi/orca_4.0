@@ -78,6 +78,7 @@ protected:
   const Real _reference_effective_normal_stress;
   // Optional Barton-Bandis hyperbolic replacement for the linear normal-stress aperture term.
   const bool _use_nonlinear_normal_closure;
+  const bool _compute_effective_normal_compression;
   const unsigned int _nonlinear_closure_type; // 0 = barton_bandis, 1 = exponential
   const Real _bb_max_aperture_closure;     // V_m: asymptotic reversible aperture range (m)
   const Real _bb_initial_normal_stiffness; // K_ni: sigma_0 = V_m*K_ni is the half-closure stress (Pa/m)
