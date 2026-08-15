@@ -357,8 +357,7 @@ binaryoutput
 .codegraph/
 !codegraph.json
 
-## Meshes to be backed up to github
-!/media/geomechanics/Data4TB/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/mesh/ye2018_sw_s4_size1_mesh.e
-!/media/geomechanics/Data4TB/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/mesh/ye2018_sw_s4_size3_mesh.e
-!/media/geomechanics/Data4TB/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/mesh/ye2018_sw_s4_size5_mesh.e
-!/media/geomechanics/Data4TB/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/mesh/ye2018_sw_s4_mesh.jou
+# v4 is the current working directory (2026-08-10 onward); same treatment as v3.
+!/Examples/YeGhasemmi2018/SWS4/mesh/
+!/Examples/YeGhasemmi2018/SWS4/mesh/**/*.e
+!/Examples/YeGhasemmi2018/SWS4/mesh/**/*.jou
