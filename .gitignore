@@ -373,3 +373,19 @@ binaryoutput
 !/Examples/YeGhasemmi2018/SWT2/mesh/
 !/Examples/YeGhasemmi2018/SWT2/mesh/**/*.e
 !/Examples/YeGhasemmi2018/SWT2/mesh/**/*.jou
+# ---------------------------------------------------------------------------
+# Ye & Ghassemi (2018) digitised validation data -- EXEMPT from the blanket
+# *.csv rule above.
+#
+# These four folders (one per specimen, each named after its specimen; SW-S4's
+# Fig. 7 set is SWS4/SWS4) are the reference every calibration is scored
+# against. The *.csv rule was written for solver OUTPUT and had been silently
+# swallowing them, so the repo carried decks tuned against data it did not
+# store. That is how a superseded SW-S3 permeability extraction was able to
+# masquerade as a 3x model error: with no versioned copy there was nothing to
+# diff against. ~416 KB for all 37 files -- cheap insurance.
+# ---------------------------------------------------------------------------
+!Examples/YeGhasemmi2018/SWS3/SWS3/**
+!Examples/YeGhasemmi2018/SWS4/SWS4/**
+!Examples/YeGhasemmi2018/SWT1/SWT1/**
+!Examples/YeGhasemmi2018/SWT2/SWT2/**
