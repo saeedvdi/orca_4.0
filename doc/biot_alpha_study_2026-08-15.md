@@ -132,8 +132,98 @@ stage 5 (24 MPa loading) onward.
 
 ## 4. Results
 
-*Pending — filled in as pairs complete. SW-S3 is the long pole (4802 s of simulated time);
-SW-T1 and SW-T2 run to 3500 s and 2852 s.*
+### 4.1 SW-S3 — both arms past the slip event (2026-08-16 05:2x)
+
+Both arms have cleared stage 6, so the decisive comparison is available. Aggregated over the
+six stages common to both, `α=1e-12` is closer on **every** observable:
+
+| observable | α=1e-12 MAE | α=0.6 MAE | |
+|---|---|---|---|
+| Q (mL/min) | 0.0120 | 0.0761 | α=1e-12 closer (84.2 % lower) |
+| σ'_n (MPa) | 0.166 | 1.082 | α=1e-12 closer (84.7 % lower) |
+| τ (MPa) | 0.342 | 1.975 | α=1e-12 closer (82.7 % lower) |
+| d_n (mm) | 0.00102 | 0.01049 | α=1e-12 closer (90.3 % lower) |
+| d_s (mm) | 0.00070 | 0.01867 | α=1e-12 closer (96.3 % lower) |
+
+**That aggregate is misleading on its own, and the per-stage breakdown is the real result.**
+Essentially the entire difference comes from one stage:
+
+| stage 5 (24 MPa) | α=1e-12 | α=0.6 | paper |
+|---|---|---|---|
+| d_s (mm) | 0.00057 | **0.0725** | 0.001 |
+| d_n (mm) | −0.0020 | **−0.0401** | 0.000 |
+| τ (MPa) | 14.67 | **5.86** | 14.26 |
+| σ'_n (MPa) | 23.64 | 18.75 | 23.42 |
+| Q (mL/min) | 0.190 | 0.471 | 0.150 |
+
+**At α=0.6 the fault slips one full stage early — at 24 MPa instead of 28.** By stage 5 the
+α=0.6 arm has already slipped ~0.072 mm, dilated ~0.040 mm and dropped its shear stress from
+~15 to 5.9 MPa, while the paper (and the baseline) still have it locked. At stage 6 the α=0.6
+arm is actually *closer* than baseline on σ'_n (−0.47) and τ (−0.98), because by then both
+have slipped.
+
+**Not a reporting artifact.** The paper-frame postprocessors are pure geometry on
+`differential_stress_reaction_mpa_pp` — `σ'_n = 30 − 0.5(p_inj+p_out)·1e-6 + 0.235·Δσ` and
+`τ = 0.424·Δσ` — with no `biot_coefficient` anywhere in them, and they use the correct
+load-cell channel rather than the σ₃-hardcoded trap. The shift is physical.
+
+### 4.2 What this does and does not establish
+
+**It does not establish that α=1e-12 is right.** It remains unphysical — below porosity, with
+the negative grain-storage term of §2. What the campaign establishes is narrower and more
+useful:
+
+> The deck's slip-onset calibration is **entangled with α**. Swapping α from 1e-12 to 0.6
+> while holding everything else fixed moves the slip event one stage earlier, so α cannot be
+> corrected on its own.
+
+This is the outcome §2 anticipated ("a shift in slip-event timing in arm B is an expected
+consequence, not evidence of a bug") — now measured rather than predicted. Two mechanisms act
+together, and this campaign does not separate them:
+
+1. **Storage compliance rises 18.8×**, changing how fast pressure builds at the fault.
+2. **Pore pressure enters the bulk effective stress at all.** At α=1e-12 the matrix is
+   poroelastically inert; at α=0.6 the effective-stress path itself changes. The systematic
+   pre-slip drift in stages 1–4 — σ'_n error growing +0.22 → +0.73 MPa and τ +0.35 → +1.36 MPa
+   — is that coupling switching on, visible well before any slip.
+
+**Consequence for the paper:** fixing α to a physical value requires **re-fitting the
+slip-onset envelope at that α**. It is not a parameter that can be corrected in isolation.
+That is a new task, not a result of this one.
+
+### 4.3 The shear-traction overshoot is independent of α
+
+At stage 6 both samples under-predict the co-seismic stress drop by about the same amount,
+*at different α*:
+
+| stage 6 | model τ | paper τ | overshoot |
+|---|---|---|---|
+| SW-S3 (α=1e-12) | 4.585 | 3.55 | +29.2 % |
+| SW-S4 v27 (α=0.6) | 4.104 | 3.12 | +31.5 % |
+
+Since SW-S4 already runs at α=0.6 and shows the same ~30 % overshoot, **α is not the cause**
+and the A/B cannot fix it. This belongs to the strength envelope (task #15). SW-S4's unloading
+branch shows the model relaxing back toward the paper (+23.6 % at stage 7 → +8 % at stage 11),
+so it is specifically the *drop* that is under-predicted, not the residual level.
+
+### 4.4 Baseline SW-S3 quality through stage 6
+
+For the record, the α=1e-12 arm against Table 2 at the slip event: Q +1.3 %, σ'_n +3.3 %,
+d_n +3.1 %, d_s +2.9 %, τ +29.2 %. Against the promotion gates, dilation is **5/5 in gate**
+(±0.003 mm) and slip **4/5**, the single miss being stage 6 at 0.00206 mm against a ±0.002 mm
+gate — over by 60 nm.
+
+### 4.5 Still outstanding
+
+- **SW-T1** — both arms still inside the hand-placed `event_dt_cap` bracket (dt = 0.05 over
+  t ∈ [1740, 1825]), running ~0.2 s of simulated time per wall minute. Stage 6 not reached.
+- **SW-T2** — never started; it waits on SW-T1's ranks. Six full-length decks at 8 MPI ranks
+  do not fit concurrently in 32 cores.
+- **SW-S3 unloading branch** (stages 7–11) — baseline is past the event and accelerating
+  (~8.5 s/min); the α=0.6 arm trails.
+
+Nothing failed: **zero non-convergence and zero exceptions on all four arms** for the whole
+campaign, including through the slip event.
 
 ---
 
