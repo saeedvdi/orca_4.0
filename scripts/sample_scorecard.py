@@ -101,7 +101,14 @@ SAMPLES = {
     "SW-T1": dict(
         arms=[("alpha=1e-12 (base)", "SWT1/results_csv/Ye2018_SWT1_BBFast_sweep_19_F0p95_Pp0p60_T40p00_U0p94_A0p0160_Kinematic_IOsafe_kernel_SV_biot_ab_20260815.csv"),
               ("alpha=0.6", "SWT1/results_csv/Ye2018_SWT1_BBFast_sweep_19_F0p95_Pp0p60_T40p00_U0p94_A0p0160_Kinematic_IOsafe_kernel_SV_biot0p6_biot_ab_20260815.csv"),
-              ("87_01 inj-fix a=0.6", "SWT1/results_csv/87_01_swt1_bbfast_injfix_kernel_SV_biot0p6.csv")],
+              ("87_01 inj-fix a=0.6", "SWT1/results_csv/87_01_swt1_bbfast_injfix_kernel_SV_biot0p6.csv"),
+              # Normal-closure stiffness bracket, run on the HPC (hence the _hpc
+              # basename suffix, which keeps HPC output from overwriting a local run
+              # of the same deck). Arms whose CSV is absent are skipped, so these can
+              # sit here before the jobs land.
+              ("88_01 V_m x2", "SWT1/results_csv/88_01_swt1_bbfast_vm2x_injfix_kernel_SV_biot0p6_hpc.csv"),
+              ("88_02 V_m opt", "SWT1/results_csv/88_02_swt1_bbfast_vmopt_injfix_kernel_SV_biot0p6_hpc.csv"),
+              ("88_03 V_m opt + K_ni", "SWT1/results_csv/88_03_swt1_bbfast_vmopt_kni_injfix_kernel_SV_biot0p6_hpc.csv")],
         vdir="SWT1/SWT1",
         obs={
             "differential_stress_MPa": ("SWT1_differential_stress.csv", "differential_stress_mpa_pp", 1.0),
@@ -117,7 +124,8 @@ SAMPLES = {
     "SW-T2": dict(
         arms=[("alpha=1e-12 (base)", "SWT2/results_csv/Ye2018_SWT2_BBFast_sweep_21_F0p90_Pp0p60_T40p20_U0p84_A0p0165_BBhyd_IOsafe_kernel_SV_biot_ab_20260815.csv"),
               ("alpha=0.6", "SWT2/results_csv/Ye2018_SWT2_BBFast_sweep_21_F0p90_Pp0p60_T40p20_U0p84_A0p0165_BBhyd_IOsafe_kernel_SV_biot0p6_biot_ab_20260815.csv"),
-              ("87_02 inj-fix a=0.6", "SWT2/results_csv/87_02_swt2_bbfast_injfix_kernel_SV_biot0p6.csv")],
+              ("87_02 inj-fix a=0.6", "SWT2/results_csv/87_02_swt2_bbfast_injfix_kernel_SV_biot0p6.csv"),
+              ("87_02 inj-fix (HPC)", "SWT2/results_csv/87_02_swt2_bbfast_injfix_kernel_SV_biot0p6_hpc.csv")],
         vdir="SWT2/SWT2",
         obs={
             "differential_stress_MPa": ("SWt2_differential_stress.csv", "differential_stress_mpa_pp", 1.0),

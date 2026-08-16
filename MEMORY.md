@@ -29,10 +29,11 @@ Ordered by what unblocks the most. Numbers are the session task IDs.
 
 | # | item | state |
 |---|---|---|
-| **#68** | **Score `87_01`/`87_02` (SW-T1/SW-T2 injection-schedule refit, §5.5)** and re-assess the residual dilation / σ'ₙ rebound misfits once the driver is right. | queued behind the campaign |
-| **#67 / #60** | **Refit SW-S3 slip onset at α = 0.6.** The only remaining SW-S3 problem. Decks `86_01` (φ_r 8.45) and `86_02` (φ_r 9.00) bracket it. | both running |
+| **#70** | **Score the SW-T1 normal-closure stiffness bracket `88_01`/`88_02`/`88_03` (§5.6)** and interpolate the K_ni / V_m pair that lands k_sys on the measured 0.135 MPa/µm. This is the fix for BOTH reported rebound complaints and for the residual permeability unload misfit. | built, `--check-input` clean, ready for HPC |
+| **#68** | **Score `87_01`/`87_02` (SW-T1/SW-T2 injection-schedule refit, §5.5).** Answers how much of the misfit was the driver. Does **not** address the rebounds — §5.6 settled that those are a separate, real defect. | `87_01` running; `87_02` queued locally, better run on HPC |
+| **#67 / #60** | **Refit SW-S3 slip onset at α = 0.6.** The only remaining SW-S3 problem. Decks `86_01` (φ_r 8.45) and `86_02` (φ_r 9.00) bracket it. | both running, ~10 h left each |
 | **#59** | **Rebuild `orca-opt`** and runtime-verify the three compile-checked-only fixes (§4.2, §4.3, §4.4). Register the `alpha_eff_lagged` test case and generate its gold. | blocked on the campaign draining |
-| **#55 / #52** | Finish scoring the Biot A/B pairs; SW-T2 both arms still running. | running |
+| **#55 / #52** | Finish scoring the Biot A/B pairs; SW-T2 α = 0.6 arm still running (decelerating through its slip event). | running |
 
 **#66 (broken SW-T1 digitized files) is CLOSED** by the 2026-08-16 re-extraction —
 see §7.2, which also records that the prediction made there was confirmed to three
@@ -379,6 +380,85 @@ MPa extraction jitter (SW-T2 wobbles 11.34–11.68 inside its 12 MPa hold) and f
 that in as a pressure BC would excite spurious transients. RMSE 1.240 → 0.195 and
 1.536 → 0.266. `87_01` also shifts `event_dt_cap` −210 s to follow the earlier peak.
 
+### 5.6 The two SW-T1 rebound complaints are ONE number: the joint is 6.3× too stiff on unload
+
+Saeed reported these as separate problems — "the normal dilation rebound is a bit
+smaller than the validation set, the effective normal stress rebound is too much."
+They are the same defect seen from two sides. On a matched window (each record's own
+peak-open → t = 3000 s), scoring the finished SW-T1 α = 0.6 run:
+
+| | Δ dilation | Δ σ'ₙ | k = Δσ/Δd |
+|---|---|---|---|
+| measured | +44.21 µm | +5.98 MPa | **0.135 MPa/µm** |
+| model | +16.23 µm | +13.94 MPa | **0.859 MPa/µm** |
+
+A joint too stiff on unload cannot open (dilation rebound 0.35×) and over-transmits
+the stress change (σ'ₙ rebound 1.82×). Because SW-T1 sets `use_kinematic_aperture =
+true`, the hydraulic aperture *is* the mechanical gap, so the same defect surfaces a
+third time: fracture permeability decays only **1.15×** from peak to end of unload
+against **1.46×** measured — while the *peak* permeability is fine (1.04×). The
+residual permeability misfit that survived the time-shift decomposition (§5.5) is
+entirely the unload branch, and it is this.
+
+**Where the stiffness comes from.** The closure law is
+σₙ = (K_ni·V_m)·[c/(V_m − c)]^(1/p) (`include/utils/OrcaNormalClosure.h`), and all
+four decks share K_ni = 2.443e11 Pa/m, V_m = 4.591e-5 m, p = 3.28,
+`normal_closure_offset` = 4.433e-5 m. **The pre-seating offset alone is 96.6% of
+V_m** — the joint is placed on the vertical part of the curve before any load is
+applied. Evaluated through the actual law:
+
+| σ'ₙ | c/V_m | tangent k_n |
+|---|---|---|
+| 67 MPa (preload) | 0.9972 | 157 MPa/µm = **646× K_ni** |
+| 35 MPa (event min) | 0.9766 | 10.2 MPa/µm = **42× K_ni** |
+
+The law's scale stress is σ₀ = K_ni·V_m = **11.2 MPa** and the specimen runs at
+30–67 MPa, 3–6× past it. The joint is effectively rigid for the whole experiment.
+
+**Why `normal_unload_retention_fraction` was never going to fix this.** At f = 0.94
+it is already suppressing 94% of the reclosure — the gain (m − f) is 0.06 — and the
+σ'ₙ rebound is *still* 1.82× too big. Series-spring inference from the scored run
+gives k_frame ≈ 0.94 MPa/µm, so f modulates a spring ~12× stiffer than the one it
+sits in series with. **It is the wrong knob, not a knob set wrong.** Retiring this
+as a lever is the main practical consequence.
+
+**V_m alone provably cannot fix it either.** Substituting x = c/(V_m − c) collapses
+V_m out of the tangent entirely:
+
+> **k_n = (K_ni/p)·x^(1/p−1)·(1+x)²**
+
+so V_m only slides the joint along a fixed curve. That curve has a minimum at
+x\* = −a/(a+2) with a = 1/p − 1, giving **k_n,min = 0.271 MPa/µm** at the current
+K_ni — above the 0.158 MPa/µm the series pair needs. **K_ni (or p) must move.**
+
+**Bracket built** (`scripts/make_swt1_vm_bracket.py`, decks `88_01`/`88_02`/`88_03`,
+all `--check-input` clean). Each re-solves `normal_closure_offset` so the pre-seated
+stress at zero mechanical overlap stays 31.00 MPa, keeping the preload state and the
+Table-2 aperture fit invariant so the arm varies **tangent stiffness alone**:
+
+| arm | V_m | K_ni | k_joint @35 MPa | predicted k_sys |
+|---|---|---|---|---|
+| 87_01 (parent) | 1.00× | 1.000× | 10.18 | 0.859 |
+| `88_01` | 2.00× | 1.000× | 0.759 | 0.420 |
+| `88_02` | 3.78× | 1.000× | 0.271 | 0.210 |
+| `88_03` | 6.50× | 0.582× | 0.158 | **0.135** (target) |
+
+k_frame is fitted to one scored run under a series assumption — one equation, one
+unknown — so it is a magnitude, not a prediction. Score all three and interpolate.
+
+**Do not reach for `reversible_normal_compliance` here.** It is declared OUTPUT ONLY
+(it adds C_n·⟨σ_ref − σ'ₙ⟩₊ to the reported opening and cannot touch traction,
+aperture, permeability or flow). It would make the dilation panel match while
+leaving σ'ₙ and the permeability unload branch exactly as wrong — one panel of a
+three-panel symptom. Fix the stiffness first, then decide if anything cosmetic is
+still warranted.
+
+**Applies to all four samples**, since the closure constants are shared. SW-T1/T2
+expose it worst because kinematic aperture ties the hydraulics directly to the
+mechanical opening. Note also that `maximum_closure_fraction` defaults to 0.999,
+which the law reaches at σₙ ≈ 92 MPa — and there the tangent is set to **zero**.
+The current fit runs to 67 MPa, so the cliff is not hit, but it is 1.4× away.
+
 ---
 
 ## 6. Hypothesis ledger — including the ones that failed
@@ -631,6 +711,42 @@ source /home/geomechanics/miniforge/etc/profile.d/conda.sh && conda activate moo
 - `/home/geomechanics/miniforge/bin/python` has pandas/numpy; the `moose` env does not.
 - Machine: 32 cores, 30 GB. Campaign scheduling: 4 concurrent decks × 8 MPI ranks.
 
+### HPC (Alliance Canada, `def-biaoli66`) — checkpoints are not available
+
+Saeed's cluster allocation caps **file count**, and a 32-rank MOOSE `Checkpoint`
+writes a `<base>_cp/` tree with one `<step>-restart-<rank>.rd` per rank plus a mesh
+blob, per retained checkpoint. Suppress it on the command line rather than forking
+the decks:
+
+```
+Outputs/chk/enable=false
+```
+
+- **Why it works:** `OutputWarehouse::outputStep()` gates on `obj->enabled()` before
+  dispatching, so a disabled `Checkpoint` is never reached — including on the
+  interrupt-signal path inside `Output::outputStep()`, which sits behind the same
+  gate. This MOOSE version's `CommonOutputAction` creates no automatic checkpoint,
+  so the deck's explicit `[chk]` block is the only one to disable.
+- **Verified, not assumed.** Two-arm test on `87_02`, 1 rank, `num_steps=2`,
+  `time_step_interval=1`: checkpoint ON → 8 files / 6 dirs with
+  `chk_cp/0002-restart-0.rd`; `enable=false` → 2 files / 1 dir, no `chk_cp` at all.
+  CSV and Exodus unaffected.
+- **Do not delete the `[chk]` block instead.** It forks every deck into a local and
+  an HPC copy that then drift. The override keeps one deck, so a local and an HPC run
+  of the same name are the same physics by construction.
+- **Override deck variables, not `Outputs/*/file_base`.** The decks define
+  `csv_file_base` / `exodus_file_base` / `checkpoint_file_base` at top level and the
+  `[Outputs]` blocks consume them. Setting `Outputs/csv/file_base=…` directly leaves
+  the deck variable unreferenced and MOOSE aborts with *"unused parameter"*. This
+  killed the first verification attempt.
+- **No checkpoint means no restart**, so a job killed at the wall clock is
+  unrecoverable. Mitigation: CSV is written incrementally and the scorecard reads
+  CSV, so a killed job still leaves a scoreable partial record. Exodus is
+  `execute_on = FINAL` and is lost. Generated jobs use `--time=24:00:00`.
+- HPC runs get an `_hpc` output basename suffix so they cannot overwrite a local run
+  of the same deck. `scripts/make_hpc_nochk_jobs.py` generates the SLURM scripts;
+  `scripts/sample_scorecard.py` already lists the `_hpc` arms and skips missing ones.
+
 ### Gotchas that each cost a debugging cycle
 
 - **`mpiexec` must come from the conda `moose` env** (MPICH/Hydra). The system
@@ -671,3 +787,4 @@ source /home/geomechanics/miniforge/etc/profile.d/conda.sh && conda activate moo
 | 2026-08-16 | v4: verification suite 1 → 12 tests; four source defects found and fixed (§4.1–4.4); Bakhtar aperture-law hypothesis rejected (§6.1); Mandel added and its residual traced to the reference implementation (§6.3) |
 | 2026-08-16 | Cross-sample parameter audit (§5.1); SW-S3 permeability false alarm corrected (§6.4); SW-T1 validation files found broken (§7.2); SW-T friction anomaly narrowed, cohesion rejected (§6.5); SW-S3 refit decks `86_01`/`86_02` built and launched (§5.4); this file created |
 | 2026-08-16 | **Validation set re-extracted by Saeed and adopted as the reference** (§7). #66 closed; §7.2's prediction confirmed to three digits. **Validation data put under version control** — a blanket `*.csv` in `.gitignore` had hidden it since the start (§7). Injection schedule audited on all four samples: SW-T1/SW-T2 were late by up to +155 s, SW-S4 clean, SW-S3 acceptable (§5.5). Refit decks `87_01`/`87_02` built, validated and queued. Established by time-shift decomposition that SW-T1's flow-rate misfit is 100% phase (29.2% → 2.5%) and needs no permeability retuning, while the dilation and σ'ₙ rebound misfits are real. `sample_scorecard.py` extended to all four samples. Commit `81bce79` |
+| 2026-08-16 | **Root-caused both SW-T1 rebound complaints to one number** (§5.6): the joint+frame unloads at 0.859 MPa/µm against a measured 0.135, 6.3× too stiff. The dilation rebound (0.35×), the σ'ₙ rebound (1.82×) and the under-decaying permeability on unload (1.15× vs 1.46×) are the same defect. Traced to the closure constants — the pre-seating offset is 96.6% of V_m, putting the joint 42–646× K_ni across the whole experiment. Proved algebraically that V_m alone cannot fix it (k_n = (K_ni/p)x^(1/p−1)(1+x)² has a floor of 0.271 MPa/µm at the current K_ni, above the 0.158 needed) and **retired `normal_unload_retention_fraction` as a lever** — at f = 0.94 it modulates a spring 12× stiffer than the one in series with it. Bracket `88_01`/`88_02`/`88_03` built and validated, each holding the pre-seated stress invariant at 31.00 MPa. **HPC checkpoint suppression verified empirically** and documented in §9 |
