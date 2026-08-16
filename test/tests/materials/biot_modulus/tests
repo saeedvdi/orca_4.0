@@ -17,6 +17,9 @@
     csvdiff = 'alpha_unphysical_out.csv'
     rel_err = 1e-8
     prereq = 'physical_alpha'
+    # This case drives alpha below porosity on purpose, which OrcaTHMaterial
+    # now warns about once. The warning is the point, not a defect.
+    allow_warnings = true
     requirement = 'OrcaTHMaterial shall reproduce the storage compliance obtained when the Biot '
                   'coefficient is driven below the porosity, where the grain-compressibility term '
                   'changes sign and subtracts from fluid storage, yielding a Biot modulus 21x larger '

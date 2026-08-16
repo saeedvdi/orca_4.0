@@ -631,6 +631,22 @@ OrcaTHMaterial::computeBiotModulus()
         return;
     }
 
+    // Biot's coefficient cannot physically be smaller than the porosity. When it
+    // is, the factor (alpha - phi) goes negative and the grain-compressibility
+    // term SUBTRACTS from fluid storage instead of adding to it -- the model
+    // still runs, and 1/M stays positive because the fluid term dominates, so
+    // there is no other symptom. SW-S3/SW-T1/SW-T2 carried alpha = 1e-12 against
+    // phi = 1e-3 for a long time on exactly that silence. Warn once rather than
+    // erroring: the value is a legitimate thing to explore deliberately, and
+    // erroring would break existing decks mid-study.
+    if (MetaPhysicL::raw_value(_biot[_qp]) < MetaPhysicL::raw_value(_porosity[_qp]))
+        mooseDoOnce(mooseWarning(
+            "biot_coefficient (", MetaPhysicL::raw_value(_biot[_qp]),
+            ") is below porosity (", MetaPhysicL::raw_value(_porosity[_qp]),
+            "). Biot's coefficient cannot physically be smaller than the porosity: the "
+            "grain-compressibility term (1-a)(a-phi)/Kd is negative here, so it subtracts "
+            "from fluid storage rather than adding to it. This warning fires once."));
+
     const ADReal denom =
         (ADReal(1.0) - _biot[_qp]) * (_biot[_qp] - _porosity[_qp]) * _solid_bulk_compliance[_qp] +
         _porosity[_qp] / _Kf[_qp];

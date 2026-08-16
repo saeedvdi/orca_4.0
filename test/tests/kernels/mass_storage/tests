@@ -18,6 +18,8 @@
     csvdiff = 'alpha_unphysical_out.csv'
     rel_err = 1e-8
     prereq = 'storage_rate'
+    # Deliberately below porosity; OrcaTHMaterial warns once. Expected.
+    allow_warnings = true
     requirement = 'OrcaFullySaturatedSinglePhaseMassTimeDerivativeKernel shall reproduce the closed-form '
                   'response at a Biot coefficient below the porosity, where the 21x larger Biot modulus '
                   'produces a correspondingly larger pressure response for the same source.'
