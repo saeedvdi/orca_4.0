@@ -528,7 +528,9 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
 []
 
 [Problem]
-  extra_tag_vectors = 'mech_reaction'
+  boundary_restricted_elem_integrity_check = false  # split-interface lower-D map is orientation-sensitive
+  kernel_coverage_check = false  # block 900 (fracture_surface) is output-only
+  extra_tag_vectors = 'mech_reaction mass_reaction'
 []
 
 ######################################################################################
@@ -587,14 +589,34 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
     secondary_sidesets = 'fracture_interface_other_side'
   []
   construct_side_list_from_node_list = false
+
+  # Explicit 2-D output block coincident with the solved CZM interface. Required by
+  # every AuxVariable carrying block = fracture_surface.
+  [fracture_surface_output]
+    type = LowerDBlockFromSidesetGenerator
+    input = fault_split_3d
+    sidesets = fracture_interface
+    new_block_id = 900
+    new_block_name = fracture_surface
+  []
 []
 
 ######################################################################################
 [Variables]
-  [disp_x][]
-  [disp_y][]
-  [disp_z][]
-  [pore_pressure][]
+  # Restricted to the 3-D bulk: the mesh also carries the lower-dimensional
+  # 'fracture_surface' block (id 900) used only for interface output.
+  [disp_x]
+    block = 'top_block bottom_block'
+  []
+  [disp_y]
+    block = 'top_block bottom_block'
+  []
+  [disp_z]
+    block = 'top_block bottom_block'
+  []
+  [pore_pressure]
+    block = 'top_block bottom_block'
+  []
 []
 
 [ICs]
@@ -673,11 +695,15 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
     extra_vector_tags = 'mech_reaction'
   []
 
+  # (1/M)*dp/dt + alpha*div(du/dt) in one correctly-coupled AD kernel, replacing the
+  # old split fluid_storage + mass_vol_expansion pair. Validated 2026-08-14 on this
+  # exact deck; see memory sw-s4-kernel-alpha-backanalysis-2026-08-14.
   [fluid_storage]
-    type = OrcaSinglePhaseMassTimeDerivativeKernel
-    variable = pore_pressure
+    type                 = OrcaFullySaturatedSinglePhaseMassTimeDerivativeKernel
+    variable             = pore_pressure
+    coupling_type        = HydroMechanical
     multiply_by_fluid_density = true
-    save_in = inj_flux_aux
+    extra_vector_tags    = mass_reaction
   []
   [darcy]
     type = OrcaFullySaturatedSinglePhaseDarcySUPGKernel
@@ -685,12 +711,7 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
     multiply_by_fluid_density = true
     use_supg = true
     save_in = inj_flux_aux
-  []
-  [mass_vol_expansion]
-    type = OrcaSinglePhaseMassVolumetricExpansionKernel
-    variable = pore_pressure
-    multiply_by_fluid_density = true
-    save_in = inj_flux_aux
+    extra_vector_tags = mass_reaction
   []
 []
 ###################################################################################
@@ -758,6 +779,7 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
     multiply_by_fluid_density = true
     save_in = 'inj_flux_aux inj_flux_aux'
     save_in_var_side = 'm s'
+    extra_vector_tags = mass_reaction
   []
 []
 
@@ -818,18 +840,213 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
 
 ######################################################################################
 [AuxVariables]
-  [inj_flux_aux][]
+  [inj_flux_aux]
+    block = 'top_block bottom_block'
+  []
   [react_disp_z]
     order = FIRST
     family = LAGRANGE
+    block = 'top_block bottom_block'
   []
-  [stress_zz]
-    order = CONSTANT
-    family = MONOMIAL
+  [react_pore_pressure]
+    order = FIRST
+    family = LAGRANGE
+    block = 'top_block bottom_block'
   []
   [stress_xx]
     order = CONSTANT
     family = MONOMIAL
+    block = 'top_block bottom_block'
+  []
+  [stress_yy]
+    order = CONSTANT
+    family = MONOMIAL
+    block = 'top_block bottom_block'
+  []
+  [stress_zz]
+    order = CONSTANT
+    family = MONOMIAL
+    block = 'top_block bottom_block'
+  []
+  [stress_xy]
+    order = CONSTANT
+    family = MONOMIAL
+    block = 'top_block bottom_block'
+  []
+  [stress_xz]
+    order = CONSTANT
+    family = MONOMIAL
+    block = 'top_block bottom_block'
+  []
+  [stress_yz]
+    order = CONSTANT
+    family = MONOMIAL
+    block = 'top_block bottom_block'
+  []
+  [darcy_vel_x]
+    order = CONSTANT
+    family = MONOMIAL
+    block = 'top_block bottom_block'
+  []
+  [darcy_vel_y]
+    order = CONSTANT
+    family = MONOMIAL
+    block = 'top_block bottom_block'
+  []
+  [darcy_vel_z]
+    order = CONSTANT
+    family = MONOMIAL
+    block = 'top_block bottom_block'
+  []
+  [traction_x]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [traction_y]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [traction_z]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [normal_traction]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [tangent_traction]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [jump_x]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [jump_y]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [jump_z]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [normal_jump]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [tangent_jump]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [aperture_mech]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [aperture_mech_raw]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [aperture_open]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [aperture_hydraulic]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [fracture_permeability]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [cumulative_dilation]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [fracture_state]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [roughness_state]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [roughness_damage]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [roughness_retention_factor]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [self_propping_aperture]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [limit_tau]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [plastic_slip_increment]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [dilation_jump_increment]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [cumulative_plastic_slip]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [friction_coefficient_effective]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [cohesion_effective]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [fracture_darcy_vel_x]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [fracture_darcy_vel_y]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
+  []
+  [fracture_darcy_vel_z]
+    order = CONSTANT
+    family = MONOMIAL
+    block = fracture_surface
   []
 []
 
@@ -840,13 +1057,15 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
     v = disp_z
     variable = react_disp_z
     remove_variable_scaling = true
+    block = 'top_block bottom_block'
   []
-  [stress_zz_aux]
-    type = ADMaterialRankTwoTensorAux
-    variable = stress_zz
-    property = stress
-    i = 2
-    j = 2
+  [react_pore_pressure_aux]
+    type = TagVectorAux
+    vector_tag = mass_reaction
+    v = pore_pressure
+    variable = react_pore_pressure
+    remove_variable_scaling = true
+    block = 'top_block bottom_block'
   []
   [stress_xx_aux]
     type = ADMaterialRankTwoTensorAux
@@ -854,9 +1073,314 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
     property = stress
     i = 0
     j = 0
+    block = 'top_block bottom_block'
+  []
+  [stress_yy_aux]
+    type = ADMaterialRankTwoTensorAux
+    variable = stress_yy
+    property = stress
+    i = 1
+    j = 1
+    block = 'top_block bottom_block'
+  []
+  [stress_zz_aux]
+    type = ADMaterialRankTwoTensorAux
+    variable = stress_zz
+    property = stress
+    i = 2
+    j = 2
+    block = 'top_block bottom_block'
+  []
+  [stress_xy_aux]
+    type = ADMaterialRankTwoTensorAux
+    variable = stress_xy
+    property = stress
+    i = 0
+    j = 1
+    block = 'top_block bottom_block'
+  []
+  [stress_xz_aux]
+    type = ADMaterialRankTwoTensorAux
+    variable = stress_xz
+    property = stress
+    i = 0
+    j = 2
+    block = 'top_block bottom_block'
+  []
+  [stress_yz_aux]
+    type = ADMaterialRankTwoTensorAux
+    variable = stress_yz
+    property = stress
+    i = 1
+    j = 2
+    block = 'top_block bottom_block'
+  []
+  [darcy_x_aux]
+    type = OrcaDarcyVelocityComponent
+    component = 0
+    variable = darcy_vel_x
+    fluid_pressure = pore_pressure
+    block = 'top_block bottom_block'
+  []
+  [darcy_y_aux]
+    type = OrcaDarcyVelocityComponent
+    component = 1
+    variable = darcy_vel_y
+    fluid_pressure = pore_pressure
+    block = 'top_block bottom_block'
+  []
+  [darcy_z_aux]
+    type = OrcaDarcyVelocityComponent
+    component = 2
+    variable = darcy_vel_z
+    fluid_pressure = pore_pressure
+    block = 'top_block bottom_block'
+  []
+  [traction_x_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = traction_x
+    variable = traction_x
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [traction_y_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = traction_y
+    variable = traction_y
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [traction_z_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = traction_z
+    variable = traction_z
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [normal_traction_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = normal_traction
+    variable = normal_traction
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [tangent_traction_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = tangent_traction
+    variable = tangent_traction
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [jump_x_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = jump_x
+    variable = jump_x
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [jump_y_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = jump_y
+    variable = jump_y
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [jump_z_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = jump_z
+    variable = jump_z
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [normal_jump_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = normal_jump
+    variable = normal_jump
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [tangent_jump_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = tangent_jump
+    variable = tangent_jump
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [aperture_mech_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = mechanical_aperture
+    variable = aperture_mech
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [aperture_mech_raw_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = mechanical_aperture_raw
+    variable = aperture_mech_raw
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [aperture_open_aux]
+    type = ParsedAux
+    check_boundary_restricted = false
+    variable = aperture_open
+    boundary = fracture_interface
+    coupled_variables = normal_jump
+    expression = 'if(normal_jump > 0.0, normal_jump, 0.0)'
+    execute_on = TIMESTEP_END
+  []
+  [aperture_hydraulic_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = hydraulic_aperture
+    variable = aperture_hydraulic
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [fracture_permeability_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = fracture_permeability
+    variable = fracture_permeability
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [cumulative_dilation_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = cumulative_dilation
+    variable = cumulative_dilation
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [fracture_state_aux]
+    type = MaterialRealAux
+    check_boundary_restricted = false
+    property = fracture_state
+    variable = fracture_state
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [roughness_state_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = roughness_state
+    variable = roughness_state
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [roughness_damage_aux]
+    type = MaterialRealAux
+    check_boundary_restricted = false
+    property = roughness_damage
+    variable = roughness_damage
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [roughness_retention_factor_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = roughness_retention_factor
+    variable = roughness_retention_factor
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [self_propping_aperture_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = self_propping_aperture
+    variable = self_propping_aperture
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [limit_tau_aux]
+    type = MaterialRealAux
+    check_boundary_restricted = false
+    property = limit_tau
+    variable = limit_tau
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [plastic_slip_increment_aux]
+    type = MaterialRealAux
+    check_boundary_restricted = false
+    property = plastic_slip_increment
+    variable = plastic_slip_increment
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [dilation_jump_increment_aux]
+    type = ADMaterialRealAux
+    check_boundary_restricted = false
+    property = dilation_jump_increment
+    variable = dilation_jump_increment
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [cumulative_plastic_slip_aux]
+    type = MaterialRealAux
+    check_boundary_restricted = false
+    property = cumulative_plastic_slip
+    variable = cumulative_plastic_slip
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [friction_coefficient_effective_aux]
+    type = MaterialRealAux
+    check_boundary_restricted = false
+    property = friction_coefficient_effective
+    variable = friction_coefficient_effective
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [cohesion_effective_aux]
+    type = MaterialRealAux
+    check_boundary_restricted = false
+    property = cohesion_effective
+    variable = cohesion_effective
+    boundary = fracture_interface
+    execute_on = TIMESTEP_END
+  []
+  [fracture_darcy_x_aux]
+    type = OrcaFractureDarcyVelocityComponent
+    component = 0
+    variable = fracture_darcy_vel_x
+    fluid_pressure = pore_pressure
+    boundary = fracture_interface
+    check_boundary_restricted = false
+    execute_on = TIMESTEP_END
+  []
+  [fracture_darcy_y_aux]
+    type = OrcaFractureDarcyVelocityComponent
+    component = 1
+    variable = fracture_darcy_vel_y
+    fluid_pressure = pore_pressure
+    boundary = fracture_interface
+    check_boundary_restricted = false
+    execute_on = TIMESTEP_END
+  []
+  [fracture_darcy_z_aux]
+    type = OrcaFractureDarcyVelocityComponent
+    component = 2
+    variable = fracture_darcy_vel_z
+    fluid_pressure = pore_pressure
+    boundary = fracture_interface
+    check_boundary_restricted = false
+    execute_on = TIMESTEP_END
   []
 []
-
 ######################################################################################
 [Materials]
   [mech]
@@ -865,6 +1389,7 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
     poissons_ratio = ${poissons_ratio}
     strain_model = ${strain_model}
     initial_stress = ${initial_stress}
+    block = 'top_block bottom_block'
   []
   [rockHM]
     type = OrcaTHMaterial
@@ -878,6 +1403,7 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
     fluid_viscosity_ref = ${fluid_viscosity_ref}
     biot_modulus_model = constant
     fluid_thermal_expansion_model = user
+    block = 'top_block bottom_block'
   []
   [biot]
     type = OrcaBiotCoefficientMaterial
@@ -1076,6 +1602,84 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
     direction = Normal
     property_name = czm_dn_global
   []
+
+  # ---- CZM interface output properties consumed by the fracture_surface AuxKernels ----
+  [fracture_surface_output_material]
+    type = GenericConstantMaterial
+    prop_names = fracture_surface_output_marker
+    prop_values = 1
+    block = fracture_surface
+  []
+  [traction_x_output_property]
+    type = OrcaCZMRealVectorCartesianComponent
+    real_vector_value = traction_global
+    index = 0
+    property_name = traction_x
+    boundary = fracture_interface
+  []
+  [traction_y_output_property]
+    type = OrcaCZMRealVectorCartesianComponent
+    real_vector_value = traction_global
+    index = 1
+    property_name = traction_y
+    boundary = fracture_interface
+  []
+  [traction_z_output_property]
+    type = OrcaCZMRealVectorCartesianComponent
+    real_vector_value = traction_global
+    index = 2
+    property_name = traction_z
+    boundary = fracture_interface
+  []
+  [jump_x_output_property]
+    type = OrcaCZMRealVectorCartesianComponent
+    real_vector_value = displacement_jump_global
+    index = 0
+    property_name = jump_x
+    boundary = fracture_interface
+  []
+  [jump_y_output_property]
+    type = OrcaCZMRealVectorCartesianComponent
+    real_vector_value = displacement_jump_global
+    index = 1
+    property_name = jump_y
+    boundary = fracture_interface
+  []
+  [jump_z_output_property]
+    type = OrcaCZMRealVectorCartesianComponent
+    real_vector_value = displacement_jump_global
+    index = 2
+    property_name = jump_z
+    boundary = fracture_interface
+  []
+  [normal_traction_output_property]
+    type = OrcaCZMRealVectorScalar
+    real_vector_value = traction_global
+    direction = Normal
+    property_name = normal_traction
+    boundary = fracture_interface
+  []
+  [tangent_traction_output_property]
+    type = OrcaCZMRealVectorScalar
+    real_vector_value = traction_global
+    direction = Tangent
+    property_name = tangent_traction
+    boundary = fracture_interface
+  []
+  [normal_jump_output_property]
+    type = OrcaCZMRealVectorScalar
+    real_vector_value = displacement_jump_global
+    direction = Normal
+    property_name = normal_jump
+    boundary = fracture_interface
+  []
+  [tangent_jump_output_property]
+    type = OrcaCZMRealVectorScalar
+    real_vector_value = displacement_jump_global
+    direction = Tangent
+    property_name = tangent_jump
+    boundary = fracture_interface
+  []
 []
 
 ######################################################################################
@@ -1265,6 +1869,7 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
   [stress_xx_bulk_pp]
     type = ElementAverageValue
     variable = stress_xx
+    block = 'top_block bottom_block'
   []
   [sigma3_bulk_mpa_pp]
     type = ParsedPostprocessor
@@ -1624,6 +2229,5 @@ checkpoint_file_base = results_checkpoint/68_03_sw4_bbfast_tail6p50_eta3p25_m0
     num_files = 4
   []
 []
-
 
 

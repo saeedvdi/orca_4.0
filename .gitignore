@@ -361,3 +361,15 @@ binaryoutput
 !/Examples/YeGhasemmi2018/SWS4/mesh/
 !/Examples/YeGhasemmi2018/SWS4/mesh/**/*.e
 !/Examples/YeGhasemmi2018/SWS4/mesh/**/*.jou
+
+# Same treatment for the other three samples: every deck references mesh/<file>.e
+# relative to its own sample directory, so a clone without these is unrunnable.
+!/Examples/YeGhasemmi2018/SWS3/mesh/
+!/Examples/YeGhasemmi2018/SWS3/mesh/**/*.e
+!/Examples/YeGhasemmi2018/SWS3/mesh/**/*.jou
+!/Examples/YeGhasemmi2018/SWT1/mesh/
+!/Examples/YeGhasemmi2018/SWT1/mesh/**/*.e
+!/Examples/YeGhasemmi2018/SWT1/mesh/**/*.jou
+!/Examples/YeGhasemmi2018/SWT2/mesh/
+!/Examples/YeGhasemmi2018/SWT2/mesh/**/*.e
+!/Examples/YeGhasemmi2018/SWT2/mesh/**/*.jou
