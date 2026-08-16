@@ -10,8 +10,10 @@ four on one table, in one set of units, with the same metrics.
 
 For each observable it reports:
 
-    peak      the extreme value of each curve (max, or min for the
-              sign-negative dilation channel), and the ratio sim/exp.
+    peak      the extreme value of each curve and the ratio sim/exp.  For the
+              displacement channels the extreme is taken by MAGNITUDE, so the
+              ratio's sign reports whether the two curves agree about direction
+              (see score() -- the repo's two dilation files disagree).
     t_peak    when that extreme occurs, and the lag sim - exp.  A ratio near 1
               with a large lag means the magnitude is calibrated but the timing
               is not -- a different fix from a magnitude error.
@@ -21,6 +23,20 @@ For each observable it reports:
 
 Digitized files are two-column (time, value) with no header, occasionally with
 a stray header line; both are handled.  Units are converted to the deck's.
+
+TWO GUARDS AGAINST BAD VALIDATION DATA, both added after they fired for real:
+
+  * a file that is CONSTANT is rejected rather than scored, because a ratio
+    against a constant still prints a plausible-looking number
+    (SWT1_piston_displacement_mm.csv has span exactly 0.0);
+  * displacement channels are zeroed at t=0 on both sides and the removed
+    offset is printed, because an un-zeroed LVDT baseline makes the raw
+    comparison meaningless rather than merely wrong
+    (SWT1_shear_slip_mm.csv starts at -48.73 mm).
+
+Both were found by this script disagreeing with the eye, and both turned out to
+be the data rather than the model.  Check the digitized series before tuning a
+deck against it.
 """
 
 import os
@@ -67,12 +83,25 @@ SAMPLES = {
     ),
 }
 
-# Observables whose physical extreme is the MINIMUM (dilation is reported negative).
-MIN_OBS = {"normal_dilation_mm"}
+# How each observable's "peak" is defined. "magnitude" is used for the
+# zero-baselined displacement channels -- see score().
+PEAK_RULE = {"normal_dilation_mm": "magnitude", "shear_slip_mm": "magnitude"}
+
+
+# Displacement channels are LVDT readings and are only meaningful as a CHANGE
+# from the start of the test. Some digitized files were captured without zeroing
+# the instrument baseline -- SWT1_shear_slip_mm.csv starts at -48.73 mm -- which
+# makes a raw comparison meaningless rather than merely wrong. For these channels
+# both curves are shifted to start at zero and the removed offset is reported, so
+# the correction stays visible instead of being silently absorbed.
+ZERO_BASELINE = {"normal_dilation_mm", "shear_slip_mm"}
 
 
 def load_digitized(path):
-    """Two columns, time then value. Tolerates a header row and blank lines."""
+    """Two columns, time then value. Tolerates a header row and blank lines.
+
+    Returns (frame, note); `note` is non-None only when the file is unusable.
+    """
     try:
         d = pd.read_csv(path, header=None, names=["t", "v"], comment="#")
     except Exception as exc:  # pragma: no cover - diagnostics only
@@ -80,12 +109,27 @@ def load_digitized(path):
     d = d.apply(pd.to_numeric, errors="coerce").dropna()
     if len(d) < 3:
         return None, "fewer than 3 numeric rows"
-    return d.sort_values("t").reset_index(drop=True), None
+    d = d.sort_values("t").reset_index(drop=True)
+    if d["v"].max() - d["v"].min() == 0.0:
+        # Not a flat measurement -- a file with no data in it. Scoring against a
+        # constant would still print a ratio, so refuse and say why.
+        return None, "CONSTANT at %.5f -- file holds no data" % d["v"].iloc[0]
+    return d, None
 
 
 def score(sim_t, sim_v, exp_t, exp_v, use_min):
-    pick = np.argmin if use_min else np.argmax
-    i_s, i_e = pick(sim_v), pick(exp_v)
+    if use_min == "magnitude":
+        # Used for the zero-baselined displacement channels, where the two files
+        # in the repo disagree about which way is positive (SW-S3's dilation ends
+        # at -0.042 mm, SW-T1's at +0.521 mm). Taking the largest-magnitude
+        # excursion scores the size of the response without silently adopting
+        # either sign convention; the ratio's SIGN then shows whether the two
+        # curves agree about direction, which is the thing worth seeing.
+        i_s = int(np.argmax(np.abs(sim_v)))
+        i_e = int(np.argmax(np.abs(exp_v)))
+    else:
+        pick = np.argmin if use_min else np.argmax
+        i_s, i_e = pick(sim_v), pick(exp_v)
     peak_s, peak_e = sim_v[i_s], exp_v[i_e]
     ratio = peak_s / peak_e if peak_e != 0 else float("nan")
 
@@ -129,12 +173,21 @@ def main():
             if exp is None:
                 print("   %-24s  %s" % (obs, err))
                 continue
+            sim_v = sim[col].to_numpy() * scale
+            exp_v = exp["v"].to_numpy()
+            note = ""
+            if obs in ZERO_BASELINE:
+                off_s, off_e = sim_v[0], exp_v[0]
+                sim_v = sim_v - off_s
+                exp_v = exp_v - off_e
+                if abs(off_e) > 0.05 * (exp_v.max() - exp_v.min()):
+                    note = "  [exp baseline %+.3f removed]" % off_e
             ps, pe, r, ts, te, nr = score(
-                sim["time"].to_numpy(), sim[col].to_numpy() * scale,
-                exp["t"].to_numpy(), exp["v"].to_numpy(), obs in MIN_OBS)
+                sim["time"].to_numpy(), sim_v,
+                exp["t"].to_numpy(), exp_v, PEAK_RULE.get(obs, False))
             flag = "" if 0.85 <= abs(r) <= 1.15 else "   <-- off"
-            print("   %-24s %13.5g %13.5g %8.3f   %9.1f %9.1f %8.1f   %6.1f%%%s"
-                  % (obs, ps, pe, r, ts, te, ts - te, 100 * nr, flag))
+            print("   %-24s %13.5g %13.5g %8.3f   %9.1f %9.1f %8.1f   %6.1f%%%s%s"
+                  % (obs, ps, pe, r, ts, te, ts - te, 100 * nr, flag, note))
         print()
 
 
