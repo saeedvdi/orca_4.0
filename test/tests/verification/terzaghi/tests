@@ -1,0 +1,18 @@
+[Tests]
+  design = 'OrcaFullySaturatedSinglePhaseMassTimeDerivativeKernel.md'
+  issues = '#N1'
+  [consolidation]
+    type = CSVDiff
+    input = 'terzaghi.i'
+    csvdiff = 'terzaghi_out.csv'
+    rel_err = 1e-6
+    abs_zero = 1e-10
+    max_time = 300
+    requirement = 'The coupled poroelastic system -- OrcaPoroMechKernel, the fully-saturated Darcy '
+                  'kernel, and the combined mass time-derivative kernel in HydroMechanical mode -- '
+                  'shall reproduce Terzaghi one-dimensional consolidation, matching the closed-form '
+                  'solution of Verruijt section 2.2 to better than 0.35 percent of the undrained '
+                  'pressure away from the drained face, and reproducing the final settlement to '
+                  'within 0.02 percent.'
+  []
+[]

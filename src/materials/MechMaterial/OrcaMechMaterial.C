@@ -319,6 +319,15 @@ OrcaMechMaterial::computeTotalSmallStrain()
 
   if (_compute_thermal_eigenstrain)
     _mechanical_strain[_qp] -= _thermal_eigenstrain[_qp];
+
+  // Must be called on BOTH strain paths. computeIncrementalStrain() calls it;
+  // this branch previously did not, so with strain_model = total the property
+  // vol_strain_rate stayed at the 0.0 set in initQpStatefulProperties. Any
+  // HydroMechanical mass kernel then silently lost its alpha * div(du/dt)
+  // coupling -- the run completed and looked plausible, but the poroelastic
+  // coupling was absent. Covered by test/tests/verification/terzaghi
+  // (total_strain case).
+  computeVolumetricStrain();
 }
 
 void
