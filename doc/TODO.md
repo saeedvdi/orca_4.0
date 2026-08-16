@@ -918,3 +918,83 @@ a comment; 3 is a new guard.
 the Biot A/B campaign runs against the current shared library. Task #59 covers the rebuild and
 the three runtime checks, including registering the `alpha_eff_lagged` case that is currently
 written out as a comment in `test/tests/kernels/thermal_storage/tests`.
+
+## S. Cross-sample parameter audit and validation-data audit (2026-08-16)
+
+Full write-up: `doc/sample_parameter_unification_2026-08-16.md`.
+Tools: `scripts/sample_scorecard.py`, `scripts/friction_envelope_compare.py`.
+
+### S1. Answering the standing question about the normal-stress rebound
+
+The **sigma'_n rebound is constitutive now**. `bb_effective_normal_stress_pp` is
+only a sign flip on `interface_traction`, and `normal_unload_retention_fraction`
+enters the traction directly at `ADOrcaBartonBandisContactTractionFastAD.C:1077`,
+inside the return mapping.
+
+The **normal-dilation rebound is still reporting-only**.
+`updateReportedNormalOpening()` runs after the constitutive update and its own
+header says it cannot perturb traction, aperture, permeability or flow;
+`reported_reversible_normal_opening_retention_fraction` is documented "OUTPUT
+ONLY". `reversible_normal_compliance` is the old postprocessor formula relocated
+into the material — it moved house, it did not become physics. Only the four
+SW-S4 `68_0*` decks set it.
+
+### S2. Four rock parameters are not shared across the samples
+
+`youngs_modulus` (SW-S3 75e9 vs 67e9 elsewhere — 67e9 is "paper Sec. 2.1", 80e9
+is what the "DD02 reference" comment actually means, 75e9 has no provenance),
+`biot_coefficient` (0.6 vs 1e-12), `jcs` (3.0e8 vs 1.5e8) and
+`residual_friction_angle_degrees` (7.5 vs 44-46 deg). Consistent already:
+Poisson, porosity, matrix permeability, all fluid properties, and the four
+normal-closure constants.
+
+### S3. Two of the three reported figure problems were the VALIDATION DATA
+
+- **SW-S3 permeability** was scored against `permeability_m2_vs_time_sw3.csv`,
+  a superseded digitization that is 3x low. Against
+  `permeability_m2_vs_time_sw3_corrected.table2` the ratio is 1.02. Proof is
+  independent of the model: the simulation's own output gives
+  `ln Q = 1.501 ln k + 1.441 ln P_inj + c` (the cubic law), so 3.0x in k implies
+  5.2x in flow, and flow is matched at 1.04. Notebook and scorecard repointed.
+- **SW-T1 dilation and slip** are broken on the validation side:
+  `SWT1_shear_slip_mm.csv` has a -48.73 mm un-zeroed baseline,
+  `SWT1_piston_displacement_mm.csv` has span exactly 0.0, and
+  `SWT1_effective_normal_stress.csv` is near-constant. The simulation is
+  self-consistent (both dilation channels identical, reported dilation =
+  -mechanical_aperture exactly, dilation/slip = tan(16.44 deg) = the deck's own
+  dilation angle). Which file is mislabelled needs the paper figure — flagged,
+  not assumed.
+
+### S4. SW-S3 has exactly one real problem left
+
+With the permeability file corrected, alpha=1e-12 is within 4% on every channel.
+alpha=0.6 shifts slip onset 2394 -> 2062 s (experiment 2451) and final slip
+0.0743 -> 0.0930 mm (experiment 0.0737); dilation, flow and permeability all
+follow from slip. Decks `86_01` (phi_r 8.45) and `86_02` (phi_r 9.00) bracket the
+refit, both also moved to `youngs_modulus = 67e9`. Sized from the margin-closure
+rate -0.00150 MPa/s x 389 s = 0.58 MPa and d(tau_limit)/d(phi_r) = 0.613
+MPa/deg. Run as a bracket because the margin is a side average while yield is
+local.
+
+### S5. The SW-T friction anomaly: two hypotheses tested, both rejected
+
+Stress resolution is correct (SW-S3 theta = 29.0 deg, SW-T1 32.0 deg; the normal
+resolution implies a mean fault pressure of 12.15 MPa, correctly between
+production and injection). Cohesion is rejected: required cohesion at phi_r = 30
+deg is 15.9 +/- 9.9 MPa for SW-T1, a +/-62% spread. The material cannot express
+cohesion anyway — `computeCohesionEffective()` returns a hard-coded 0.0 with no
+input parameter, which is why a fit needing it inflated `phi_r` instead.
+
+The finding is the scatter: SW-S3's yielding follows one friction law to within
+0.9 MPa, while SW-T1's mobilised mu swings 0.88 -> 1.20 over only 35-59 MPa of
+normal stress. SW-T1's tau/sigma'_n is not well described by Barton-Bandis at
+all. It cannot be settled until the degenerate sigma'_n file is replaced, so
+**task #66 blocks the friction question**.
+
+### S6. Order of work
+
+1. Refit SW-S3 onset at alpha=0.6 (#60/#67) — running.
+2. Verify the SW-T1 digitized set against the paper (#66) — blocks #65's
+   friction half.
+3. `youngs_modulus = 67e9` everywhere (#65) — already in 86_01/86_02.
+4. Do not unify `phi_r` until (2) is done.
