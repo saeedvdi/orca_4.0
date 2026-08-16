@@ -287,3 +287,73 @@ Cheaper split, since the diagnostic and the physics are different questions:
   and stop at the answer; no need for full length.
 - **HPC, full length** — the physics comparison against Table 2 needs the complete cycle, and
   32 ranks per deck running in parallel is exactly what the allocation is for.
+
+---
+
+## H. Mesh-size-3 deck set — 2026-08-15
+
+Built the size-3 variant of all 18 `kernel_SV` decks. They are **HPC decks**; the reasoning
+for that is H3 and it is not a preference, it is an arithmetic result.
+
+### H1. What was generated
+`<base>_kernel_SV*_mesh3.i` + matching `.sh` for every kernel_SV deck: SWS4 ×8, SWS3 ×4,
+SWT1 ×3, SWT2 ×3. Each carries `mesh_file` repointed to the sample's size-3 mesh, output
+file bases repointed to its own name, and a dated provenance header. The mesh-5 parents are
+untouched. Generator: `scratchpad/mk_mesh3.py`.
+
+Meshes copied into `orca_4.0` from `orca_3.0_full/Examples/YeGhasemmi2018/Final/mesh/`,
+whose size-5 files were first confirmed **byte-identical** to the ones already in `orca_4.0`
+(md5, all three samples) — so the size-3 siblings are the correct pairing, not a lookalike.
+
+| sample | nodes 5 → 3 | elements 5 → 3 | ratio |
+|---|---|---|---|
+| SWS4 | 9,597 → 92,919 | 8,640 → 88,504 | 10.24× |
+| SWS3 | 11,425 → 104,781 | 10,368 → 100,048 | 9.65× |
+| SWT1 | 11,861 → 122,475 | 10,752 → 117,232 | 10.90× |
+| SWT2 | 11,861 → 122,475 | 10,752 → 117,232 | 10.90× |
+
+Size 3 is the **finer** mesh, ~10× the elements.
+
+### H2. Two defects the mesh change exposed — both fixed
+**Source nodes.** Deck source coordinates are pinned to *mesh-5* nodes and are not
+transferable. Re-pinned against each size-3 mesh with `scratchpad/repin_source_coords.py`
+(same method as the standing `snap_source_coords.py`: keep the deck's x/y, recompute z from
+the mesh's own least-squares fracture plane, snap to the nearest `fracture_interface` node).
+It acts only on `*_mesh3.i`, so no running deck was touched.
+
+Result: SWS3, SWS4, SWT1 were "pin only" — same node either way, no physics change. **All
+three SWT2 decks were selecting a BULK node** and would have injected into the matrix with
+no error raised, fluid reaching the fracture only through the 5e-19 m² matrix permeability.
+Moved 0.988 mm onto the fracture. This is the failure mode the standing rule exists for, and
+it reproduced on the first mesh change since.
+
+**Nodeset naming.** The SWS4 size-5 mesh is the only one of the set naming its nodesets
+`top`/`bottom`/`sides`; every other mesh, including SWS4 size-3, uses `*_nodeset`. All eight
+SWS4 mesh-3 decks aborted in `SideSetsFromNodeSetsGenerator`. Fixed by renaming
+`nodesets_to_convert` and the 64 dependent `boundary =` references (72 lines across 8 decks)
+to match SWS3's convention.
+
+### H3. These cannot run locally — the solver is direct
+`[Preconditioning]` is `-pc_type lu` with MUMPS. For a 3D problem a ~10× DOF increase raises
+direct-factor memory by roughly 10^(4/3) ≈ 20×, far faster than the element count.
+
+- Measured mesh-5 footprint: ~0.37 GB/rank, ~3.3 GB per 8-rank job.
+- Projected mesh-3: ~70 GB per 8-rank job.
+- **This machine has 30 GB of RAM total.**
+
+Independent corroboration from the project's own history: the existing mesh-3 SLURM scripts
+request **64 GB** against 32 GB for mesh 5, and task #21 exists *because a mesh-3 LU run ran
+out of memory even at that*. So one mesh-3 deck needs more than twice this machine's entire
+RAM, at any concurrency. Wall clock is the lesser problem and still severe: the mesh-5 SWS3
+baseline is running at ~10 s simulated per wall minute, so 4802 s takes ~8 h; ~10× the work
+per step puts a single mesh-3 deck in the multi-day range.
+
+Generated `.sh` therefore request `--mem=180G`, `--time=48:00:00`, 32 ranks.
+
+### H4. Validation
+`--check-input`: **18/18 pass**. `--mesh-only` generation: 4/4 samples. Source-node audit on
+the generated meshes: `source_in` and `source_out` each resolve to exactly **2 nodes** (the
+two faces of the split), **all** in `fracture_interface`, for all four samples — the
+authoritative check.
+
+Not yet done: no mesh-3 deck has been *run*. H3 is why.
