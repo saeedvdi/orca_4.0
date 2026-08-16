@@ -106,9 +106,13 @@ SAMPLES = {
               # basename suffix, which keeps HPC output from overwriting a local run
               # of the same deck). Arms whose CSV is absent are skipped, so these can
               # sit here before the jobs land.
-              ("88_01 V_m x2", "SWT1/results_csv/88_01_swt1_bbfast_vm2x_injfix_kernel_SV_biot0p6_hpc.csv"),
-              ("88_02 V_m opt", "SWT1/results_csv/88_02_swt1_bbfast_vmopt_injfix_kernel_SV_biot0p6_hpc.csv"),
-              ("88_03 V_m opt + K_ni", "SWT1/results_csv/88_03_swt1_bbfast_vmopt_kni_injfix_kernel_SV_biot0p6_hpc.csv")],
+              ("88_01 V_m x2 (HPC)", "SWT1/results_csv/88_01_swt1_bbfast_vm2x_injfix_kernel_SV_biot0p6_hpc.csv"),
+              ("88_02 V_m opt (HPC)", "SWT1/results_csv/88_02_swt1_bbfast_vmopt_injfix_kernel_SV_biot0p6_hpc.csv"),
+              ("88_03 V_m opt + K_ni (HPC)", "SWT1/results_csv/88_03_swt1_bbfast_vmopt_kni_injfix_kernel_SV_biot0p6_hpc.csv"),
+              # 88_02 and 88_03 are also running locally (deck-default basenames, no
+              # _hpc suffix). Whichever finishes first scores; the other is skipped.
+              ("88_02 V_m opt (local)", "SWT1/results_csv/88_02_swt1_bbfast_vmopt_injfix_kernel_SV_biot0p6.csv"),
+              ("88_03 V_m opt + K_ni (local)", "SWT1/results_csv/88_03_swt1_bbfast_vmopt_kni_injfix_kernel_SV_biot0p6.csv")],
         vdir="SWT1/SWT1",
         obs={
             "differential_stress_MPa": ("SWT1_differential_stress.csv", "differential_stress_mpa_pp", 1.0),
