@@ -134,18 +134,18 @@ stage 5 (24 MPa loading) onward.
 
 ## 4. Results
 
-### 4.1 SW-S3 — both arms past the slip event (2026-08-16 05:2x)
+### 4.1 SW-S3 — both arms COMPLETE
 
-Both arms have cleared stage 6, so the decisive comparison is available. Aggregated over the
-six stages common to both, `α=1e-12` is closer on **every** observable:
+Both arms ran to t=4802. Final scores over the 10 resolvable stages (stage 11's target of
+4802.4 falls marginally past the end of both runs), `α=1e-12` closer on **every** observable:
 
 | observable | α=1e-12 MAE | α=0.6 MAE | |
 |---|---|---|---|
-| Q (mL/min) | 0.0120 | 0.0761 | α=1e-12 closer (84.2 % lower) |
-| σ'_n (MPa) | 0.166 | 1.082 | α=1e-12 closer (84.7 % lower) |
-| τ (MPa) | 0.342 | 1.975 | α=1e-12 closer (82.7 % lower) |
-| d_n (mm) | 0.00102 | 0.01049 | α=1e-12 closer (90.3 % lower) |
-| d_s (mm) | 0.00070 | 0.01867 | α=1e-12 closer (96.3 % lower) |
+| Q (mL/min) | 0.0200 | 0.0767 | α=1e-12 closer (73.9 % lower) |
+| σ'_n (MPa) | 0.154 | 0.957 | α=1e-12 closer (83.9 % lower) |
+| τ (MPa) | 0.286 | 1.757 | α=1e-12 closer (83.7 % lower) |
+| d_n (mm) | 0.00093 | 0.00971 | α=1e-12 closer (90.5 % lower) |
+| d_s (mm) | 0.00062 | 0.01887 | α=1e-12 closer (96.7 % lower) |
 
 **That aggregate is misleading on its own, and the per-stage breakdown is the real result.**
 Essentially the entire difference comes from one stage:
