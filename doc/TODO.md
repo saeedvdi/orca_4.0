@@ -86,12 +86,17 @@ which is not physical: Biot's coefficient cannot be below porosity. Consequences
 Fix the parameterisation first — the clamp only masks it. Then decide whether the clamp is
 still worth porting as a guard against a recurrence.
 
-### N4. Confirm the `SinglePhaseFluidProperties` removal is permanent — **OPEN, low**
+### N4. `SinglePhaseFluidProperties` removal — **CONFIRMED PERMANENT (2026-08-15)**
 `orca_4.0`'s `OrcaTHMaterial` deletes external fluid-properties UserObject support;
 `fluid_properties_model`, `fp` and `fluid_thermal_expansion_model` are deprecated params that
-hard-error unless set to `user`. All 17 decks set `user`, so nothing breaks — but this is a
-real capability reduction versus `orca_3.0_full`, and it is what makes the two
-`OrcaTHMaterial` versions unmergeable. Confirm it is intended before anyone tries to merge.
+hard-error unless set to `user`. All 17 decks set `user`.
+
+Confirmed by the author as a permanent design decision, not a temporary regression.
+`OrcaTHMaterial` is self-contained by intent: fluid properties come from its own input
+parameters and nowhere else. **Consequence:** the `orca_4.0` and
+`HPC_backup/orca_3.0_claude_edits` versions of `OrcaTHMaterial` are permanently unmergeable —
+any future port from that backup (e.g. N1's `one_over_biot_modulus_qp`) must be applied as a
+hand-picked hunk, never a file copy or a merge.
 
 ### N5. Groups C and D — **no action**
 - *State-dependent α* in `OrcaCZMFluidPressureInterfaceKernel`: present in the backup (branch

@@ -135,7 +135,7 @@ therefore requires the `OrcaTHMaterial` change in §4 as well.
 
 Three independent divergences bundled in one file.
 
-### B1. External fluid-properties support — orca_4.0 removed it *(deliberate)*
+### B1. External fluid-properties support — orca_4.0 removed it *(deliberate, permanent)*
 
 The backup can query a `SinglePhaseFluidProperties` UserObject for ρ, μ, c_p, c_v, e, h, s, k
 and β. `orca_4.0` deletes that path: `fluid_properties_model`, `fp` and
