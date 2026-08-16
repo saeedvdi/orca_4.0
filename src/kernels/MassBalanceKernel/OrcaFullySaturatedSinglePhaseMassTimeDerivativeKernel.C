@@ -38,7 +38,10 @@ OrcaFullySaturatedSinglePhaseMassTimeDerivativeKernel::OrcaFullySaturatedSingleP
                          _coupling_type == CouplingTypeEnum::ThermoHydroMechanical),
     _multiply_by_fluid_density(getParam<bool>("multiply_by_fluid_density")),
 
-    // NOTE: interpret biot_modulus_qp as (1/M). If it is M, switch dpdt*_biot_modulus -> dpdt/_biot_modulus.
+    // biot_modulus_qp holds M itself, NOT 1/M. OrcaTHMaterial::computeBiotModulus
+    // builds the compliance 1/M = (1-a)(a-phi)/Kd + phi/Kf and then stores its
+    // reciprocal, so the storage term below must DIVIDE by this property.
+    // Verified by test/tests/materials/biot_modulus.
     _biot_modulus(getADMaterialProperty<Real>("biot_modulus_qp")),
     _biot_modulus_available(hasMaterialProperty<Real>("biot_modulus_available_qp")
                                 ? &getMaterialProperty<Real>("biot_modulus_available_qp")
@@ -87,9 +90,13 @@ OrcaFullySaturatedSinglePhaseMassTimeDerivativeKernel::precomputeQpResidual()
   // dp/dt (pressure is the kernel variable)
   const ADReal dpdt = _u_dot[_qp];
 
-  // pressure storage contribution
-  // If biot_modulus_qp stores (1/M), use multiplication; if it stores M, use division.
-  _storage_rate_p = dpdt * 1/_biot_modulus[_qp];
+  // Pressure storage contribution (1/M) dp/dt. Written as an explicit division:
+  // the previous form `dpdt * 1/_biot_modulus[_qp]` evaluates identically (it is
+  // (dpdt*1)/M by left-associativity) but reads like a multiplication, which is
+  // the wrong operation for a property holding M. Locked by
+  // test/tests/kernels/mass_storage, which checks p(t) = M q t against a
+  // closed-form solution -- a flipped operator lands a factor M^2 ~ 1e22 out.
+  _storage_rate_p = dpdt / _biot_modulus[_qp];
 
   // thermal storage coupling: - alpha_T dT/dt
   if (_includes_thermal)

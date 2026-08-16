@@ -1,0 +1,45 @@
+[Tests]
+  design = 'OrcaTHMaterial.md'
+  issues = '#N3'
+  [physical_alpha]
+    type = CSVDiff
+    input = 'biot_modulus.i'
+    csvdiff = 'biot_modulus_out.csv'
+    rel_err = 1e-8
+    requirement = 'OrcaTHMaterial shall compute the Biot modulus as M = 1/[(1-a)(a-phi)/Kd + phi/Kf] '
+                  'and store M itself -- not its reciprocal -- in biot_modulus_qp, matching the value '
+                  'derived by hand from the SW-T1 rock constants at the physical alpha = 0.6.'
+  []
+  [alpha_unphysical]
+    type = CSVDiff
+    input = 'biot_modulus.i'
+    cli_args = 'biot_coefficient=1e-12 Outputs/file_base=alpha_unphysical_out'
+    csvdiff = 'alpha_unphysical_out.csv'
+    rel_err = 1e-8
+    prereq = 'physical_alpha'
+    requirement = 'OrcaTHMaterial shall reproduce the storage compliance obtained when the Biot '
+                  'coefficient is driven below the porosity, where the grain-compressibility term '
+                  'changes sign and subtracts from fluid storage, yielding a Biot modulus 21x larger '
+                  'than the physical case.'
+  []
+  [alpha_eq_porosity]
+    type = CSVDiff
+    input = 'biot_modulus.i'
+    cli_args = 'biot_coefficient=0.001 Outputs/file_base=alpha_eq_porosity_out'
+    csvdiff = 'alpha_eq_porosity_out.csv'
+    rel_err = 1e-8
+    prereq = 'alpha_unphysical'
+    requirement = 'OrcaTHMaterial shall drop the grain-compressibility term exactly when the Biot '
+                  'coefficient equals the porosity, reducing the Biot modulus to Kf/phi.'
+  []
+  [alpha_unity]
+    type = CSVDiff
+    input = 'biot_modulus.i'
+    cli_args = 'biot_coefficient=1.0 Outputs/file_base=alpha_unity_out'
+    csvdiff = 'alpha_unity_out.csv'
+    rel_err = 1e-8
+    prereq = 'alpha_eq_porosity'
+    requirement = 'OrcaTHMaterial shall drop the grain-compressibility term at the incompressible-grain '
+                  'limit alpha = 1, again reducing the Biot modulus to Kf/phi.'
+  []
+[]

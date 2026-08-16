@@ -1,0 +1,3 @@
+time,biot_coefficient,biot_modulus,porosity,solid_bulk_compliance
+0,0,0,0,0
+1,0.001,4783561643800,0.001,1.611901e-11
