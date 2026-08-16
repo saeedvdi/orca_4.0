@@ -162,6 +162,22 @@ Essentially the entire difference comes from one stage:
 arm is actually *closer* than baseline on σ'_n (−0.47) and τ (−0.98), because by then both
 have slipped.
 
+**The stresses re-converge; the kinematics do not.** With stage 7 (first unloading, 24 MPa)
+now available on both arms, the two error signatures separate cleanly:
+
+| B − A at stage | σ'_n (MPa) | τ (MPa) | d_s (mm) | d_n (mm) |
+|---|---|---|---|---|
+| 5 (premature slip) | +4.46 | +7.99 | +0.0711 | +0.0381 |
+| 6 (both slipped) | −0.47 | −0.98 | +0.0188 | +0.0095 |
+| 7 (unloading) | +0.33 | +0.68 | +0.0188 | +0.0089 |
+
+Once both arms have slipped, the **stress state re-converges** — the σ'_n and τ gaps collapse
+from 4.5/8.0 MPa to a few tenths. But the **displacement offset is permanent**: the α=0.6 arm
+stays ~0.019 mm ahead in slip and ~0.009 mm in dilation, essentially unchanged from stage 6 to
+stage 7. Slip is irreversible, so the extra displacement banked during the premature event
+never heals. That is why d_s remains the worst-scoring observable (96 % higher MAE) even
+though the stresses agree again.
+
 **Not a reporting artifact.** The paper-frame postprocessors are pure geometry on
 `differential_stress_reaction_mpa_pp` — `σ'_n = 30 − 0.5(p_inj+p_out)·1e-6 + 0.235·Δσ` and
 `τ = 0.424·Δσ` — with no `biot_coefficient` anywhere in them, and they use the correct
