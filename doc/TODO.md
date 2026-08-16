@@ -884,3 +884,37 @@ Every term of the combined mass kernel is now pinned — `(1/M)dp/dt` (§K), `�
 `α·div(du/dt)` (§L, §Q) — plus the Darcy flux (§O) and the momentum coupling in both a 1D and a
 genuinely 2D stress state. Still untested: `use_supg` (§O4), the CZM/fracture-flow path, and
 `OrcaBiotCoefficientMaterial`'s `from_elasticity` model (dead in every deck).
+
+## R. Suite state — 2026-08-16
+
+**12 tests, 12 passing**, serial and on 2 MPI ranks (`./run_tests -j 2 -p 2` → 12 passed, 0
+skipped, 0 failed). Parallel was checked because a test that only passes serially is half a test
+and every production run uses 8 ranks; all gold files are rank-consistent.
+
+| area | tests | what it pins |
+|---|---|---|
+| `materials/biot_modulus` | 4 | M formula + both vanishing-term boundaries |
+| `kernels/mass_storage` | 2 | `(1/M)dp/dt`, and the M-vs-1/M convention, to 12 sig figs |
+| `kernels/thermal_storage` | 2 | `−α_T dT/dt`, sign included, to 11 sig figs |
+| `kernels/simple_diffusion` | 1 | stock MOOSE smoke test (pre-existing) |
+| `verification/pressure_diffusion` | 1 | Darcy flux and `c = M k/µ`, vs erfc |
+| `verification/terzaghi` | 1 | 1D coupled consolidation, vs Verruijt §2.2 |
+| `verification/mandel` | 1 | multi-axial coupling + Mandel–Cryer overshoot |
+
+Started the day at 1 (the stock smoke test).
+
+**Four defects found**, all silent — every one produced a cleanly-converging run with a plausible
+answer and a physical term missing:
+
+1. kernel comments claimed `biot_modulus_qp` held 1/M when it holds M (§K)
+2. `computeVolumetricStrain()` never called on the `total` strain path (§L)
+3. no warning when α < φ (§M)
+4. lagged α_T never seeded, pinning the thermal term at zero (§N)
+
+**No production deck is affected by any of them.** 2 and 4 sit on code paths no deck takes; 1 was
+a comment; 3 is a new guard.
+
+**Outstanding**: 2, 3 and 4 are **compile-checked only** — `orca-opt` has not been relinked while
+the Biot A/B campaign runs against the current shared library. Task #59 covers the rebuild and
+the three runtime checks, including registering the `alpha_eff_lagged` case that is currently
+written out as a comment in `test/tests/kernels/thermal_storage/tests`.
