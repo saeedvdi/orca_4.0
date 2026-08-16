@@ -3,8 +3,10 @@
 Six full-length mesh-5 runs, local, four concurrent at 8 MPI ranks each. Three A/B pairs,
 each pair identical except for `biot_coefficient`.
 
-**Status: campaign in flight.** Method, deck integrity and the analytical part of the result
-are settled and recorded below; the Table-2 scores are filled in as pairs complete.
+**Status: SW-S3 complete, SW-T1 past the slip event, SW-T2 running.** Method, deck integrity
+and the analytical part are settled; Table-2 scores are filled in as pairs complete. The
+headline conclusion (§4.2) is settled by SW-S3 and SW-T1 together and is not expected to change
+with SW-T2.
 
 ---
 
@@ -165,24 +167,30 @@ have slipped.
 **The stresses re-converge; the kinematics do not.** With stage 7 (first unloading, 24 MPa)
 now available on both arms, the two error signatures separate cleanly:
 
+Both arms are now **complete** (t=4802; stage 11's target of 4802.4 falls marginally past the
+end, so 10 stages score). The full post-event history:
+
 | B − A at stage | σ'_n (MPa) | τ (MPa) | d_s (mm) | d_n (mm) |
 |---|---|---|---|---|
 | 5 (premature slip) | +4.46 | +7.99 | +0.0711 | +0.0381 |
 | 6 (both slipped) | −0.47 | −0.98 | **+0.01878** | +0.0095 |
 | 7 (unloading, 24) | +0.33 | +0.68 | **+0.01875** | +0.0089 |
 | 8 (unloading, 20) | +0.69 | +1.24 | **+0.01873** | +0.0068 |
+| 9 (unloading, 16) | +0.72 | +1.47 | **+0.01846** | +0.0074 |
+| 10 (unloading, 12) | +0.80 | +1.51 | **+0.01841** | +0.0086 |
 
-Three distinct behaviours, and they separate cleanly:
+Two distinct behaviours, and the second one only became clear with the complete run:
 
-- **Slip offset is frozen.** d_s holds at +0.01878 → +0.01875 → +0.01873 mm across three
-  stages — constant to 0.3 %. Slip is irreversible, so the displacement banked during the
-  premature event at 24 MPa is never given back. This is why d_s stays the worst-scoring
-  observable (96 % higher MAE) even where the stresses agree.
-- **Dilation partially recovers.** d_n decays +0.0095 → +0.0089 → +0.0068 mm as normal stress
-  rises through unloading and closes the aperture elastically — the reversible part of the
-  offset.
-- **Stresses re-converge, then drift again.** The σ'_n and τ gaps collapse from 4.5/8.0 MPa at
-  stage 5 to a few tenths at stage 6–7, then widen modestly by stage 8 (+0.69/+1.24).
+- **The slip offset is frozen.** d_s holds at +0.01878 → +0.01841 mm across five stages — a
+  2 % decline over the whole unloading branch. Slip is irreversible, so the displacement banked
+  during the premature event at 24 MPa is essentially never given back. This is why d_s is the
+  worst-scoring observable (96.7 % higher MAE) even at stages where the stresses nearly agree.
+- **The stresses do not recover.** They collapse from 4.5/8.0 MPa at stage 5 to near-agreement
+  at stage 6, then **drift monotonically apart again** — σ'_n +0.33 → +0.80 and τ +0.68 → +1.51
+  MPa through unloading. An earlier reading of this table at stage 8 described them as
+  "re-converging"; with stages 9–10 in hand that is wrong. The α=0.6 arm ends the cycle further
+  from the paper than it was just after the event, because the extra slip has left the fault in
+  a permanently different aperture and stress state.
 
 **Not a reporting artifact.** The paper-frame postprocessors are pure geometry on
 `differential_stress_reaction_mpa_pp` — `σ'_n = 30 − 0.5(p_inj+p_out)·1e-6 + 0.235·Δσ` and
@@ -331,12 +339,11 @@ through the entire unloading branch.
 - **SW-T1** — both arms are past the slip event and running at 4–6 s/min; the stage-6 A/B is
   in §4.1b. Neither arm has finished the unloading branch. They spent ~5 h inside the
   hand-placed `event_dt_cap` bracket (dt = 0.05 over t ∈ [1740, 1825]).
-- **SW-T2** — the baseline arm **launched at ~08:45**, automatically, when SW-S3's completion
-  freed 8 ranks; its α=0.6 partner stays queued until SW-S3's second arm finishes. Six
-  full-length decks at 8 MPI ranks never fit concurrently in 32 cores, so this pair was always
-  going to run last. No SW-T2 result exists yet.
-- **SW-S3** — the baseline is **complete** (§4.4); the α=0.6 arm is in the unloading branch and
-  should finish around 09:30.
+- **SW-T2** — **both arms now running** (baseline from ~08:45, α=0.6 from ~09:40), each
+  launched automatically as SW-S3's two arms freed ranks. All six campaign decks have now
+  started. SW-T2 runs to 2852 s and is hours from any result. Six full-length decks at 8 MPI
+  ranks never fit concurrently in 32 cores, so this pair was always going to run last.
+- **SW-S3** — **both arms complete** (§4.1, §4.4). This pair is finished.
 
 Nothing failed: **zero non-convergence and zero exceptions on all four arms** for the whole
 campaign, including through the slip event.
