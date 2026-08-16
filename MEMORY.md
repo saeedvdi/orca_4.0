@@ -29,16 +29,21 @@ Ordered by what unblocks the most. Numbers are the session task IDs.
 
 | # | item | state |
 |---|---|---|
-| **#67 / #60** | **Refit SW-S3 slip onset at α = 0.6.** The only remaining SW-S3 problem. Decks `86_01` (φ_r 8.45) and `86_02` (φ_r 9.00) bracket it. | 86_01 running; 86_02 queued |
-| **#66** | **Replace the broken SW-T1 digitized files** (§7.2). Blocks the SW-T friction question *and* any scoring of SW-T1 kinematics. Needs the paper figure. | needs the paper |
+| **#68** | **Score `87_01`/`87_02` (SW-T1/SW-T2 injection-schedule refit, §5.5)** and re-assess the residual dilation / σ'ₙ rebound misfits once the driver is right. | queued behind the campaign |
+| **#67 / #60** | **Refit SW-S3 slip onset at α = 0.6.** The only remaining SW-S3 problem. Decks `86_01` (φ_r 8.45) and `86_02` (φ_r 9.00) bracket it. | both running |
 | **#59** | **Rebuild `orca-opt`** and runtime-verify the three compile-checked-only fixes (§4.2, §4.3, §4.4). Register the `alpha_eff_lagged` test case and generate its gold. | blocked on the campaign draining |
 | **#55 / #52** | Finish scoring the Biot A/B pairs; SW-T2 both arms still running. | running |
+
+**#66 (broken SW-T1 digitized files) is CLOSED** by the 2026-08-16 re-extraction —
+see §7.2, which also records that the prediction made there was confirmed to three
+digits. The SW-T friction question (§6.5) is therefore unblocked.
 
 ### Open, not blocking
 
 | # | item |
 |---|---|
-| #65 | Unify the rock parameters (§5.1). E is settled; **do not unify φ_r until #66 is done.** |
+| #65 | Unify the rock parameters (§5.1). E is settled. φ_r is now unblocked (#66 closed). **Add `normal_unload_retention_fraction` to the list** — it is 0.94 / 0.84 / 0.04 across SW-T1 / SW-T2 / SW-S4 (§4.7) and it is a joint property, not a free knob. |
+| #69 | Refresh SW-S3's injection schedule from the re-extraction (RMSE 0.243 MPa, lags up to +24 s — acceptable, not ideal). Fold into the next SW-S3 iteration *after* the φ_r bracket resolves, so it does not invalidate `86_01`/`86_02` mid-flight. |
 | #13 | Make the flow measurement mesh-independent |
 | #15 | Correct the slip-onset strength envelopes (superset of #60) |
 | #14 / #19 | SW-S3/SW-S4 non-convergence at the slip/arrest event. New lead in §6.4: not the aperture law — look at the disabled negative-feedback stack |
@@ -330,6 +335,50 @@ average* over the whole fracture, while yield begins locally. A side-averaged
 extrapolation gives a magnitude, not a prediction. Hence `86_01` (8.45) and `86_02`
 (9.00).
 
+### 5.5 The injection schedule is a DRIVER — check it before tuning anything
+
+**Fix the boundary condition before fitting a constitutive parameter to the
+response.** SW-T1 and SW-T2 carried hand-built idealised staircases with the right
+hold levels (5/8/12/16/20/24/28 MPa) and the wrong transition times. Lag at first
+up-crossing of each level, against the 2026-08-16 re-extraction:
+
+| sample | 8 | 12 | 16 | 20 | 24 | 28 MPa | RMSE | verdict |
+|---|---|---|---|---|---|---|---|---|
+| SW-S4 | −2 | +1 | +2 | −4 | −5 | +0 | 0.060 MPa | densely digitised — fine |
+| SW-S3 | +24 | +9 | +22 | +17 | +5 | +1 | 0.243 MPa | acceptable |
+| SW-T1 | +48 | +87 | +77 | +102 | +72 | **+155** | **1.240 MPa** | idealised staircase |
+| SW-T2 | +53 | +77 | +72 | +55 | +70 | +56 | **1.536 MPa** | idealised staircase |
+
+SW-T1 was worse than its RMSE suggests: the 28 MPa peak hold ran 1824–1955 (131 s)
+against a measured 1640–1895 (255 s) — **184 s late and 0.51× the duration**, so the
+specimen spent half the time at peak pressure the experiment did and entered the
+unload branch from a different state. Note the pressure–time *integral* was within
+1% the whole time (0.9906): an integral check would have passed this. Timing errors
+hide from integral metrics.
+
+**Why this had to come first, measured not assumed.** Scoring the finished SW-T1
+α=0.6 run, every peak ratio was already within 2–8%; the misfit was phase. Re-scoring
+under an optimal uniform time shift separates the two:
+
+| observable | nRMSE | best | shift | reading |
+|---|---|---|---|---|
+| flow rate | 29.2% | **2.5%** | −220 s | pure timing |
+| fracture permeability | 31.9% | **13.3%** | −295 s | mostly timing, ~13% real |
+| shear slip | 8.4% | **1.5%** | −38 s | pure timing |
+| normal dilation | 12.0% | 8.1% | −40 s | **real shape error** |
+| effective normal stress | 19.9% | 16.0% | −43 s | **real shape error** |
+
+So flow rate needed *no* permeability retuning — the 29% was entirely phase. Anyone
+who had "fixed" it by changing `dilation_scale` would have broken a correct model to
+compensate for a wrong BC. The dilation and σ'ₙ rebound misfits survive the shift and
+are the real remaining targets.
+
+Fixed in `87_01` (SW-T1) and `87_02` (SW-T2): plateau **values** snapped to nominal,
+measured **transition times** adopted. Snapping matters — the raw trace carries ±0.3
+MPa extraction jitter (SW-T2 wobbles 11.34–11.68 inside its 12 MPa hold) and feeding
+that in as a pressure BC would excite spurious transients. RMSE 1.240 → 0.195 and
+1.536 → 0.266. `87_01` also shifts `event_dt_cap` −210 s to follow the earlier peak.
+
 ---
 
 ## 6. Hypothesis ledger — including the ones that failed
@@ -465,11 +514,30 @@ data — §7.2.
 validation data, not the model.** Check the digitized series before tuning a deck
 against it.
 
+> **2026-08-16 — SUPERSEDED BY RE-EXTRACTION.** Saeed re-extracted all four
+> specimens into one folder each, named after the specimen
+> (`SWS3/SWS3`, `SWS4/SWS4`, `SWT1/SWT1`, `SWT2/SWT2`; SW-S4's is the Fig. 7 set).
+> **This is the reference from here on.** It repairs every defect below. The
+> sections are kept because the *reasoning* was load-bearing — §7.2 made a
+> numerical prediction that the new data then confirmed to three digits.
+>
+> **The validation data is now tracked in git** (commit `81bce79`). It never had
+> been: `.gitignore` line 23 is a blanket `*.csv` written for solver output, and it
+> had been silently swallowing all four folders. The repo held decks tuned against
+> data it did not store. That is precisely how §6.4's superseded permeability file
+> was able to masquerade as a 3× model error — there was nothing to diff against.
+> Negation rules now exempt the four folders; 37 files, ~416 KB.
+
 ### 7.1 SW-S3 fracture permeability — superseded file
 
 See §6.4. Fixed: notebook and scorecard repointed to
 `permeability_m2_vs_time_sw3_corrected.table2`, with the reasoning recorded inline in
 the notebook so the next reader does not undo it.
+
+**Retired 2026-08-16.** The re-extracted `permeability_m2_vs_time_sw3.csv` now agrees
+with the hand-corrected `.table2` to the digit (both 1.21e-13 … 3.66e-13 over 11
+points). The override is no longer needed and the scorecard points at the plain
+`.csv`. Keep the `.table2` as the audit trail.
 
 ### 7.2 SW-T1 — three broken channels
 
@@ -497,6 +565,27 @@ from the CSVs alone**; it needs the paper figure. Flagged, not assumed.
 
 The scorecard now guards both failure modes: constant files are rejected rather than
 scored, and displacement channels are zeroed with the removed offset printed.
+
+**CONFIRMED 2026-08-16 — the reading was right, and it predicted the number.**
+The re-extraction resolves it without the paper figure:
+
+| channel | old file | re-extracted | prediction above |
+|---|---|---|---|
+| `SWT1_shear_slip_mm.csv` | −48.731 … −46.844 (un-zeroed) | −0.0019 … **+0.5425** | — |
+| `SWT1_normal_dilation.csv` | −0.008 … **+0.521** (wrong sign, ≈ slip) | −0.1612 … +0.0017 | **0.161 mm** |
+
+The old "dilation" file was carrying something that tracked slip (+0.521 against the
+corrected slip's +0.5425), exactly as suspected. And the dilation predicted from the
+slip/dilation-angle argument — 0.546·tan(16.44°) = 0.161 mm — is what the corrected
+extraction measures, **0.1612 mm**. A hypothesis that survives a blind test at three
+digits is worth more than one that merely fits.
+
+Task #66 is closed by this. What remains genuinely constant, in all three files that
+have it, is **piston displacement** — still not scored, still guarded.
+`SWt1_produciton_pressure.csv` and `SWT2_production_pressure_MPa.csv` are also
+constant at 5.000 MPa, but that one is *physics*: it is the outlet backpressure, and
+both decks already set `production_pressure = 5e6`. That BC is confirmed, not suspect.
+Do not "fix" those two files.
 
 ---
 
@@ -581,3 +670,4 @@ source /home/geomechanics/miniforge/etc/profile.d/conda.sh && conda activate moo
 | 2026-08-15 | v1–v3: source import, deck sets, SLURM, Table-2 gate, Biot α A/B campaign method and launch |
 | 2026-08-16 | v4: verification suite 1 → 12 tests; four source defects found and fixed (§4.1–4.4); Bakhtar aperture-law hypothesis rejected (§6.1); Mandel added and its residual traced to the reference implementation (§6.3) |
 | 2026-08-16 | Cross-sample parameter audit (§5.1); SW-S3 permeability false alarm corrected (§6.4); SW-T1 validation files found broken (§7.2); SW-T friction anomaly narrowed, cohesion rejected (§6.5); SW-S3 refit decks `86_01`/`86_02` built and launched (§5.4); this file created |
+| 2026-08-16 | **Validation set re-extracted by Saeed and adopted as the reference** (§7). #66 closed; §7.2's prediction confirmed to three digits. **Validation data put under version control** — a blanket `*.csv` in `.gitignore` had hidden it since the start (§7). Injection schedule audited on all four samples: SW-T1/SW-T2 were late by up to +155 s, SW-S4 clean, SW-S3 acceptable (§5.5). Refit decks `87_01`/`87_02` built, validated and queued. Established by time-shift decomposition that SW-T1's flow-rate misfit is 100% phase (29.2% → 2.5%) and needs no permeability retuning, while the dilation and σ'ₙ rebound misfits are real. `sample_scorecard.py` extended to all four samples. Commit `81bce79` |
