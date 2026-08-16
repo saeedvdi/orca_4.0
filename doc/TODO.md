@@ -782,3 +782,32 @@ orca_3.0_full Bakhtar run near the slip event. If it moves at all, P2 is the mec
 fix is to compute the offset from the same JRC the formula divides by, not from `bb_jrc`. If it
 stays pinned at 17.5 there too, all four candidates are dead and the cause is elsewhere —
 worth knowing either way before the completion run. Tasks #14, #19.
+
+### P3. Closed against the real Bakhtar runs — all four candidates dead
+
+P1's third row was hedged because orca_4.0 has no Bakhtar output. orca_3.0_full does.
+`Final/SWS4/results_csv/`:
+
+| run | rows | t_final | JRC_mob | mech. aperture | hyd. aperture |
+|---|---|---|---|---|---|
+| `68_02_..._bakhtar.csv` | 1915 | 722.2 | **17.5 flat** | ≤ 4.21 µm | 0.74–0.95 µm |
+| `68_02_..._bakhtar_cyclic.csv` | 4869 | 268.7 | **17.5 flat** | ≤ 4.36 µm | 0.74–0.95 µm |
+| `SMOKE_68_02_bakhtar.csv` | 15 | 20.0 | **17.5 flat** | ≤ 4.36 µm | 0.78–0.95 µm |
+
+`bb_jrc_mobilized` never moves in any of them. So:
+
+- **Candidate 3 is dead**, not merely unchecked. The P2 hazard is **real but dormant** — it
+  needs JRC_mob to move, and nothing in any run makes it move.
+- **Candidate 2 is dead in the Bakhtar runs directly**: hydraulic aperture tops out at 0.95 µm
+  against an 8 µm clamp.
+- **Candidate 1 is dead at the true peak**: the Bakhtar runs reach 4.36 µm mechanical aperture
+  (vs 1.16 µm in the additive deck), which still gives `dlnT/dlnE = 0.74` — under 1, nowhere
+  near 6.
+
+**Conclusion: the aperture law is not the cause.** Both Bakhtar runs do terminate early
+(t = 722 and t = 269), so the instability is real; it is simply not in this material. Look
+instead at what else the Bakhtar deck disables — it drops the bounded power-law normal closure,
+the dilation term and the slip-damage/gouge feedback that the additive deck runs with, and
+those are exactly the terms the additive deck's own comments describe as added to stop HM
+runaway. That is the next hypothesis, and it is about **missing negative feedback**, not about
+formula stiffness. Tasks #14, #19.

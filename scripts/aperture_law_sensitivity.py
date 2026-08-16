@@ -35,14 +35,21 @@ RULED OUT #2 -- "e_h saturates the max_hydraulic_aperture = 8 um clamp, and hitt
     an order of magnitude below the clamp.
 
 RULED OUT #3 -- "mobilized JRC degrades during slip and 1/JRC^2.5 blows up."
-    Not observable in the data present: bb_jrc_mobilized_pp is pinned at 17.5 for all
-    1302 post-zero rows of 68_03. It never moves.
+    bb_jrc_mobilized_pp is pinned at 17.5 for all 1302 post-zero rows of 68_03, AND
+    for all rows of the three actual Bakhtar runs in orca_3.0_full:
 
-    CAVEAT on #3: 68_03 is the ADDITIVE deck, which does not consume JRC for
-    permeability at all. No Bakhtar run output exists in this repo to check against
-    (that work was done in orca_3.0 / orca_3.0_full). So #3 is unsupported here
-    rather than disproven, and the table at the bottom of this script is why it is
-    still worth checking there.
+        Final/SWS4/results_csv/68_02_..._bakhtar.csv          1915 rows, JRC_mob = 17.5
+        Final/SWS4/results_csv/68_02_..._bakhtar_cyclic.csv   4869 rows, JRC_mob = 17.5
+        Final/SWS4/results_csv/SMOKE_68_02_bakhtar.csv          15 rows, JRC_mob = 17.5
+
+    It never moves anywhere. In those runs the mechanical aperture reaches 4.36 um --
+    higher than the additive deck's 1.16 um, but still far below the 30.79 um offset,
+    giving dlnT/dlnE = 0.74 at the peak. Hydraulic aperture stays 0.74-0.95 um, an
+    order of magnitude below the 8 um clamp, so #2 holds there too.
+
+    All four candidates are therefore dead against the real Bakhtar data, not just
+    against a proxy. The hazard documented at the bottom of this script is real but
+    DORMANT: it needs JRC_mob to move, and nothing observed makes it move.
 
 THE LATENT HAZARD. The offset is computed once from the CONSTANT bb_jrc = 17.5:
 
