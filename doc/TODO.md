@@ -722,3 +722,63 @@ marking the rest `tail`. Same trap set for `CSVDiff`, handled with `abs_zero = 1
 the base kernel deliberately does not call `supgStabilization` (see the comment at
 `computeQpResidual`). The stabilisation path is reachable only from derived advection kernels.
 Worth a test if anything ever turns it on; not worth one now.
+
+## P. Aperture-law stiffness ruled out as the Bakhtar instability — 2026-08-16
+
+Branch `orca_v4`. `scripts/aperture_law_sensitivity.py`. **A negative result**, plus one latent
+hazard it surfaced on the way. No source or deck changes.
+
+The Bakhtar swap destabilises SW-S4 near the slip event while the additive control runs
+divergence-free end to end — that much is settled from run behaviour. The obvious explanation
+is that the Bakhtar law is *stiffer*: it is quadratic in mechanical aperture where the additive
+law is linear, so transmissivity `T = e³/12µ` would go as E⁶ instead of E³. **That explanation
+is wrong**, and two follow-up candidates are wrong too.
+
+### P1. Three mechanisms, all ruled out on SW-S4's own numbers
+
+| candidate | verdict |
+|---|---|
+| Bakhtar quadratic ⇒ T ~ E⁶ | **No.** The deck's calibrated `mechanical_aperture_offset` is 30.79 µm, and SW-S4's mechanical aperture peaks at **1.16 µm** (68_03, 1302 rows). `(E + 30.79)²` is near-linear there. Measured `dlnT/dlnE` tops out at **0.37**, not 6. |
+| `max_hydraulic_aperture` clamp saturating mid-Newton | **No.** At fixed JRC, e_h stays 0.74–0.84 µm — an order of magnitude below the 8 µm clamp. |
+| mobilized JRC degrading, 1/JRC^2.5 blowing up | **Not supported here.** `bb_jrc_mobilized_pp` is pinned at 17.5 for every one of 68_03's 1302 post-zero rows. It never moves. |
+
+**Transmissivity ratio Bakhtar/additive over the whole operating range: 1.00 → 1.45.** The two
+laws are within 45% of each other everywhere SW-S4 actually goes. Whatever destabilises the
+Bakhtar deck, it is not the stiffness of its aperture formula.
+
+**Caveat on the third row**: 68_03 is the *additive* deck, which never consumes JRC for
+permeability. No Bakhtar run output exists in orca_4.0 at all — that work lives in orca_3.0 /
+orca_3.0_full. So the third mechanism is *unchecked here*, not disproven, and P2 is why it is
+still worth checking there.
+
+### P2. The latent hazard: offset calibrated at a JRC the formula does not use
+
+The Bakhtar deck computes its offset once, from the **constant** `bb_jrc = 17.5`:
+
+```
+mechanical_aperture_offset[µm] = sqrt(a_h0[µm] · bb_jrc^2.5) = 30.79
+```
+
+then sets `use_mobilized_jrc = true`, so the formula divides by `bb_jrc_mobilized`, which is
+free to move. The calibration — "reproduces a_h0 at E = 0" — holds **only while JRC_mob is
+exactly 17.5**. Because the offset alone is 30.79 µm, at E = 0 the law returns
+30.79²/JRC_mob^2.5:
+
+| JRC_mob | e_h at E=0 | vs a_h0 |
+|---|---|---|
+| 17.5 | 0.74 µm | 1.0× |
+| 12.0 | 1.90 µm | 2.6× |
+| 10.0 | 3.00 µm | 4.1× |
+| 8.0 | 5.24 µm | 7.1× |
+| **6.75** | **8.01 µm** | **10.8× — hits the clamp** |
+| 3.0 | 60.8 µm | 82× (clamped) |
+
+A **2.6× drop** in mobilized JRC is enough to drive the hydraulic aperture into the clamp, a
+10× aperture jump and ~1000× in transmissivity. Whether that fires depends entirely on whether
+JRC_mob moves in the Bakhtar deck — unknown from what is in this repo.
+
+**Next step** (does not block anything): read `bb_jrc_mobilized` out of an orca_3.0 /
+orca_3.0_full Bakhtar run near the slip event. If it moves at all, P2 is the mechanism and the
+fix is to compute the offset from the same JRC the formula divides by, not from `bb_jrc`. If it
+stays pinned at 17.5 there too, all four candidates are dead and the cause is elsewhere —
+worth knowing either way before the completion run. Tasks #14, #19.
