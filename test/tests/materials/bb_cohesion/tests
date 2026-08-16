@@ -1,0 +1,43 @@
+[Tests]
+  design = 'ADOrcaBartonBandisContactTractionFastAD.md'
+  issues = '#69'
+  [cohesionless]
+    type = CSVDiff
+    input = 'bb_cohesion.i'
+    csvdiff = 'bb_cohesion_out.csv'
+    rel_err = 1e-8
+    requirement = 'The Barton-Bandis contact law shall reproduce the purely frictional envelope '
+                  'tau_lim = sigma_n*tan(phi_r + JRC*log10(JCS/sigma_n)) when cohesion and '
+                  'residual_cohesion are left at their defaults, so that adding those parameters '
+                  'cannot change any existing calibration. At sigma_n = 17.9967 MPa, JRC = 15.32 '
+                  'and JCS = 150 MPa the peak friction angle is 43.864 deg and limit_tau starts at '
+                  '17.297 MPa, decaying to 10.296 MPa as slip passes 4 D_c.'
+  []
+  [cohesive]
+    type = CSVDiff
+    input = 'bb_cohesion.i'
+    cli_args = 'cohesion=2.0e7 Outputs/file_base=cohesive_out'
+    csvdiff = 'cohesive_out.csv'
+    rel_err = 1e-8
+    prereq = 'cohesionless'
+    requirement = 'The Barton-Bandis contact law shall add a sigma_n-INDEPENDENT cohesion to the '
+                  'shear strength and destroy it on the same slip-weakening curve W as friction, '
+                  'so that cohesion_effective = c*W exactly and limit_tau exceeds the cohesionless '
+                  'case by c*W at every step. At zero slip the excess is the full 20 MPa; by 4 D_c '
+                  'it has fallen to 0.023 MPa.'
+  []
+  [retained]
+    type = CSVDiff
+    input = 'bb_cohesion.i'
+    cli_args = 'cohesion=2.0e7 residual_cohesion=8.0e6 Outputs/file_base=retained_out'
+    csvdiff = 'retained_out.csv'
+    rel_err = 1e-8
+    prereq = 'cohesive'
+    requirement = 'The Barton-Bandis contact law shall interpolate cohesion between its peak and '
+                  'residual values as c(s) = c_res + (c - c_res)*W, leaving 8 MPa of interlock '
+                  'standing after large slip instead of collapsing to the frictional envelope. '
+                  'This is what a mated Mode-I fracture does: Ye & Ghassemi (2018) Table 2 shows '
+                  'SW-T1 and SW-T2 retaining 72-92 % of their dilation through the slip burst '
+                  'while still carrying mu = 0.92.'
+  []
+[]

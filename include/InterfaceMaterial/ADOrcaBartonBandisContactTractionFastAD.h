@@ -227,6 +227,12 @@ protected:
   const Real _jrc0;
   const Real _jcs0;
   const Real _residual_friction_angle_deg;
+  // Barton's law is purely frictional: tau_lim = sigma'_n * tan(phi_r + JRC*log10(JCS/sigma'_n)).
+  // The roughness term vanishes as sigma'_n approaches JCS, so at the sigma'_n/JCS ~ 0.4 of the
+  // Ye & Ghassemi (2018) tensile specimens the law cannot reach the measured mu = 1.17-1.27
+  // without an unphysical phi_r. _cohesion is the missing sigma'_n-independent term: the shear
+  // strength of the interlocked asperities of a mated Mode-I fracture. Default 0 = Barton exactly.
+  const Real _cohesion;
   const bool _use_scale_correction;
   const Real _laboratory_length;
   const Real _joint_length;

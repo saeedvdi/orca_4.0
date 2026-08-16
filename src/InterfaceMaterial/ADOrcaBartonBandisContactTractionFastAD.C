@@ -209,6 +209,19 @@ ADOrcaBartonBandisContactTractionFastAD::validParams()
       30.0,
       "residual_friction_angle_degrees >= 0.0 & residual_friction_angle_degrees < 89.9",
       "Residual friction angle phi_r [degrees].");
+  params.addRangeCheckedParam<Real>(
+      "cohesion",
+      0.0,
+      "cohesion >= 0.0",
+      "OPT-IN sigma'_n-INDEPENDENT shear strength c [Pa] added to the Barton-Bandis envelope: "
+      "tau_lim = c + sigma'_n*tan(phi_r + JRC*log10(JCS/sigma'_n)). Default 0 reproduces Barton "
+      "exactly. Barton's roughness term is mobilization-limited -- it decays to zero as sigma'_n "
+      "approaches JCS -- so a MATED tensile fracture held at sigma'_n/JCS ~ 0.4 has no way to "
+      "express its asperity interlock except through phi_r, which then has to take values well "
+      "above any measured granite basic friction angle. Setting c instead puts that strength "
+      "where it physically belongs (asperity shear) and leaves phi_r measurable. In the Hardening "
+      "subclass c is destroyed by slip on the same weakening curve W as friction, because the "
+      "asperities that carry it are sheared through.");
 
   params.addParam<bool>(
       "use_scale_correction", true, "If true, apply BB scale corrections to JRC and JCS.");
@@ -386,6 +399,7 @@ ADOrcaBartonBandisContactTractionFastAD::ADOrcaBartonBandisContactTractionFastAD
     _jrc0(getParam<Real>("jrc")),
     _jcs0(getParam<Real>("jcs")),
     _residual_friction_angle_deg(getParam<Real>("residual_friction_angle_degrees")),
+    _cohesion(getParam<Real>("cohesion")),
     _use_scale_correction(getParam<bool>("use_scale_correction")),
     _laboratory_length(getParam<Real>("laboratory_length")),
     _joint_length(getParam<Real>("joint_length")),
@@ -540,7 +554,10 @@ ADOrcaBartonBandisContactTractionFastAD::computeRoughnessState() const
 Real
 ADOrcaBartonBandisContactTractionFastAD::computeCohesionEffective() const
 {
-  return 0.0;
+  // Reports the cohesion actually carried by the envelope. Was hard-coded to 0 while `cohesion`
+  // did not exist, which is why every calibration that needed a sigma'_n-independent strength had
+  // to hide it in phi_r. The Hardening subclass overrides this to report the slip-weakened value.
+  return _cohesion;
 }
 
 ADReal
@@ -797,7 +814,10 @@ ADOrcaBartonBandisContactTractionFastAD::computeBartonBandisProperties(
   const ADReal deg_to_rad(M_PI / 180.0);
   friction_coefficient = tan(peak_friction_angle_deg * deg_to_rad);
   dilation_coefficient = _use_dilatancy ? tan(dilation_angle_deg * deg_to_rad) : ADReal(0.0);
-  shear_strength = sigma_n * friction_coefficient;
+  // Asperity cohesion (default 0 = Barton exactly). It is sigma'_n-independent, so it changes
+  // d(tau_lim)/d(sigma'_n) -- the quantity an injection test actually sweeps -- and is NOT
+  // interchangeable with a phi_r that reproduces the same strength at one calibration point.
+  shear_strength = ADReal(_cohesion) + sigma_n * friction_coefficient;
   // Residual self-propping floor (default 0 = no-op). Keeps tau_limit > 0 when the joint
   // opens (sigma_n -> 0), removing the strength-collapse singularity at the slip instability.
   if (_min_tau_limit > 0.0)
@@ -888,7 +908,7 @@ ADOrcaBartonBandisContactTractionFastAD::computeBartonBandisPropertiesReal(
   const Real deg_to_rad = M_PI / 180.0;
   friction_coefficient = tan(peak_friction_angle_deg * deg_to_rad);
   dilation_coefficient = _use_dilatancy ? tan(dilation_angle_deg * deg_to_rad) : 0.0;
-  shear_strength = sigma_n * friction_coefficient;
+  shear_strength = _cohesion + sigma_n * friction_coefficient;  // mirrors the AD version
   // Residual self-propping floor (default 0 = no-op); mirrors the AD version.
   if (_min_tau_limit > 0.0)
     shear_strength = std::max(_min_tau_limit, shear_strength);

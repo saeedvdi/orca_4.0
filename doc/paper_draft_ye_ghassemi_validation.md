@@ -4,15 +4,31 @@
 Fractures: A Cohesive-Zone Hydromechanical Model Validated Across a Roughness Range
 
 **Status:** original draft 2026-08-07, revised 2026-08-11, audited against the source PDF
-2026-08-16. The 2026-08-16 pass compared every physical property in the decks, meshes and this
-draft against Ye & Ghassemi (2018) directly, and inserted `[bracketed]` correction notes wherever
-the draft asserts something the current setup does not support. There are four such notes and they
-are not cosmetic: the dissipation bound in §1/§3.5.3 belongs to the baseline law rather than the
-validated one; Table 4's JRC and JCS rows for the two saw cuts are calibrated, not measured;
-Table 1's θ column is derived correctly but two of the four meshes do not honour it; and one
-numerical slip (SW-T1's Table-2 dilation angle) is corrected in place. Working:
-`doc/paper_vs_model_audit_2026-08-16.md`, reproducible via `scripts/paper_parameter_audit.py`.
-Nothing in §5 changed — no new runs were made.
+2026-08-16, **findings applied to the model 2026-08-16 (branch `orca_v5`)**.
+
+The audit pass compared every physical property in the decks, meshes and this draft against
+Ye & Ghassemi (2018) directly, and inserted `[bracketed]` correction notes wherever the draft
+asserted something the setup did not support. Those findings have now been acted on. Three of the
+four are **resolved in the model**; one remains a drafting decision:
+
+| audit finding | status |
+|---|---|
+| SW-S4 meshed at 28.99° and 2.85 mm off centre; SW-T2 at 31° against its own data's 30° | **fixed** — corrected meshes ported; decks `89_01`, `89_03`, `89_05`, `89_06` |
+| SW-S3/SW-S4 JRC, JCS and φ_r invented rather than measured | **fixed** — refitted to the paper's Table 1 and Sec. 2.1; decks `89_01`, `89_02` |
+| SW-T1/SW-T2 need φ_r = 44–46°, above any granite basic friction angle | **fixed** — `cohesion`/`residual_cohesion` added to the law; decks `89_04`, `89_05` |
+| §1/§3.5.3 claim a dissipation bound the *validated* law does not implement | **still a drafting decision** — see the `[SCOPE CORRECTION]` note in §3.5.3 |
+
+**The numerical content of §5 must not be quoted.** Every score in §5 was produced by the
+pre-audit decks. The 89-series decks are built and syntax-checked but not yet run, so §5 is
+`[PENDING]` in its entirety until they are. Two of them (`89_04`, `89_05`) are explicitly
+*candidates* rather than corrections: they change dτ/dσ′ₙ by ~40 % and must be scored against
+Table 2 before they can replace `87_01`/`87_02`.
+
+Working and derivations: `doc/paper_vs_model_audit_2026-08-16.md`;
+`scripts/paper_parameter_audit.py` (states the problem);
+`scripts/refit_joint_constants_from_paper.py` (derives every new constant);
+`scripts/build_paper_corrected_decks.py` (generates the decks);
+`Examples/YeGhasemmi2018/MESHES.md` (mesh provenance).
 
 Revised 2026-08-11 to align §3.6/§4.3/§6/Notation with the
 state-dependent fracture pressure–area coefficient (tasks #22/#24) and to give §6 an actual
@@ -110,14 +126,18 @@ measured is marked `[PENDING]`; nothing is invented.
   progressively rather than in a burst). Resist smoothing this over; it is the most informative
   sample.
 - The angle for SW-T2 given in the paper's Table 1 (31°) disagrees with the value implied by its
-  own Table 2 (30°). Appendix A resolves this. Flag it once, politely, and move on. **But check
-  before submitting that the SW-T2 mesh was actually rebuilt at 30° — as of 2026-08-16 it is still
-  cut at 31°, and SW-S4 at 28.99°. Appendix A resolving something on paper is not the same as the
-  runs honouring it, and this is the one inconsistency that would embarrass the paper's central
-  claim.**
-- Two of the four specimens report $\sigma'_n$ through different operators. SW-T1, SW-T2 and SW-S3
-  carry a postprocessor implementing the paper's eq (3) with $P_p = \tfrac12(P_i+P_o)$; SW-S4 has
-  no such postprocessor and compares the raw interface traction against the same Table 2 column.
+  own Table 2 (30°). Appendix A resolves this. Flag it once, politely, and move on. **Resolved in
+  the setup on 2026-08-16: SW-T2 and SW-S4 are both meshed at 30° and centred, verified by fitting
+  a plane to the meshed interface rather than by trusting the journal. Appendix A resolving
+  something on paper is not the same as the runs honouring it, and this was the one inconsistency
+  that would have embarrassed the paper's central claim.**
+- ~~Two of the four specimens report $\sigma'_n$ through different operators.~~ **Fixed
+  2026-08-16.** SW-S4 was the only specimen without a paper-frame postprocessor: it compared a raw
+  fault-averaged interface traction against a Table 2 column that had been reduced through eq (3)
+  with $P_p = \tfrac12(P_i+P_o)$, while its three siblings compared like with like. The 89-series
+  SW-S4 decks carry `effective_normal_paper_frame_mpa_pp` and `shear_stress_paper_frame_mpa_pp`
+  with $\sin^2\theta = 0.25$ and $\sin\theta\cos\theta = 0.4330$ at the corrected 30°. Any §5 score
+  quoted from a 68-series run is on the old operator and must be regenerated.
   Those are not the same quantity, and it is the likely reason SW-S4 alone needs a
   fault-pressure coefficient of 0.86. Either give SW-S4 the paper-frame postprocessor or say in
   §5.3 which operator each specimen's $\sigma'_n$ score uses — do not present them in one table as
@@ -248,14 +268,16 @@ We make four contributions.
    elements distinguish it from the non-associative interface plasticity in common use. The
    dilation is constrained by an explicit dissipation inequality,
    $\tan\psi \leq (1-\epsilon_D)\mu$, evaluated against the *Coulomb* strength rather than the
-   regularised branch traction; we show this bound is frequently the active constraint, so that a
-   nominal dilation angle above it is never realised and should not be reported as calibrated
-   (§3.5.3). `[SCOPE — the bound is implemented in the baseline law only; the validated`
-   `Barton–Bandis law does not carry it, so this half of the contribution cannot be claimed for`
-   `the runs in §5 as written. Rewrite or drop, per the correction note in §3.5.3. What survives`
-   `unconditionally is the diagnostic use of the bound in §3.5.3, which shows the saw cuts'`
-   `published dilation angle exceeds their own mobilised friction angle.]`
-   And the dilation is routed kinematically as a normal eigen-opening rather than as a
+   regularised branch traction. In the Mohr–Coulomb formulation this bound is enforced, and it is
+   frequently the active constraint, so that a nominal dilation angle above it is never realised
+   and should not be reported as calibrated. Applied instead as an *admissibility diagnostic* to
+   the published measurements, the same inequality shows that both saw-cut specimens report a
+   dilation angle exceeding their own mobilised friction angle — which no amount of shear dilation
+   can produce, and which identifies elastic joint decompression inside the LVDT signal (§3.5.3).
+   `[SCOPE — the sentence above is the scoped form agreed on 2026-08-16. The bound is`
+   `implemented in the Mohr–Coulomb law; the Barton–Bandis law validated in §5 bounds ψ by`
+   `clamping instead. Do not restore the unqualified claim. See the note in §3.5.3.]`
+   The dilation is routed kinematically as a normal eigen-opening rather than as a
    contact-stress reduction, which reverses the sign of its feedback on strength, produces a
    normal displacement jump directly comparable with an LVDT measurement, and makes the mechanical
    gap the single source of truth for the hydraulic aperture (§3.5.4).
@@ -309,14 +331,19 @@ $\theta$ column as revised in Appendix A)*
 | SW-S3 | saw cut | 1.96 | 29° | 29.03° | 123.4 | 50.53 |
 | SW-S4 | polished saw cut | 1.19 | 30° | 30.02° | 118.7 | 50.51 |
 
-`[SETUP CAVEAT — resolve before submission. The θ column headed "Appendix A" is the`
-`value the published stress data was reduced at, and it is the value the model should`
-`be built at. Two of the four meshes are not: SW-T2 is cut at the printed 31° and`
-`SW-S4 at 28.99° (its journal inherited SW-S3's fracture plane, which also leaves it`
-`2.85 mm off centre). Corrected journals exist but have not been ported to the`
-`repository the production decks run from. Until they are, the claim in §1 and the`
-`Abstract that the geometry is *recovered rather than fitted* is contradicted by the`
-`setup for half the specimens. See doc/paper_vs_model_audit_2026-08-16.md §3.]`
+`[SETUP CAVEAT — RESOLVED 2026-08-16. The θ column headed "Appendix A" is the value the`
+`published stress data was reduced at, and it is the value the model must be built at.`
+`Two of the four meshes were not: SW-T2 was cut at the printed 31°, and SW-S4 at 28.99°`
+`— its journal had inherited SW-S3's fracture plane verbatim (bit-identical z-span),`
+`which also left it 2.85 mm off centre. Corrected meshes are now in the repository the`
+`production decks run from, and the angle in each .e file was re-derived here by fitting`
+`a plane to the nodes shared by the two element blocks rather than trusting the journal.`
+`All four specimens now honour their Appendix-A angle, so the claim in §1 and the`
+`Abstract that the geometry is recovered rather than fitted is no longer contradicted by`
+`the setup. Inventory: Examples/YeGhasemmi2018/MESHES.md. One item remains: the SW-S3`
+`mesh is 124.40 mm against Table 1's 123.40 mm. The corrected journal is written but`
+`needs Cubit to build; the effect is 0.8 % on axial stiffness alone, because the fracture`
+`ellipse area does not contain L and W/L is taken from Table 2.]`
 
 ### 2.2 What the published data constrains
 
@@ -686,13 +713,33 @@ $$
 *Barton–Bandis.*
 
 $$
-Y = \sigma'_n \tan\!\left[ \phi_r + \mathrm{JRC}\,\log_{10}\!\left(\frac{\mathrm{JCS}}{\sigma'_n}\right) \right],
+Y = c(s) + \sigma'_n \tan\!\left[ \phi_r + \mathrm{JRC}\,\log_{10}\!\left(\frac{\mathrm{JCS}}{\sigma'_n}\right) \right],
+\qquad
+c(s) = c_{\text{res}} + (c - c_{\text{res}})\,W(s),
 $$
 
-with $\phi_r$ the residual friction angle, JRC the joint roughness coefficient and JCS the joint
-wall compressive strength. This envelope is concave in $\sigma'_n$: the mobilised friction angle
-*rises* as the effective normal stress falls, because asperities override rather than shear
-through at low confinement.
+with $\phi_r$ the residual friction angle, JRC the joint roughness coefficient, JCS the joint wall
+compressive strength, and $W(s) = \exp[-(s/D_c)^m]$ the slip-weakening factor of §3.7. The
+frictional part is concave in $\sigma'_n$: the mobilised friction angle *rises* as the effective
+normal stress falls, because asperities override rather than shear through at low confinement.
+
+The cohesion $c$ is not decoration and is not Barton's. Barton's roughness term is
+**mobilisation-limited** — $\mathrm{JRC}\log_{10}(\mathrm{JCS}/\sigma'_n) \to 0$ as
+$\sigma'_n \to \mathrm{JCS}$ — which correctly encodes asperities shearing *through* rather than
+overriding at high normal stress, but leaves the resulting strength with nowhere to go, because in
+Barton's form every term is proportional to $\sigma'_n$. Asperity shear-through is a cohesion: it
+is the strength of the rock bridges, and it does not scale with confinement. For a **mated Mode-I
+fracture** held near $\sigma'_n/\mathrm{JCS} \approx 0.4$ — which is exactly where SW-T1 and SW-T2
+sit — this is the dominant term, and a purely frictional fit is forced to absorb it into $\phi_r$,
+producing values above any measured granite basic friction angle (§4.3, note (b)). We therefore
+carry $c$ explicitly and let it decay on the *same* curve $W(s)$ as friction, since the asperities
+that carry it are the ones slip destroys, with a residual $c_{\text{res}}$ for the interlock that
+survives a single slip event. Setting $c = c_{\text{res}} = 0$ recovers Barton exactly.
+
+This envelope has one property that the purely frictional form does not, and it is the property
+this experiment is sensitive to: $\mathrm{d}Y/\mathrm{d}\sigma'_n$ is reduced by the cohesion's
+absence from that derivative. Two parameterisations that agree at a single calibration point can
+therefore disagree by 40 % in slope, which is what §5.5 measures.
 
 The distinction matters for this experiment specifically. The two envelopes can be made tangent at
 one effective normal stress and will then diverge at every other. Injection sweeps $\sigma'_n$
@@ -703,25 +750,38 @@ and it is the basis of §5.5.
 
 #### 3.5.3 Flow rule and the dissipation bound on dilation
 
-`[SCOPE CORRECTION — 2026-08-16. This subsection, and the roughness-interpolated`
-`Mohr–Coulomb envelope in §3.5.2, describe the` **`baseline`** `law`
-`(ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile), not the`
-`Barton–Bandis law that is validated in §5. dissipation_margin is declared in that`
-`one material and nowhere else; the four production decks all run`
-`OrcaBartonBandisContactTractionFastADHardening, which has no dissipation`
-`inequality — it bounds ψ with min_dilation_angle_degrees /`
-`max_dilation_angle_degrees, neither of which is set in any of the four decks — and`
-`evolves ψ through the mobilisation/decay law ψ(s) below. The only decks that set`
-`dissipation_margin are the MC baselines 67_11 and 83_11.`
+`[SCOPE — resolved 2026-08-16 by taking option (a): keep the material, state the scope`
+`explicitly. Rewrite the prose of this subsection along the lines of the paragraph`
+`below before submission; the facts are settled, only the wording is outstanding.`
 
-`Therefore: the sentence below in bold, contribution 1 in §1, figure F2b and the`
-`corresponding part of §3.8 currently claim for the validated model a mechanism that`
-`exists only in its control. Choose one before submission — (a) keep the material and`
-`say explicitly that §3.5.2–§3.5.3 describe the baseline while Barton–Bandis carries`
-`the clamped mobilisation law, or (b) drop the bound from the contribution list and`
-`retain it as a remark in §3.8. Either way "we show this bound is frequently the`
-`active constraint" cannot stand for the BBFast runs, because it is never evaluated`
-`in them. See doc/paper_vs_model_audit_2026-08-16.md §4.]`
+`The facts. dissipation_margin is declared in exactly one material,`
+`ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile, and nowhere else.`
+`The production decks all run OrcaBartonBandisContactTractionFastADHardening, which`
+`has no dissipation inequality: it bounds ψ with min_dilation_angle_degrees /`
+`max_dilation_angle_degrees, neither of which is set in any deck, and evolves ψ`
+`through the mobilisation/decay law below. The only decks that set dissipation_margin`
+`are the Mohr–Coulomb baselines 67_11 and 83_11. So the bound is enforced in the`
+`baseline and not in the validated law — the reverse of what the earlier draft`
+`implied. "We show this bound is frequently the active constraint" cannot stand for`
+`the Barton–Bandis runs, because it is never evaluated in them.`
+
+`Why option (a) rather than dropping it. The bound is a real and correctly implemented`
+`piece of the model, and — this is the part worth putting in §1 — it is informative`
+`precisely where it is NOT enforced. Applied as a diagnostic to Table 2 itself, the`
+`dilation angle arctan(|d_n|/d_s) exceeds the mobilised friction angle arctan(μ) for`
+`BOTH saw cuts (SW-S3: 31.8° against 31.3°; SW-S4: 28.7° against 24.6°), while the`
+`tensile pair sits comfortably inside it (16.4° against 49.4°; 14.0° against 51.7°).`
+`A dilation angle above the friction angle is inadmissible as pure shear dilation.`
+`The resolution is this paper's own §2.3.1 decomposition: on a low-μ saw cut the`
+`LVDT-measured d_n contains elastic joint decompression, not just geometric override.`
+`That is a result about the published data, obtained from the bound, and it explains`
+`why the saw-cut decks carry ψ below their Table-2 value and under-predict dilation.`
+
+`So: §1 contribution 1 keeps the bound but states it as (i) enforced in the`
+`Mohr–Coulomb formulation and (ii) used as an admissibility diagnostic on the`
+`published data. §3.5.2–§3.5.3 say plainly that they describe the baseline law and`
+`that Barton–Bandis carries the clamped mobilisation law instead. Figure F2b and the`
+`§3.8 passage follow the same scoping. See doc/paper_vs_model_audit_2026-08-16.md §4.]`
 
 The flow rule is **non-associative**. The tangential direction follows the shear traction,
 
@@ -1460,14 +1520,14 @@ pressure is 5 MPa throughout.
 | Matrix permeability | $k_m$ | $5\times10^{-19}$ m² | measured | Ye & Ghassemi §2.1 (low end of $5\times10^{-19}$–$1\times10^{-18}$) |
 | Fluid density | $\rho_f$ | 1000 kg m⁻³ | literature | — |
 | Fluid viscosity | $\mu_f$ | $1.002\times10^{-3}$ Pa s | measured | Ye & Ghassemi §2.5, water at 20 °C |
-| Fluid bulk modulus | $K_f$ | 4.78 GPa | **assumed** | not reported; **2.17× water at 20 °C** — see note below |
+| Fluid bulk modulus | $K_f$ | 2.2 GPa | literature | water at 20 °C; **was 4.78 GPa (2.17× too stiff) in the pre-audit decks** |
 | Confining pressure | $\sigma_3$ | 30 MPa | measured | Ye & Ghassemi §2.4 |
 | Production pressure | $P_o$ | 5 MPa | measured | Ye & Ghassemi §2.4 |
 | Joint roughness coefficient, SW-T1/T2 | JRC | 15.32, 14.63 | measured | Ye & Ghassemi §2.2 |
-| Joint roughness coefficient, SW-S3/S4 | JRC | **23.35, 17.50** | **calibrated** | **not the measured 1.96 and 1.19 — see note** |
-| Joint wall strength, SW-T1/T2 | JCS | 150 MPa | substituted | UCS, Ye & Ghassemi §2.1 |
-| Joint wall strength, SW-S3/S4 | JCS | **300 MPa** | **calibrated** | **2× the measured UCS — see note** |
-| **Fracture angle** | $\theta$ | 29.03–32.00° | **derived** | **Appendix A.1** (but see the setup caveat under Table 1) |
+| Joint roughness coefficient, SW-S3/S4 | JRC | 1.96, 1.19 | measured | Ye & Ghassemi §2.2; **was 23.35 and 17.50 in the pre-audit decks** |
+| Joint wall strength, all four | JCS | 150 MPa | substituted | UCS, Ye & Ghassemi §2.1; **was 300 MPa for the saw cuts** |
+| Joint cohesion, SW-T1/T2 | $c$, $c_{\text{res}}$ | 24.65/11.18, 31.65/10.70 MPa | derived | Appendix A.4; asperity interlock of a mated Mode-I surface |
+| **Fracture angle** | $\theta$ | 29.03–32.00° | **derived** | **Appendix A.1**; all four meshes now honour it |
 | **Series compliance** | $\Omega$ | $1.61$–$4.42\times10^{-12}$ m Pa⁻¹ | **derived** | **Appendix A.2** |
 | **Flow geometry factor** | $W/L$ | 0.813–0.817 | **derived** | **Appendix A.3** |
 | Reference hydraulic aperture | $a_{h0}$ | 0.745–2.10 µm | derived | cubic-law inversion of stage-1 $Q$ |
@@ -1479,34 +1539,49 @@ pressure is 5 MPa throughout.
 | Dilation-propping coefficient | $\chi$ | per specimen | calibrated | $a_h$ at peak |
 | Unload retention fraction | $f$ | per specimen | calibrated | $d_n$ recovery |
 
-`[UNRESOLVED — 2026-08-16. Three rows above are marked in bold because the current decks do not`
-`support the class the earlier draft assigned them, and Table 4 is the table a sceptical reviewer`
-`reads first. Full working in doc/paper_vs_model_audit_2026-08-16.md §2 and §5.]`
+`[RESOLVED — 2026-08-16, branch orca_v5. The three rows that were bold here are now measured or`
+`derived rather than calibrated. Full working: doc/paper_vs_model_audit_2026-08-16.md §2,`
+`scripts/refit_joint_constants_from_paper.py. What follows is the argument, and it belongs in the`
+`text — it is the strongest parameter-provenance claim this paper has.]`
 
 `(a) JRC and JCS on the saw cuts. Ye and Ghassemi measure JRC = 1.96 (SW-S3) and 1.19 (SW-S4) by`
-`3-D laser scan and the Yu & Vayssade correlation, and report a UCS of 150 MPa. The decks run`
-`JRC = 23.35 and 17.50 — 11.9× and 14.7× the measured values, and in SW-S3's case outside Barton's`
-`0–20 scale — with JCS at 300 MPa, and compensate with residual friction angles of 8.45° and 7.50°.`
-`No granite joint has a basic friction angle below about 25°. The three errors cancel at the`
-`calibration point, so both specimens still reproduce their measured peak τ; what does not survive`
-`is dτ/dσ'_n, which comes out 28 % too flat on both saw cuts — and that derivative is the quantity`
-`this experiment exists to measure, because injection sweeps σ'_n downward by a factor of two.`
-`Refitting with the paper's own JRC and JCS = UCS, holding the envelope through each specimen's`
-`last stick stage, puts φ_r at 29.8° (SW-S3) and 23.7° (SW-S4) — ordinary numbers. Until that`
-`refit is run, these rows are calibrated, not measured, and §5.5 and §6.3 rest on them.`
+`3-D laser scan and the Yu & Vayssade correlation, and report a UCS of 150 MPa. The pre-audit decks`
+`ran JRC = 23.35 and 17.50 — 11.9× and 14.7× the measured values, and in SW-S3's case outside`
+`Barton's 0–20 scale — with JCS at 300 MPa, compensated by residual friction angles of 8.45° and`
+`7.50°, below any measured granite. The three errors cancel at the calibration point, so both`
+`specimens still reproduced their measured peak τ; what did not survive is dτ/dσ'_n, 28 % too flat`
+`on both — and that derivative is the quantity this experiment exists to measure, because injection`
+`sweeps σ'_n downward by a factor of two. Refitting with the paper's own JRC and JCS = UCS, holding`
+`the envelope through each specimen's last stick stage, gives φ_r = 29.76° (SW-S3) and 23.71°`
+`(SW-S4). Two independent checks that this is the right parameterisation and not just a different`
+`one: (i) both land in or just below the measured granite basic-friction range, whereas 8.45° and`
+`7.50° land nowhere; (ii) the refitted envelope is nearly FLAT in μ across the injection sweep`
+`(SW-S4: 0.456 → 0.464) where the old one rose steeply (0.462 → 0.580). That rise is the "LOCK" the`
+`deck lineage spent four tuning generations fighting, and the paper's own SW-S4 data are fitted`
+`almost exactly by a single straight Coulomb line. The pathology was an artefact of the invented`
+`JRC. It also moves SW-S4's slip-weakening slope from just above the measured system stiffness`
+`(1.326e11 vs k_sys = 1.25e11 Pa/m) to just below it (1.224e11), i.e. off the strength cliff.`
 
-`(b) The tensile pair is a different matter and is not fixable by re-fitting. SW-T1 and SW-T2`
-`already use the measured JRC and JCS, yet require φ_r = 44.1° and 46.3°. That comes from the data:`
-`both sustain μ = τ/σ'_n of 1.17–1.27 while still stuck. This is the interlock of a perfectly mated`
-`Mode-I surface, and the model has nowhere else to put it — computeCohesionEffective() returns a`
-`hard-coded zero. SW-T2's 46.3° is essentially the paper's intact-rock friction angle of 46°, which`
-`is the honest reading: an unsheared conjugate tensile fracture is closer to intact rock than to a`
-`frictional joint. Say this in the text rather than leaving it inside a parameter whose name says`
-`otherwise.`
+`(b) The tensile pair. SW-T1 and SW-T2 already used the measured JRC and JCS yet required`
+`φ_r = 44.1° and 46.3°, because both sustain μ = τ/σ'_n of 1.17–1.27 while still stuck. The cause is`
+`structural: Barton's roughness term is mobilisation-limited — it decays to zero as σ'_n approaches`
+`JCS — and these specimens sit at σ'_n/JCS ≈ 0.38, where the measured JRC buys only 6.4° of`
+`roughness angle. A μ of 1.17 then has nowhere to live except φ_r, because the law had no cohesion`
+`(computeCohesionEffective() returned a hard-coded zero). But shearing THROUGH asperities is a`
+`cohesion, not a friction: its strength does not scale with σ'_n. The law now carries`
+`cohesion and residual_cohesion (§3.5.2, regression test test/tests/materials/bb_cohesion).`
+`Refitting with φ_r fixed at the basic friction angle measured on this campaign's own saw cut`
+`(29.756°) gives c = 24.65 MPa (SW-T1) and 31.65 MPa (SW-T2) — 81 % and 104 % of the 30.30 MPa`
+`intact-rock cohesion implied by the paper's own UCS = 150 MPa and intact φ = 46°. The two straddle`
+`the intact value, and nothing in the derivation knows about it. That is the expected signature of a`
+`fully mated Mode-I fracture whose asperities ARE intact rock, and it is the physical statement the`
+`old φ_r = 44–46° was standing in for. NB these two decks change dτ/dσ'_n by ~40 %, so they are`
+`candidates pending scoring, not corrections.`
 
-`(c) Fluid bulk modulus. 4.78 GPa is 2.17× water at 20 °C. It enters only`
-`1/M = (α−φ)/K_s + φ/K_f, so at φ = 10⁻³ the matrix storage error is negligible — but the same`
-`value is handed to the fracture fluid, where storage is not negligible during the burst.]`
+`(c) Fluid bulk modulus, corrected to 2.2 GPa. An earlier version of this note said the 4.78 GPa`
+`value "is handed to the fracture fluid, where storage is not negligible during the burst". That was`
+`wrong: it is read in exactly one place, the matrix OrcaTHMaterial, and the fracture flow uses`
+`fracture_transmissivity. The real effect is ~6 % on matrix storage and nothing else.]`
 
 Three quantities usually treated as free — the fracture angle, the load-train compliance and the
 flow geometry factor — are here *derived* from the published table without adjustment. Their

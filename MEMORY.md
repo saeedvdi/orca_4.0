@@ -43,10 +43,12 @@ digits. The SW-T friction question (§6.5) is therefore unblocked.
 
 | # | item |
 |---|---|
-| **#71** | **Refit SW-S3 and SW-S4 with the paper's JRC (1.96 / 1.19) and JCS = UCS = 150 MPa**, letting φ_r land near 29.76° and 23.71° (§5.7 item 1). Removes a 28% error in dτ/dσ'ₙ on both saw cuts and replaces two indefensible parameters with two defensible ones. Changes §5.5 and §6.3 of the manuscript. New deck names per convention. Fold in with #72 — they invalidate the same runs. |
-| **#72** | **Port the corrected SW-S4 and SW-T2 mesh journals** from `orca_3.0_claude_edit/.../final_simulation_runs_v3|v4/meshes/` (§5.7 item 3). SW-S4 goes 28.990° → 30.000° and gets centred; SW-T2 goes 31° → 30°. Regenerate the `.e` files at size 5. Do **not** do this alone — it invalidates every SW-S4 and SW-T2 result on disk. |
-| **#73** | **Decide the manuscript's dissipation-bound framing** (§5.7 item 4). Either scope §3.5.2/§3.5.3 explicitly to the baseline law, or drop the bound from the §1 contribution list and keep it as a §3.8 remark. Documentation-only; the correction notes are already inserted in the draft. |
-| **#74** | Give SW-S4 a `effective_normal_paper_frame_mpa_pp` matching the other three, or state per-specimen in §5.3 which operator each σ'ₙ score uses (§5.7 item 6). Cheap, and it may explain why SW-S4 alone needs `fault_pressure_coefficient = 0.86`. |
+| ~~#71~~ | **DONE 2026-08-16** — refit applied; decks `89_01`, `89_02`. See §5.8. |
+| ~~#72~~ | **DONE 2026-08-16** — corrected meshes ported and independently re-verified; decks `89_01`, `89_03`, `89_05`, `89_06`. See §5.8. |
+| ~~#73~~ | **DECIDED 2026-08-16** — option (a): scope it, do not drop it. The bound stays in §1, stated as (i) enforced in the Mohr–Coulomb law and (ii) used as an admissibility diagnostic on Table 2. Draft rewritten in §1 and §3.5.3. |
+| ~~#74~~ | **DONE 2026-08-16** — the 89-series SW-S4 decks carry `effective_normal_paper_frame_mpa_pp` and `shear_stress_paper_frame_mpa_pp`. |
+| **#75** | **Score the six 89-series decks.** `89_01`/`89_06` (SW-S4) and `89_03`/`89_05` (SW-T2) are controlled pairs that separate the mesh effect from the strength effect. `89_04`/`89_05` are **candidates, not corrections** — they change dτ/dσ′ₙ by ~40 % and have to beat `87_01`/`87_02` on Table 2 before replacing them. |
+| **#76** | **Build `SWS3/mesh/sw3_mesh_L123p4.jou`** in Cubit (124.40 → 123.40 mm, Table 1). The journal is written; only the `.e` is missing. Effect is 0.8 % on axial stiffness alone. Re-run `scripts/check_source_nodes.py` afterwards — **mandatory**. |
 | #65 | Unify the rock parameters (§5.1). E is settled. φ_r is now explained rather than open (§5.7 item 2) but the T/S split stands. **Add `normal_unload_retention_fraction` to the list** — it is 0.94 / 0.84 / 0.04 across SW-T1 / SW-T2 / SW-S4 (§4.7) and it is a joint property, not a free knob. Also re-gate SW-S3's `axial_pres_final`, whose comment still reads `# E=75 GPa`. |
 | #69 | Refresh SW-S3's injection schedule from the re-extraction (RMSE 0.243 MPa, lags up to +24 s — acceptable, not ideal). Fold into the next SW-S3 iteration *after* the φ_r bracket resolves, so it does not invalidate `86_01`/`86_02` mid-flight. |
 | #13 | Make the flow measurement mesh-independent |
@@ -553,6 +555,70 @@ cap and the min(1e-9, 0.01 V_m) linearisation threshold.
 SW-S3's mesh is 124.40 mm against a published 123.40 mm (+0.81%). Wrong in every
 journal on the machine and in the manuscript's Table 1. Below the noise of
 everything else — record it, don't re-run for it alone.
+
+### 5.8 The §5.7 findings, applied — 2026-08-16, branch `orca_v5`
+
+Six new decks, one source change, three scripts. Every constant is a closed-form
+solve of the paper's own equations against Tables 1–2; nothing is tuned to a run.
+
+```bash
+python3 scripts/paper_parameter_audit.py            # states the problem (pre-audit decks)
+python3 scripts/refit_joint_constants_from_paper.py # derives every new constant
+python3 scripts/build_paper_corrected_decks.py      # regenerates the six decks
+```
+
+| deck | sample | controlled axis | class |
+|---|---|---|---|
+| `89_01` | SW-S4 | 30° mesh **and** paper JRC/JCS/φ_r | correction |
+| `89_06` | SW-S4 | 30° mesh only | correction + attribution control for `89_01` |
+| `89_02` | SW-S3 | paper JRC/JCS/φ_r | correction |
+| `89_03` | SW-T2 | 30° mesh only | correction + control for `89_05` |
+| `89_04` | SW-T1 | cohesion refit | **CANDIDATE — must be scored** |
+| `89_05` | SW-T2 | 30° mesh **and** cohesion refit | **CANDIDATE — must be scored** |
+
+All six pass `--check-input`, and all six carry `_hpc_nochk.sh` in the
+`results_*_hpc_rorqual/` convention of commit `9a5f081`.
+
+**The refit is the fix for the "LOCK".** Four deck generations (54_20 → 54_24)
+fought a Barton envelope whose μ *rises* as injection unloads the joint. That rise
+was an artefact of the invented JRC: at JRC = 17.5 / JCS = 300 MPa, SW-S4's μ runs
+0.462 → 0.580 across the sweep; at the paper's 1.19 / 150 MPa it runs 0.456 → 0.464,
+essentially the straight Coulomb line the paper's own SW-S4 data show. It also
+moves SW-S4's onset weakening slope from **1.326e11**, just *above* the measured
+k_sys = 1.25e11 Pa/m, to **1.224e11**, just below — off the strength cliff.
+
+**Source change: `cohesion` + `residual_cohesion` on the Barton–Bandis law.**
+Barton's roughness term is mobilisation-limited (it → 0 as σ′ₙ → JCS), so at the
+tensile specimens' σ′ₙ/JCS ≈ 0.38 the measured JRC buys only 6.4°, and μ = 1.17 had
+nowhere to live but φ_r. Asperity shear-through is a *cohesion*. Refitting at
+φ_r = 29.756° (the basic angle measured on this campaign's own saw cut) gives
+c = 24.65 / 31.65 MPa against the 30.30 MPa intact-rock cohesion implied by the
+paper's UCS and φ = 46° — the two straddle it, and nothing in the derivation knows
+about it. Both parameters default to 0, so every existing calibration is
+bit-identical; `test/tests/materials/bb_cohesion/` pins c_eff = c·W to 2.4e-12 %
+and keeps the cohesionless case as a legacy guard.
+
+**Two traps this hit, worth not re-learning:**
+
+1. **The SW-S4 nodeset rename.** The old SW-S4 mesh names its boundaries
+   `top`/`bottom`/`sides`; every other mesh, including the corrected SW-S4 one, uses
+   `top_nodeset`/`bottom_nodeset`/`sides_nodeset`. A mesh swap without the rename
+   fails at setup — the good case.
+2. **The source node landed in the bulk.** On the corrected SW-S4 size-5 mesh the
+   *ideal* borehole position (6.00 mm inside the sidewall) has a bulk node 1.734 mm
+   away and the nearest interface node 1.776 mm away. `use_closest_node = true`
+   would have silently pinned injection into the matrix. The 89-series decks carry
+   **exact interface-node coordinates** instead. `scripts/check_source_nodes.py` is
+   the check, it is not optional after any mesh rebuild, and it also confirmed the
+   four pre-existing decks were fine.
+
+**One earlier claim was wrong and is retracted:** §5.7 said the 4.78 GPa fluid bulk
+modulus "is handed to the fracture fluid, where storage is not negligible during
+the burst". It is read in exactly one place, the matrix `OrcaTHMaterial`; the
+fracture flow uses `fracture_transmissivity`. Real effect ~6 % on matrix storage.
+
+Still outstanding: SW-S3's 1.00 mm length error. `SWS3/mesh/sw3_mesh_L123p4.jou`
+is written but needs Cubit, which is not installed here (#76).
 
 ---
 

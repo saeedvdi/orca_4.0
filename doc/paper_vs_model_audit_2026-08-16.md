@@ -19,10 +19,33 @@ python3 scripts/paper_parameter_audit.py
 The script carries Tables 1–3 and Sec. 2.1/2.4/2.5 transcribed from the PDF, and
 re-reads the decks at run time so the transcription cannot go stale.
 
-**No source file was modified.** Every finding below sits in a deck, a mesh
-journal, or a document — not in `src/` or `include/`. The one code-level finding
-(§4) is a scope error in the *manuscript's description* of the code, not a defect
-in the code.
+---
+
+## 0. Status — findings applied, 2026-08-16 (branch `orca_v5`)
+
+The audit below is left as written, describing the state it found, so that its
+findings stay reproducible against the pre-audit decks. What was done about them:
+
+| § | finding | resolution |
+|---|---|---|
+| 2 | SW-S3/S4 JRC, JCS, φ_r invented | **fixed.** Refit to the paper's Table 1 / Sec. 2.1: JRC 1.96/1.19, JCS 150 MPa, φ_r 29.756°/23.709°. Decks `89_01`, `89_02`. |
+| 2.1 | SW-T1/T2 need φ_r = 44–46° | **fixed in the source.** `cohesion` and `residual_cohesion` added to the Barton–Bandis law; refit gives c = 24.65/31.65 MPa against a 30.30 MPa intact-rock cohesion. Decks `89_04`, `89_05` — **candidates, must be scored.** |
+| 3 | SW-S4 at 28.99° and off centre; SW-T2 at 31° | **fixed.** Corrected meshes ported and independently re-verified. Decks `89_01`, `89_03`, `89_05`, `89_06`. |
+| 3 | SW-S3 meshed 1.00 mm too long | **journal written, not built** — needs Cubit. `SWS3/mesh/sw3_mesh_L123p4.jou`. |
+| 4 | manuscript claims a dissipation bound the validated law lacks | **resolved as a drafting decision:** scope it (option (a)) rather than drop it. Notes rewritten in §1 and §3.5.3 of the draft. |
+| 5 | SW-S4 missing the paper-frame σ′ₙ/τ postprocessors | **fixed** in the 89-series SW-S4 decks. |
+| 5 | SW-S4 W/L = 0.81 | **fixed** to 0.814819511514, inverted from Table 2. |
+| 5 | K_f = 4.78 GPa | **fixed** to 2.2 GPa. The audit's claim that this value also reaches the fracture fluid was **wrong** — it is read only by the matrix `OrcaTHMaterial`; the real effect is ~6 % on matrix storage. |
+
+Derivations: `scripts/refit_joint_constants_from_paper.py`.
+Deck generation: `scripts/build_paper_corrected_decks.py`.
+Mesh provenance and the mandatory post-rebuild check:
+`Examples/YeGhasemmi2018/MESHES.md`, `scripts/check_source_nodes.py`.
+Source change and its regression test: `test/tests/materials/bb_cohesion/`.
+
+The statement in the original version of this document that **no source file was
+modified** was true when written and is no longer true: §2.1 turned out to need a
+constitutive term, not a parameter.
 
 ---
 

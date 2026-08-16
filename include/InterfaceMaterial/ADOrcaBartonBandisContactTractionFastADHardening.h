@@ -62,10 +62,21 @@ protected:
 
   Real computeRoughnessState() const override;
 
+  /// Cohesion actually carried, after the same slip weakening W that acts on friction.
+  Real computeCohesionEffective() const override;
+
+  /// W = exp(-(s^p / D_c)^m), the shared slip-weakening factor. Factored out so friction and
+  /// cohesion cannot drift apart: both are carried by the same asperities.
+  Real slipWeakeningFactor(Real cumulative_slip) const;
+
+  /// c(W) = c_res + (c - c_res)*W.
+  Real cohesionAt(Real W) const;
+
   const bool _use_slip_weakening;
   const Real _characteristic_slip_distance;
   const Real _slip_weakening_exponent;
   const Real _slip_weakening_residual_friction_angle_deg;
+  const Real _residual_cohesion;
 
   const bool _use_roughness_degradation;
   const Real _roughness_characteristic_slip;

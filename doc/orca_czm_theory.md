@@ -3553,16 +3553,70 @@ textbook granite basic friction — and $23.71°$ for SW-S4, low but defensible 
 lapped surface. That the paper's constants land on ordinary numbers is good
 evidence they are the right ones.
 
-The tensile pair is a different problem and re-fitting cannot touch it: both
-already use the measured JRC and JCS, and both require $\phi_r \approx 44$–46°
-because they sustain $\mu = \tau/\sigma'_n$ of 1.17–1.27 *while still stuck*. That
-is the interlock of a perfectly mated Mode-I surface, and it has nowhere to go
-because `computeCohesionEffective()` returns a hard-coded `0.0`. SW-T2's 46.29° is
-essentially the paper's **intact-rock** friction angle of 46°, which is the honest
-reading of what that parameter is carrying. Recorded here as a structural
-limitation of the law, not a calibration choice.
+The tensile pair is a different problem: both already use the measured JRC and
+JCS, and both require $\phi_r \approx 44$–46° because they sustain
+$\mu = \tau/\sigma'_n$ of 1.17–1.27 *while still stuck*. That is the interlock of
+a perfectly mated Mode-I surface, and until 2026-08-16 it had nowhere to go,
+because `computeCohesionEffective()` returned a hard-coded `0.0`. SW-T2's 46.29°
+is essentially the paper's **intact-rock** friction angle of 46°.
 
-Full working: `doc/paper_vs_model_audit_2026-08-16.md` §2.
+##### Why Barton's law cannot express this, and what was added
+
+<a id="sup-cohesion"></a>
+
+The failure is structural, not a calibration accident. Barton's roughness term is
+**mobilisation-limited**: $\mathrm{JRC}\log_{10}(\mathrm{JCS}/\sigma'_n)$ decays to
+zero as $\sigma'_n \to \mathrm{JCS}$, encoding the physical fact that at high
+normal stress asperities shear *through* rather than ride over. The tensile
+specimens sit at $\sigma'_n/\mathrm{JCS} \approx 0.38$–0.39, where the measured
+JRC = 15.32 buys only 6.44° of roughness angle. A $\mu$ of 1.17 then has nowhere
+to live except $\phi_r$.
+
+But shearing *through* asperities is a cohesion, not a friction: its strength does
+not scale with $\sigma'_n$. So the law was given the missing term (branch
+`orca_v5`, 2026-08-16):
+
+<a id="eq-bbcohesion"></a>
+
+$$
+\boxed{\;\tau_{\lim} = c(s) + \sigma'_n\tan\!\left[\phi_r + \mathrm{JRC}\log_{10}\!\left(\frac{\mathrm{JCS}}{\sigma'_n}\right)\right],
+\qquad c(s) = c_{\text{res}} + (c - c_{\text{res}})\,W\;}
+$$
+
+with $W = \exp[-(s^p/D_c)^m]$ — the *same* weakening factor that acts on friction,
+because the asperities that carry $c$ are the ones the slip destroys. Parameters
+`cohesion` and `residual_cohesion`, both defaulting to zero, so every existing
+calibration is bit-identical. Regression test:
+`test/tests/materials/bb_cohesion/`, which pins $c_{\text{eff}} = c\,W$ to
+2.4 × 10⁻¹² % and keeps the cohesionless case as a legacy guard.
+
+Refitting the tensile pair with $\phi_r$ fixed at the basic friction angle
+measured on **this campaign's own saw cut** (SW-S3's refitted 29.756°) gives:
+
+| | $c$ peak | as % of $c_{\text{intact}}$ | $c_{\text{res}}$ | replaces $\phi_r$ |
+|---|---|---|---|---|
+| SW-T1 | 24.65 MPa | 81 % | 11.18 MPa | 44.10° |
+| SW-T2 | 31.65 MPa | 104 % | 10.70 MPa | 46.29° |
+
+where $c_{\text{intact}} = \mathrm{UCS}\,(1-\sin\phi)/(2\cos\phi) = 30.30$ MPa
+follows from the paper's own UCS = 150 MPa and intact $\phi = 46°$. **The two
+cohesions straddle the intact value.** Nothing in the derivation knows about
+$c_{\text{intact}}$, so this is a result rather than a fit — and it is exactly what
+a fully mated Mode-I fracture should show, since its asperities *are* intact rock.
+The $\phi_r = 44$–46° parameterisation it replaces admits no such reading.
+
+The tail friction angle goes to $\phi_r$ as well: slip destroys **roughness**, not
+the rock's basic friction angle, which is Barton's own picture. The residual
+cohesion is then pinned on the post-burst stage, and comes out at 34–45 % of the
+peak — consistent with Table 2 showing these two joints retaining 72–92 % of their
+dilation through the burst.
+
+This changes $\mathrm{d}\tau/\mathrm{d}\sigma'_n$ from 0.928 to 0.554 (SW-T1) and
+0.999 to 0.553 (SW-T2), so the two decks that use it (`89_04`, `89_05`) are
+**candidates that must be scored**, not drop-in corrections.
+
+Full working: `doc/paper_vs_model_audit_2026-08-16.md` §2 and
+`scripts/refit_joint_constants_from_paper.py`.
 
 ---
 
@@ -3634,29 +3688,44 @@ is compared against was reduced at 30°.
 Cost, at fixed $\sigma_d$: $\tau$ 2.1% low (SW-S4) / 2.0% high (SW-T2), and the
 deviatoric part of $\sigma'_n$ 6.1% low / high.
 
-> **Status in this repository, checked 2026-08-16.** Corrected journals — SW-S4 and
-> SW-T2 both at 30.000°, both centred — exist, but **not here**. They are in
-> `orca_3.0_claude_edit/Examples/YeGhasemmi2018/final_simulation_runs_v3/meshes/`
-> and `.../v4/meshes/`, together with the `README_fracture_angle.md` that records
-> the audit and the `PHYSICS_FIXES.md` §2.7 entry. Earlier editions of this manual
-> cited those two files as though they were paths in this tree and said the fix had
-> been applied "in both campaign directories"; that was true of
-> `orca_3.0_claude_edit` and has never been true of `orca_4.0`.
->
-> The four meshes the production decks actually load are still the as-found ones:
+> **Status in this repository — RESOLVED 2026-08-16.** Corrected meshes, SW-S4 and
+> SW-T2 both at 30.000° and both centred, are now **here**:
 >
 > ```
-> SWS4/mesh/ye2018_sw_s4_mesh.jou   theta = 28.990   plane 2.85 mm below h/2
-> SWT2/mesh/ye2018_sw_T2_mesh.jou   theta = 31.000   (data was reduced at 30.0)
-> SWS3/mesh/sw3_mesh_size5.jou      L = 124.40 mm    (Table 1 says 123.40)
-> SWT1/mesh/ye2018_sw_T1_mesh.jou   theta = 32.000   correct
+> SWS4/mesh/ye2018_sw_s4_theta30_size{3,5}_mesh.e     theta = 30.000, centred
+> SWT2/mesh/ye2018_sw_T2_theta30_mesh_size_{3,5}.e    theta = 30.000, centred
 > ```
 >
-> Re-derive with `scripts/paper_parameter_audit.py`, which carries this check as
-> `section_theta_recovery` and re-reads the decks so it cannot go stale. Porting the
-> corrected meshes invalidates every SW-S4 and SW-T2 result on disk, so it is a
-> campaign decision rather than a cleanup — see
-> `doc/paper_vs_model_audit_2026-08-16.md` §3.1.
+> They were built in `orca_3.0_claude_edit/.../final_simulation_runs_v3/meshes/` and
+> had never been ported into a repo the production decks run from. An earlier
+> edition of this manual said the fix had been applied "in both campaign
+> directories" and cited `README_fracture_angle.md` and `PHYSICS_FIXES.md` as
+> though they were paths in this tree; that was true of `orca_3.0_claude_edit` and
+> was never true of `orca_4.0`. The angle in each `.e` was re-derived here by
+> fitting a plane to the nodes shared by the two element blocks, not taken on trust
+> from the journal.
+>
+> The 68/86/87 decks still load the as-found meshes, deliberately, so their results
+> stay reproducible. The 89-series decks load the corrected ones. Inventory and the
+> full verification procedure: `Examples/YeGhasemmi2018/MESHES.md`.
+>
+> **SW-S3's length is still outstanding**: the mesh is 124.40 mm against Table 1's
+> 123.40 mm. `SWS3/mesh/sw3_mesh_L123p4.jou` is the corrected journal but has not
+> been built, because that needs Cubit and Cubit is not installed here. The effect
+> is 0.8 % on the core's axial stiffness and nothing else — the fracture ellipse
+> area $\pi D^2/(4\sin\theta)$ does not contain $L$, and the deck takes $W/L$ from
+> Table 2 rather than from the mesh.
+>
+> **After any mesh rebuild, run `scripts/check_source_nodes.py`.** It is not
+> optional. `ExtraNodesetGenerator ... use_closest_node = true` never errors: if the
+> requested injection coordinate misses the fracture plane it silently pins the
+> source to the nearest *bulk* node and the run drives the matrix instead of the
+> joint. On the corrected SW-S4 size-5 mesh the ideal borehole position has a bulk
+> node 1.734 mm away and the nearest interface node 1.776 mm away — the bulk node
+> wins. The 89-series decks therefore carry exact interface-node coordinates.
+>
+> Re-derive the angles themselves with `scripts/paper_parameter_audit.py`, which
+> carries this check and re-reads the decks so it cannot go stale.
 
 A second check confirms the transcription: $k$ recomputed as $a_h^2/12$
 reproduces every tabulated $k$ (e.g. SW-S4 stage 1:

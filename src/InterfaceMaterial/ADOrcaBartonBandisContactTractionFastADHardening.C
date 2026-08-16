@@ -31,6 +31,13 @@ ADOrcaBartonBandisContactTractionFastADHardening::validParams()
       "uses residual_friction_angle_degrees, preserving legacy behavior. Setting this "
       "separately lets the Barton-Bandis peak envelope and the post-slip tail be tuned "
       "independently.");
+  params.addRangeCheckedParam<Real>("residual_cohesion", 0.0, "residual_cohesion >= 0.0",
+      "Cohesion c_res [Pa] surviving large slip: c(s) = c_res + (cohesion - c_res)*W. "
+      "The default 0 destroys all cohesion, which is right for a joint whose interlock is "
+      "ground away, and is a no-op at the default cohesion = 0. A MATED tensile fracture "
+      "does not lose all interlock in one slip event -- Ye & Ghassemi (2018) Table 2 shows "
+      "SW-T1/SW-T2 retaining 72-92 % of their dilation through the burst -- so for those "
+      "specimens c_res is a measured quantity, not a regularizer.");
 
   params.addParam<bool>("use_roughness_degradation", false,
       "If true, roughness_state decays exponentially with cumulative plastic slip: "
@@ -61,6 +68,7 @@ ADOrcaBartonBandisContactTractionFastADHardening::ADOrcaBartonBandisContactTract
     _slip_weakening_exponent(getParam<Real>("slip_weakening_exponent")),
     _slip_weakening_residual_friction_angle_deg(
         getParam<Real>("slip_weakening_residual_friction_angle_degrees")),
+    _residual_cohesion(getParam<Real>("residual_cohesion")),
     _use_roughness_degradation(getParam<bool>("use_roughness_degradation")),
     _roughness_characteristic_slip(getParam<Real>("roughness_characteristic_slip")),
     _roughness_state_initial(getParam<Real>("roughness_state_initial")),
@@ -68,6 +76,9 @@ ADOrcaBartonBandisContactTractionFastADHardening::ADOrcaBartonBandisContactTract
 {
   if (_slip_weakening_residual_friction_angle_deg >= 89.9)
     paramError("slip_weakening_residual_friction_angle_degrees", "Must be < 89.9 degrees.");
+  if (_residual_cohesion > _cohesion)
+    paramError("residual_cohesion",
+               "Must be <= cohesion: slip cannot create interlock that was not there.");
   if (_roughness_state_residual > _roughness_state_initial)
     paramError("roughness_state_residual", "Must be <= roughness_state_initial.");
 }
@@ -104,7 +115,13 @@ ADOrcaBartonBandisContactTractionFastADHardening::computeBartonBandisProperties(
                             cumulative_slip / ADReal(_characteristic_slip_distance));
   const ADReal W = exp(-pow(x, Real(_slip_weakening_exponent)));
   friction_coefficient = mu_r + (mu_p - mu_r) * W;
-  shear_strength       = sigma_n * friction_coefficient;
+  // Asperity cohesion decays on the SAME curve as friction: the interlock that carries c is
+  // destroyed by exactly the slip that wears the surface down to mu_r. At the default
+  // cohesion = residual_cohesion = 0 this is bit-identical to the previous
+  // `shear_strength = sigma_n * mu`.
+  shear_strength       = ADReal(_residual_cohesion) +
+                         ADReal(_cohesion - _residual_cohesion) * W +
+                         sigma_n * friction_coefficient;
   // Re-apply the base-class residual self-propping floor: slip-weakening above overwrote
   // shear_strength, so without this the floor would be bypassed in the Hardening model.
   if (_min_tau_limit > 0.0)
@@ -141,7 +158,7 @@ ADOrcaBartonBandisContactTractionFastADHardening::computeBartonBandisPropertiesR
   const Real x = std::max(Real(0.0), cumulative_slip / _characteristic_slip_distance);
   const Real W = std::exp(-std::pow(x, _slip_weakening_exponent));
   friction_coefficient = mu_r + (mu_p - mu_r) * W;
-  shear_strength       = sigma_n * friction_coefficient;
+  shear_strength       = cohesionAt(W) + sigma_n * friction_coefficient;  // mirrors the AD version
   // Re-apply the base-class residual self-propping floor (slip-weakening overwrote it).
   if (_min_tau_limit > 0.0)
     shear_strength = std::max(_min_tau_limit, shear_strength);
@@ -243,9 +260,38 @@ ADOrcaBartonBandisContactTractionFastADHardening::computeReturnMappingDerivative
     }
   }
 
+  // tau_lim = c(W) + sigma_n*mu_eff with c(W) = c_res + (c - c_res)*W, so the cohesion
+  // contributes (c - c_res)*dW/ds to d(tau_lim)/d(gamma) (d(cumslip)/d(gamma) = 1, the same
+  // convention d_mu_eff_d_cumslip already uses). Omitting this would leave the Newton tangent
+  // inconsistent with the residual whenever cohesion > residual_cohesion.
   const Real d_taulim_d_g = mu * d_sn_d_g +
-      sigma_n * (d_mu_eff_d_sn * d_sn_d_g + d_mu_eff_d_cumslip);
+      sigma_n * (d_mu_eff_d_sn * d_sn_d_g + d_mu_eff_d_cumslip) +
+      (_cohesion - _residual_cohesion) * dW_d_cumslip;
   return -Real(_penalty_tangent) - d_taulim_d_g;
+}
+
+// =============================================================================
+// Shared slip-weakening factor and the cohesion it carries.
+// =============================================================================
+Real
+ADOrcaBartonBandisContactTractionFastADHardening::slipWeakeningFactor(Real cumulative_slip) const
+{
+  if (!_use_slip_weakening)
+    return 1.0;
+  const Real x = std::max(Real(0.0), cumulative_slip / _characteristic_slip_distance);
+  return std::exp(-std::pow(x, _slip_weakening_exponent));
+}
+
+Real
+ADOrcaBartonBandisContactTractionFastADHardening::cohesionAt(Real W) const
+{
+  return _residual_cohesion + (_cohesion - _residual_cohesion) * W;
+}
+
+Real
+ADOrcaBartonBandisContactTractionFastADHardening::computeCohesionEffective() const
+{
+  return cohesionAt(slipWeakeningFactor(_cumulative_plastic_slip[_qp]));
 }
 
 // =============================================================================
