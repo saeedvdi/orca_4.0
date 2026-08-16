@@ -379,3 +379,45 @@ Two headline points that bear on work here:
 
 Naming lesson for future batches: a `_kernel_SV` suffix on a deck whose parent is already
 kernel_SV conveys nothing and cost ~5 h on 8 cores here. Check the parent before suffixing.
+
+## J. Biot coefficient A/B campaign — 2026-08-15
+
+Six full-length mesh-5 runs, local, 4 concurrent at 8 ranks. Three A/B pairs testing
+`biot_coefficient` 1e-12 (baseline) vs 0.6 (fixed) on SW-S3, SW-T1 and SW-T2. This is
+task N3 / #51 being answered with runs rather than argument.
+
+Full write-up: `doc/biot_alpha_study_2026-08-15.md`.
+
+**J1. The value is not new.** SW-S4 already carries `biot_coefficient = 0.6`; only the other
+three carry 1e-12. The campaign asks whether to bring them to the value SW-S4 was validated
+with, not whether to invent one.
+
+**J2. Deck integrity verified.** Each pair differs in exactly three things — the
+`biot_coefficient` line, the header, and the three `*_file_base` paths. Nothing else.
+
+**J3. The unphysicality is measurable, and worse than "decoupled".** `OrcaTHMaterial` builds
+`1/M = (1-α)(α-φ)/K_d + φ/K_f`. Going 1e-12 -> 0.6 raises the storage compliance by 18.8x
+(SW-S3) / 21.1x (SW-T1, SW-T2). And because α < φ, the grain-compressibility term at 1e-12
+is **negative** — it subtracts 6.9 % of the fluid storage rather than adding to it. Net 1/M
+stays positive only because the fluid term dominates.
+
+Consequence for reading the results: this is a **recalibration**. Onset timing and the
+strength envelopes were fitted at α=1e-12, so a timing shift in arm B is expected, not a bug.
+
+**J4. New tool — `scripts/table2_gate.py`** (commit `0cbc441`). Scores any run against
+Ye & Ghassemi Table 2 for all four samples, replacing four disagreeing per-sample fragments
+(one script + three notebook TABLE2 blocks). Scores the five independent observables only
+(Q, σ'_n, τ, d_n, d_s); a_h and k are derived from Q and excluded.
+
+Two stage-detection bugs found and fixed, both landing on stage 6 — the slip event:
+`np.argmax` returns the first peak index, so the staircase decks were sampling the 28 MPa
+hold at its **start** (SW-T1: t=1824 not 1955); and sharing one tolerance between target
+matching and plateau membership put SW-S4 stage 6 67 s past the hold. Plateau membership now
+uses a separate 1 kPa flatness tolerance. Verified: 11 monotonic stages on all four decks,
+stage 6 exactly on the peak plateau in each.
+
+Validated against the three completed v27 SW-S4 runs — 11/11 stages, and it independently
+reproduces the v27 result that MC and BBFast are identical through stage 4 and diverge only
+from stage 5 onward.
+
+**J5. Mesh 5 only.** The mesh-3 set (§H) is not run here; the user is running it separately.
