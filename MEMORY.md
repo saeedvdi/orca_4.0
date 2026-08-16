@@ -43,7 +43,11 @@ digits. The SW-T friction question (§6.5) is therefore unblocked.
 
 | # | item |
 |---|---|
-| #65 | Unify the rock parameters (§5.1). E is settled. φ_r is now unblocked (#66 closed). **Add `normal_unload_retention_fraction` to the list** — it is 0.94 / 0.84 / 0.04 across SW-T1 / SW-T2 / SW-S4 (§4.7) and it is a joint property, not a free knob. |
+| **#71** | **Refit SW-S3 and SW-S4 with the paper's JRC (1.96 / 1.19) and JCS = UCS = 150 MPa**, letting φ_r land near 29.76° and 23.71° (§5.7 item 1). Removes a 28% error in dτ/dσ'ₙ on both saw cuts and replaces two indefensible parameters with two defensible ones. Changes §5.5 and §6.3 of the manuscript. New deck names per convention. Fold in with #72 — they invalidate the same runs. |
+| **#72** | **Port the corrected SW-S4 and SW-T2 mesh journals** from `orca_3.0_claude_edit/.../final_simulation_runs_v3|v4/meshes/` (§5.7 item 3). SW-S4 goes 28.990° → 30.000° and gets centred; SW-T2 goes 31° → 30°. Regenerate the `.e` files at size 5. Do **not** do this alone — it invalidates every SW-S4 and SW-T2 result on disk. |
+| **#73** | **Decide the manuscript's dissipation-bound framing** (§5.7 item 4). Either scope §3.5.2/§3.5.3 explicitly to the baseline law, or drop the bound from the §1 contribution list and keep it as a §3.8 remark. Documentation-only; the correction notes are already inserted in the draft. |
+| **#74** | Give SW-S4 a `effective_normal_paper_frame_mpa_pp` matching the other three, or state per-specimen in §5.3 which operator each σ'ₙ score uses (§5.7 item 6). Cheap, and it may explain why SW-S4 alone needs `fault_pressure_coefficient = 0.86`. |
+| #65 | Unify the rock parameters (§5.1). E is settled. φ_r is now explained rather than open (§5.7 item 2) but the T/S split stands. **Add `normal_unload_retention_fraction` to the list** — it is 0.94 / 0.84 / 0.04 across SW-T1 / SW-T2 / SW-S4 (§4.7) and it is a joint property, not a free knob. Also re-gate SW-S3's `axial_pres_final`, whose comment still reads `# E=75 GPa`. |
 | #69 | Refresh SW-S3's injection schedule from the re-extraction (RMSE 0.243 MPa, lags up to +24 s — acceptable, not ideal). Fold into the next SW-S3 iteration *after* the φ_r bracket resolves, so it does not invalidate `86_01`/`86_02` mid-flight. |
 | #13 | Make the flow measurement mesh-independent |
 | #15 | Correct the slip-onset strength envelopes (superset of #60) |
@@ -245,22 +249,30 @@ been done:
 
 ## 5. Calibration state
 
-### 5.1 Rock parameters are not shared across the four decks
+### 5.1 Rock parameters across the four decks — and against the paper
 
-| parameter | SW-S3 | SW-S4 | SW-T1 | SW-T2 | verdict |
-|---|---|---|---|---|---|
-| `youngs_modulus` | **75e9** | 67e9 | 67e9 | 67e9 | **drift — settled, use 67e9** |
-| `poissons_ratio` | 0.32 | 0.32 | 0.32 | 0.32 | consistent |
-| `biot_coefficient` | **1e-12** | **0.6** | **1e-12** | **1e-12** | must be shared → 0.6 |
-| `initial_porosity` | 0.001 | 0.001 | 0.001 | 0.001 | consistent |
-| `matrix_permeability` | 5e-19 | 5e-19 | 5e-19 | 5e-19 | consistent |
-| fluid ρ / μ / Kf | identical everywhere | | | | consistent |
-| `jcs` | **3.0e8** | **3.0e8** | **1.5e8** | **1.5e8** | unresolved — §6.5 |
-| `residual_friction_angle_degrees` | **7.5** | **7.5** | **44.1** | **46.3** | unresolved — §6.5 |
-| `jrc` | 23.35 | 17.5 | 15.32 | 14.63 | per specimen — legitimate |
-| `dilation_angle_peak_degrees` | 26.0 | 24.0 | 16.44 | 13.97 | per specimen — legitimate |
-| `normal_unload_retention_fraction` | 0.06 | 0.04 | **0.94** | **0.84** | see §4.7 |
-| Kni / Vm / exponent / offset | identical across all four | | | | consistent |
+Two different questions. Columns SW-S3…SW-T2 answer "are the decks consistent with
+each other?"; the **paper** column answers "is the value the one Ye & Ghassemi
+report?" The second question is the one that matters and it was not asked until
+2026-08-16 — see §5.7. State below is the current production decks (`86_01`,
+`68_01`, `87_01`, `87_02`), re-read on 2026-08-16.
+
+| parameter | SW-S3 | SW-S4 | SW-T1 | SW-T2 | paper | verdict |
+|---|---|---|---|---|---|---|
+| `youngs_modulus` | 67e9 | 67e9 | 67e9 | 67e9 | 67 GPa §2.1 | ✅ settled — was 75e9 in SW-S3 |
+| `poissons_ratio` | 0.32 | 0.32 | 0.32 | 0.32 | 0.32 §2.1 | ✅ |
+| `biot_coefficient` | 0.6 | 0.6 | 0.6 | 0.6 | not reported | ✅ shared; literature value |
+| `initial_porosity` | 0.001 | 0.001 | 0.001 | 0.001 | not reported | assumed; granite is 0.005–0.01 |
+| `matrix_permeability` | 5e-19 | 5e-19 | 5e-19 | 5e-19 | 5e-19–1e-18 §2.1 | ✅ low end |
+| fluid ρ / μ | identical everywhere | | | | μ 1.002e-3 §2.5 | ✅ |
+| `fluid_bulk_modulus` | 4.784e9 everywhere | | | | not reported | **2.17× water (2.2e9)** |
+| `confining_pressure` | 30e6 | 30e6 | 30e6 | 30e6 | 30 MPa §2.4 | ✅ |
+| `jcs` | **3.0e8** | **3.0e8** | 1.5e8 | 1.5e8 | UCS 150 MPa §2.1 | **S-family 2× — §5.7** |
+| `jrc` | **23.35** | **17.5** | 15.32 | 14.63 | 1.96 / 1.19 / 15.32 / 14.63 §2.2 | **S-family 12–15× — §5.7** |
+| `residual_friction_angle_degrees` | **8.45** | **7.5** | **44.1** | **46.3** | not reported (intact φ = 46°) | **all four unphysical — §5.7** |
+| `dilation_angle_peak_degrees` | 26.0 | 24.0 | 16.44 | 13.97 | Table 2 → 31.8 / 28.7 / 16.44 / 13.97 | T ✅ exact; **S under-set — §5.7** |
+| `normal_unload_retention_fraction` | 0.06 | 0.04 | **0.94** | **0.84** | — | see §4.7 |
+| Kni / Vm / exponent / offset | identical across all four | | | | — | consistent |
 
 **Young's modulus is settled.** All SW-S3 decks use 75e9, everything else 67e9, and
 both carry the *identical* comment `# --- mechanics (OrcaMechMaterial) : DD02
@@ -458,6 +470,89 @@ expose it worst because kinematic aperture ties the hydraulics directly to the
 mechanical opening. Note also that `maximum_closure_fraction` defaults to 0.999,
 which the law reaches at σₙ ≈ 92 MPa — and there the tangent is set to **zero**.
 The current fit runs to 67 MPa, so the cliff is not hit, but it is 1.4× away.
+
+### 5.7 The four decks were never checked against the paper itself — 2026-08-16
+
+Every earlier parameter audit compared the decks **to each other**. That finds drift
+and is structurally blind to a value that is wrong in all four, or wrong in exactly
+the two that were tuned together. Reading the source PDF and transcribing Tables 1–3
+and Sections 2.1/2.4/2.5 found six discrepancies.
+
+Reproduce: `python3 scripts/paper_parameter_audit.py`. Full write-up:
+`doc/paper_vs_model_audit_2026-08-16.md`. The script re-reads the decks at run time,
+so it fails loudly rather than silently going stale.
+
+**1 — The saw cuts' joint constants are not the paper's, and they hide each other.**
+JRC 23.35 (SW-S3) and 17.5 (SW-S4) against measured 1.96 and 1.19 — 11.9× and 14.7×.
+SW-S3's is outside Barton's 0–20 scale. JCS 300 MPa against a measured UCS of
+150 MPa. φ_r 8.45° and 7.50°, below anything physical for granite, which is the
+compensation. All three cancel at the calibration point, so both still hit their
+measured peak τ. **dτ/dσ'ₙ does not cancel: 0.423 vs 0.589 (SW-S3) and 0.322 vs
+0.447 (SW-S4) — 28% too flat on both.** That derivative is the point of an
+experiment where injection halves σ'ₙ, and SW-S4 is the specimen the manuscript
+calls discriminating. Refit at the paper's JRC/JCS puts φ_r at 29.76° and 23.71° —
+ordinary numbers, which is good evidence the paper's constants are the right ones.
+
+**2 — The T-family's 44–46° φ_r is not fixable by refitting** and is not the same
+kind of error. Both already use the measured JRC and JCS. They need μ = 1.17–1.27
+*while still stuck* — that is the interlock of a mated Mode-I surface, and
+`computeCohesionEffective()` returns hard-coded `0.0`, so φ_r is the only place it
+can go. SW-T2's 46.29° ≈ the paper's **intact-rock** φ of 46°. Supersedes the
+"unresolved" verdict in §6.5: the split is now explained, not open.
+
+**3 — Two meshes disagree with the data, and the fixes exist in another repo.**
+θ recovered from Table 2 alone via tanθ = (σ'ₙ − σ₃ + P_p)/τ, over all 11 stages:
+SW-T1 32.00 ✅, SW-T2 **30.00 (Table 1 prints 31)**, SW-S3 29.03 ✅, SW-S4 30.02.
+The meshes: SW-T2 cut at 31°, SW-S4 at **28.990° and 2.85 mm off centre** (its
+journal is a copy of SW-S3's — the fracture-plane z-span is bit-identical,
+`0.09115854`). Cost at fixed σ_d: τ 2.1% low / 2.0% high, deviatoric σ'ₙ 6.0%.
+**Corrected journals exist in `orca_3.0_claude_edit/.../final_simulation_runs_v3|v4/
+meshes/` and were never ported to orca_4.0.** The theory doc claimed they were fixed
+"in both campaign directories" — true there, never true here. Porting invalidates
+every SW-S4 and SW-T2 result on disk, so it is a campaign decision.
+
+**4 — The manuscript claims a dissipation bound the validated model doesn't have.**
+`dissipation_margin` is declared in exactly one material,
+`ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile`. All four
+production decks run `OrcaBartonBandisContactTractionFastADHardening`, which has no
+dissipation inequality — it clamps ψ with `min/max_dilation_angle_degrees`, neither
+of which is set anywhere. The only decks that set `dissipation_margin` are the MC
+baselines `67_11` and `83_11`. So the bound lives exclusively in the law §0.2 of the
+draft demotes to "baseline, not a coequal candidate", while §1 and §3.5.3 claim it
+as a contribution of the model and assert it is "frequently the active constraint".
+
+**5 — But the bound is a good diagnostic, and this is a result worth keeping.**
+arctan(|d_n|/d_s) from Table 2 vs each specimen's mobilised arctan μ:
+SW-T1 16.4° vs 49.4° and SW-T2 14.0° vs 51.7° — fine; **SW-S3 31.8° vs 31.3° and
+SW-S4 28.7° vs 24.6° — the published dilation angle exceeds the friction angle.**
+Read as pure shear dilation that is inadmissible. The resolution is the draft's own
+§2.3.1 decomposition: on a low-μ saw cut the measured d_n contains elastic joint
+decompression, not just dilation. A tensile fracture with μ > 1 has headroom; a
+lapped saw cut with μ ≈ 0.46 does not. This is why the S-family decks carry ψ = 26°
+and 24° and under-predict dilation — turns an apparent calibration miss into a
+statement about what the measurement contains.
+
+**6 — Smaller.** `fluid_bulk_modulus = 4.784e9` is 2.17× water; negligible in the
+matrix at φ = 1e-3, not negligible in the fracture during the burst. SW-S3's
+`axial_pres_final` comment still reads `# E=75 GPa` while E is now 67e9 — the
+constant was derived at the old modulus and the preload has not been re-gated.
+**SW-S4 reports the raw interface traction where the other three report the
+paper-frame reduction** (eq 3 with P_p = ½(P_i+P_o)); different operators, likely
+why SW-S4 alone needs `fault_pressure_coefficient = 0.86`, and its σ'ₙ score is not
+comparable with its siblings'.
+
+**What was verified correct**, and should not be re-litigated: E, ν, matrix
+permeability, σ₃, P_o, μ_f, the injection protocol, the T-family's JRC/JCS, the
+T-family's dilation angles (exactly the Table-2 values), the specimen L and D for
+T1/T2/S4, and the flow geometry factor W/L — inverting the paper's own eq (9) on its
+own tabulated Q, a_h and ΔP returns each deck's W/L to better than 0.5%. The
+normal-closure law in `include/utils/OrcaNormalClosure.h` also matches the theory
+manual line for line: σₙ = (K_ni V_m)[c/(V_m−c)]^(1/p), its tangent, the f_max·V_m
+cap and the min(1e-9, 0.01 V_m) linearisation threshold.
+
+SW-S3's mesh is 124.40 mm against a published 123.40 mm (+0.81%). Wrong in every
+journal on the machine and in the manuscript's Table 1. Below the noise of
+everything else — record it, don't re-run for it alone.
 
 ---
 
@@ -788,3 +883,4 @@ Outputs/chk/enable=false
 | 2026-08-16 | Cross-sample parameter audit (§5.1); SW-S3 permeability false alarm corrected (§6.4); SW-T1 validation files found broken (§7.2); SW-T friction anomaly narrowed, cohesion rejected (§6.5); SW-S3 refit decks `86_01`/`86_02` built and launched (§5.4); this file created |
 | 2026-08-16 | **Validation set re-extracted by Saeed and adopted as the reference** (§7). #66 closed; §7.2's prediction confirmed to three digits. **Validation data put under version control** — a blanket `*.csv` in `.gitignore` had hidden it since the start (§7). Injection schedule audited on all four samples: SW-T1/SW-T2 were late by up to +155 s, SW-S4 clean, SW-S3 acceptable (§5.5). Refit decks `87_01`/`87_02` built, validated and queued. Established by time-shift decomposition that SW-T1's flow-rate misfit is 100% phase (29.2% → 2.5%) and needs no permeability retuning, while the dilation and σ'ₙ rebound misfits are real. `sample_scorecard.py` extended to all four samples. Commit `81bce79` |
 | 2026-08-16 | **Root-caused both SW-T1 rebound complaints to one number** (§5.6): the joint+frame unloads at 0.859 MPa/µm against a measured 0.135, 6.3× too stiff. The dilation rebound (0.35×), the σ'ₙ rebound (1.82×) and the under-decaying permeability on unload (1.15× vs 1.46×) are the same defect. Traced to the closure constants — the pre-seating offset is 96.6% of V_m, putting the joint 42–646× K_ni across the whole experiment. Proved algebraically that V_m alone cannot fix it (k_n = (K_ni/p)x^(1/p−1)(1+x)² has a floor of 0.271 MPa/µm at the current K_ni, above the 0.158 needed) and **retired `normal_unload_retention_fraction` as a lever** — at f = 0.94 it modulates a spring 12× stiffer than the one in series with it. Bracket `88_01`/`88_02`/`88_03` built and validated, each holding the pre-seated stress invariant at 31.00 MPa. **HPC checkpoint suppression verified empirically** and documented in §9 |
+| 2026-08-16 | **First audit of the decks against the source paper rather than against each other** (§5.7). Six discrepancies: the saw cuts' JRC is 12–15× the measured value with JCS at 2× UCS and sub-8.5° φ_r compensating, which cancels at the calibration point but leaves dτ/dσ'ₙ 28% too flat on both; the T-family's 44–46° φ_r is the interlock of a mated Mode-I surface with nowhere to go because cohesion is hard-coded to zero; the SW-S4 mesh is cut at 28.990° and 2.85 mm off centre and SW-T2 at 31° where its own Table 2 says 30°, with corrected journals sitting unported in `orca_3.0_claude_edit`; `fluid_bulk_modulus` is 2.17× water; SW-S4 reports a different σ'ₙ operator from its siblings; SW-S3's mesh is 1 mm too long. **The manuscript claims a dilation dissipation bound the validated law does not implement** — `dissipation_margin` exists only in the CompressionTensile material, i.e. in the MC *baseline*. Kept the bound as a diagnostic instead: applied to Table 2 it shows both saw cuts' published dilation angle exceeds their own mobilised friction angle, which is the quantitative form of the §2.3.1 identifiability argument. New `scripts/paper_parameter_audit.py` (re-reads the decks so it cannot go stale) and `doc/paper_vs_model_audit_2026-08-16.md`; correction notes inserted in the manuscript draft and the theory manual; two dangling cross-references in the theory manual fixed. **No source file touched, no run affected.** Tasks #71–#74 opened |
