@@ -421,3 +421,68 @@ reproduces the v27 result that MC and BBFast are identical through stage 4 and d
 from stage 5 onward.
 
 **J5. Mesh 5 only.** The mesh-3 set (§H) is not run here; the user is running it separately.
+
+---
+
+## K. First regression test suite — 2026-08-16
+
+Branch `orca_v4`, commit `ba43f88`. Answers the "is the source validated?" question with
+something other than "the physics runs looked right": before this the app had **no test
+coverage at all** — `test/tests/` held only MOOSE's stock `simple_diffusion`, and nothing
+referenced any Orca kernel or material. The combined mass kernel that all 32 production
+mesh-5 decks depend on was guarded by nothing.
+
+**K1. A real defect was found, in the comments rather than the arithmetic.**
+`OrcaTHMaterial::computeBiotModulus` stores **M**, not `1/M` (`OrcaTHMaterial.C:638`,
+`M_new = 1.0/denom`). Two comments in the consuming kernel asserted the opposite — line 41
+*"interpret biot_modulus_qp as (1/M)"* and line 91 *"if it stores (1/M), use
+multiplication"* — while the code read `dpdt * 1/_biot_modulus[_qp]`, which is
+`(dpdt*1)/M` by left-associativity, i.e. a division, i.e. correct.
+
+So the physics was right and the documentation was wrong in the exact direction that
+invites a destructive fix: converting it to a true multiplication is wrong by a factor of
+`M^2` ≈ 6e22. Comments corrected; the expression rewritten as an explicit `dpdt / M`, which
+is bit-identical (multiplying by 1.0 is exact in IEEE-754) and changes no result.
+
+**K2. `test/tests/materials/biot_modulus` — pins the storage formula.** Four cases, checked
+against values derived by hand from the SW-T1 constants rather than against whatever the
+code printed:
+
+| case | α | M | note |
+|---|---|---|---|
+| `physical_alpha` | 0.6 | 2.4562999362e11 | agrees to 8 sig figs |
+| `alpha_unphysical` | 1e-12 | 5.1832204827e12 | 21x larger |
+| `alpha_eq_porosity` | φ = 0.001 | 4.7835616438e12 | grain term vanishes, `(α−φ)=0` |
+| `alpha_unity` | 1.0 | 4.7835616438e12 | grain term vanishes, `(1−α)=0` |
+
+The two boundary cases reach `M = K_f/φ` from opposite factors, so they pin both halves of
+the product independently.
+
+**K3. `test/tests/kernels/mass_storage` — pins the kernel against a closed form.** One
+element, no Darcy kernel, no BCs, so the discrete problem collapses to the scalar ODE
+`(1/M) dp/dt = q` with solution `p(t) = M q t`. Measured `p(10) = 2456299.9362447` Pa
+against the exact `2.4562999362e6` — **12 significant figures**. This is what makes K1
+uncatchable-by-accident from now on: a flipped operator moves the answer by `M^2`, not by a
+few percent.
+
+**K4. One non-obvious setup detail, worth remembering for any future minimal deck.** With
+storage as the *only* term in the equation, the Jacobian diagonal is `(1/M)/dt · V ≈ 2e-14`,
+and PETSc reported a **false** non-convergence at `dt ≥ 0.25` — even though a single Newton
+step had already driven `|R|` from 3.5e-12 to 6.1e-28. `automatic_scaling = true` fixes it.
+A production deck's Darcy term dominates this and hides the problem entirely, so it only
+shows up in isolation tests.
+
+**K5. Result.** `./run_tests` → **7 passed, 0 skipped, 0 failed** (was 1).
+
+**K6. Deliberately deferred: the full rebuild.** The modified translation unit was compiled
+in isolation (`make build/unity_src/kernels_Unity...opt.lo`) instead of a full `make`,
+because the six-deck A/B campaign is mid-flight against the current `orca-opt` and
+relinking would have left the queued SW-T2 pair running a different build from its partner.
+`orca-opt` is byte-unchanged. **A full rebuild and re-run of the suite is due once the
+campaign drains** — the change is comments plus a bit-identical expression, so no result
+should move, but that is an expectation until it is checked.
+
+**K7. What this still does not cover.** These are unit-level tests of the storage term.
+There is no coverage of the Darcy kernels, the CZM/Barton-Bandis path, or any coupled
+poroelastic response — a 1D Terzaghi consolidation case against the analytical solution is
+the obvious next step and would be the first genuinely *coupled* verification in the repo.
