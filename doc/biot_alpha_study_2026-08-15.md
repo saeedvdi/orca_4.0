@@ -213,20 +213,50 @@ together, and this campaign does not separate them:
 slip-onset envelope at that α**. It is not a parameter that can be corrected in isolation.
 That is a new task, not a result of this one.
 
-### 4.3 The shear-traction overshoot is independent of α
+### 4.3 The shear-traction overshoot is a constant ~1 MPa offset, not a percentage
 
-At stage 6 both samples under-predict the co-seismic stress drop by about the same amount,
-*at different α*:
+**This supersedes an earlier reading of this section.** On two samples the post-slip τ
+overshoot looked like a systematic ~30 % error. SW-T1 shows +4.3 %, which breaks that
+generalisation. Comparing **absolute** residuals instead:
 
-| stage 6 | model τ | paper τ | overshoot |
+| stage 6 | model τ | paper τ | absolute | relative |
+|---|---|---|---|---|
+| SW-S4 v27 (α=0.6) | 4.104 | 3.12 | **+0.98 MPa** | +31.5 % |
+| SW-S3 (α=1e-12) | 4.585 | 3.55 | **+1.04 MPa** | +29.2 % |
+| SW-T1 (α=1e-12) | 30.61 | 29.35 | **+1.26 MPa** | +4.3 % |
+
+The absolute residual is nearly constant across three samples spanning a 10× range of residual
+shear stress. It only *looks* like a 30 % error on the S samples because their post-slip τ is
+~3 MPa; on SW-T1, where residual τ is ~29 MPa, the same ~1 MPa is a 4 % effect.
+
+Two consequences:
+
+1. **It is not an α artifact.** SW-S4 already runs at α=0.6 and shows the same offset, so this
+   A/B cannot fix it. It belongs with task #15.
+2. **It is more likely a fixed offset than a proportional envelope error** — a residual
+   cohesion or friction floor of order 1 MPa that the model does not shed. That is a different
+   correction from rescaling the envelope slope, and the two are distinguishable precisely
+   because the S and T samples sit at such different stress levels.
+
+SW-S4's unloading branch relaxes back toward the paper (+23.6 % at stage 7 → +8 % at stage 11),
+consistent with a fixed offset becoming a smaller fraction as τ recovers during unloading.
+
+### 4.3b SW-T1 baseline quality at the slip event
+
+SW-T1's α=1e-12 arm reached stage 6 at t=1955 after ~5 h inside its `event_dt_cap` bracket,
+and matches Table 2 well:
+
+| observable | model | paper | error |
 |---|---|---|---|
-| SW-S3 (α=1e-12) | 4.585 | 3.55 | +29.2 % |
-| SW-S4 v27 (α=0.6) | 4.104 | 3.12 | +31.5 % |
+| Q (mL/min) | 6.495 | 6.22 | +4.4 % |
+| σ'_n (MPa) | 32.63 | 31.79 | +2.6 % |
+| τ (MPa) | 30.61 | 29.35 | +4.3 % |
+| d_n (mm) | −0.1555 | −0.157 | **−0.95 %** |
+| d_s (mm) | 0.5188 | 0.532 | −2.5 % |
 
-Since SW-S4 already runs at α=0.6 and shows the same ~30 % overshoot, **α is not the cause**
-and the A/B cannot fix it. This belongs to the strength envelope (task #15). SW-S4's unloading
-branch shows the model relaxing back toward the paper (+23.6 % at stage 7 → +8 % at stage 11),
-so it is specifically the *drop* that is under-predicted, not the residual level.
+The slip-event kinematics — 0.519 mm of slip and 0.156 mm of dilation — are captured to within
+1–3 %, on a sample whose slip is 7× larger than SW-S3's. Its α=0.6 partner is still inside the
+bracket, so no SW-T1 A/B verdict exists yet.
 
 ### 4.4 Baseline SW-S3 quality through stage 6
 
