@@ -1,0 +1,73 @@
+[Tests]
+  design = 'OrcaPoroMechKernel.md'
+  issues = '#N1'
+  [mandel_cryer]
+    type = CSVDiff
+    input = 'mandel.i'
+    csvdiff = 'mandel_csv.csv'
+    rel_err = 1e-8
+    abs_zero = 1e-10
+    requirement = 'Orca shall reproduce Mandel-Cryer behaviour in a plane-strain sample squashed by '
+                  'rigid impermeable platens and drained at its sides: the centre pore pressure shall '
+                  'RISE above its undrained value before decaying, and the total force on the platen '
+                  'shall remain at the applied value throughout.'
+  []
+[]
+
+# WHY THIS TEST EXISTS
+#
+# Terzaghi is 1D and its pressure only ever decays, so a formulation can pass it
+# while still being wrong in a multi-axial stress state. Mandel's problem is the
+# standard check for that: rigid platens transfer load shed by the draining edges
+# INWARD, so the centre pressure overshoots. A decoupled or mis-signed
+# formulation cannot produce a non-monotonic response at all.
+#
+#   undrained p_u = F B (1+nuu) / 3a  = 0.479520
+#   simulated peak p0                 = 0.504772 at t = 0.01637  (+5.27%)
+#   series peak p0                    = 0.505571
+#
+# The peak is 0.16% from the analytic peak, and p0 rises for the first 7 of 31
+# output rows before decaying.
+#
+# TWO INDEPENDENT CHECKS, both in scripts/mandel_analytic.py:
+#
+#  1. The platen displacement imposed by top_velocity is regenerated from the
+#     series and compared to the table in mandel.i. Worst difference 9.1e-6,
+#     exact to 9 digits at the final time. So the boundary condition is verified,
+#     not trusted -- and the pressure check below rests on a BC known to be right.
+#
+#  2. Pressure at five stations, worst error 1.5% of p_u.
+#
+#  Plus: total_downwards_force stays within 0.26% of the applied F = 1 for the
+#  whole run. That is not a diagnostic -- it is the physical boundary condition
+#  that the prescribed displacement stands in for.
+#
+# THE 1.5% RESIDUAL is a discretisation bias SHARED WITH THE REFERENCE
+# IMPLEMENTATION, not an Orca defect. Against the same analytic series, MOOSE's
+# own gold for this problem (porous_flow mandel_constM) is further from it than
+# Orca at every matched time:
+#
+#     t         series p0     MOOSE err    Orca err
+#     0.02489    0.496100      -0.451%     -0.266%
+#     0.11614    0.258927      +2.062%     +1.404%
+#     0.23614    0.102709      +1.701%     +1.256%
+#     0.47614    0.016159      +0.448%     +0.369%
+#
+# Both codes decay slightly slower than the series, in the same direction, with
+# Orca marginally closer throughout.
+#
+# THREE CANDIDATE SOURCES FOR THAT RESIDUAL, ALL TESTED AND REJECTED:
+#
+#   mesh       nx = 10 / 20 / 40  ->  worst 3.00% / 1.51% / 1.51% of p_u.
+#              Halves once, then stops. Not spatial beyond nx = 20.
+#   timestep   dt cap 0.01 / 0.005 / 0.0025 -> 1.506% / 1.250% / 1.250%.
+#              (Override confirmed applied: 32 / 54 / 99 output rows.)
+#   BC table   the 47-point piecewise-LINEAR platen table is 1.94% of total
+#              platen travel away from the true curve at worst. Replacing it with
+#              a 401-point table generated from the series moved the error from
+#              1.506% to 1.498% -- i.e. not this either.
+#
+# The source was not isolated further. It is recorded here rather than papered
+# over: the verification claim is that Orca matches the reference implementation
+# of the same problem and is marginally closer to the closed form, NOT that the
+# remaining 1.5% is understood.

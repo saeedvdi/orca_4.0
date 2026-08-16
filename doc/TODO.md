@@ -811,3 +811,76 @@ the dilation term and the slip-damage/gouge feedback that the additive deck runs
 those are exactly the terms the additive deck's own comments describe as added to stop HM
 runaway. That is the next hypothesis, and it is about **missing negative feedback**, not about
 formula stiffness. Tasks #14, #19.
+
+## Q. Mandel's problem — the verification Terzaghi cannot do — 2026-08-16
+
+Branch `orca_v4`. `test/tests/verification/mandel` + `scripts/mandel_analytic.py`. Suite is now
+**12 tests**.
+
+Terzaghi (§L) is 1D and its pressure only ever decays. A formulation can pass it while still
+being wrong in a multi-axial stress state. Mandel's problem is the standard check for exactly
+that: rigid impermeable platens transfer load shed by the draining edges *inward*, so the centre
+pressure **rises above its undrained value** before decaying. A decoupled or mis-signed
+formulation cannot produce a non-monotonic response at all.
+
+### Q1. The Mandel–Cryer overshoot is reproduced
+
+| | |
+|---|---|
+| undrained `p_u = F B (1+ν_u)/3a` | 0.479520 |
+| simulated peak p0 | **0.504772** at t = 0.01637 (**+5.27%**) |
+| series peak p0 | 0.505571 |
+
+Peak within **0.16%** of the analytic peak. p0 rises for the first 7 of 31 output rows, then
+decays.
+
+### Q2. How the load is applied, and why that is half the verification
+
+A rigid platen is a constraint, not a traction. The standard workaround (MOOSE's too) is to
+invert it: prescribe the platen's displacement from the analytic solution, then check that the
+**total force** required is constant — that is the real boundary condition.
+`total_downwards_force` stays within **0.26%** of F = 1 for the whole run.
+
+The imposed table is not taken on trust either. `mandel_analytic.py` regenerates it from the
+series independently: worst difference **9.1e-6**, exact to 9 digits at the final time, and the
+drained asymptote `−F(1−ν)b/(2Ga)` checks out. So the pressure comparison rests on a boundary
+condition known to be right.
+
+Derived constants all reproduce the reference: ν=0.2, M=4.705882, Ku=2.694118, ν_u=0.372627,
+B=1.048035, **c=3.821656** (MOOSE's header states 3.821656).
+
+### Q3. Pressure — worst 1.5% of p_u, and it is not ours
+
+Five stations across the half-width. The residual is a discretisation bias **shared with the
+reference implementation**. Against the same analytic series, MOOSE's own gold for this problem
+is *further* from it than Orca at every matched time:
+
+| t | series p0 | MOOSE err | Orca err |
+|---|---|---|---|
+| 0.02489 | 0.496100 | −0.451% | **−0.266%** |
+| 0.11614 | 0.258927 | +2.062% | **+1.404%** |
+| 0.23614 | 0.102709 | +1.701% | **+1.256%** |
+| 0.47614 | 0.016159 | +0.448% | **+0.369%** |
+
+Both codes decay slightly slower than the series, same direction, Orca marginally closer
+throughout.
+
+### Q4. Three candidate sources for the residual — all tested, all rejected
+
+| candidate | result |
+|---|---|
+| mesh | nx = 10/20/40 → 3.00% / 1.51% / 1.51%. Halves once, then stops. |
+| timestep | dt cap 0.01/0.005/0.0025 → 1.506% / 1.250% / 1.250%. Override confirmed applied (32/54/99 output rows). |
+| BC table resolution | the 47-point piecewise-**linear** table is 1.94% of total platen travel from the true curve at worst. A 401-point table generated from the series moved the error 1.506% → **1.498%**. Not this. |
+
+**Not isolated further, and recorded rather than papered over.** The verification claim is that
+Orca matches the reference implementation of the same problem and is marginally closer to the
+closed form — *not* that the remaining 1.5% is understood. Worth revisiting if anyone needs
+Mandel to tighter tolerance; it does not block anything now.
+
+### Q5. Coverage after §K–§Q
+
+Every term of the combined mass kernel is now pinned — `(1/M)dp/dt` (§K), `−α_T dT/dt` (§N),
+`α·div(du/dt)` (§L, §Q) — plus the Darcy flux (§O) and the momentum coupling in both a 1D and a
+genuinely 2D stress state. Still untested: `use_supg` (§O4), the CZM/fracture-flow path, and
+`OrcaBiotCoefficientMaterial`'s `from_elasticity` model (dead in every deck).
