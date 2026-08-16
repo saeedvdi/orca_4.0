@@ -192,6 +192,62 @@ sigma'_n turns out to be a near-constant line).
 is a symptom. Until the SW-T resolution is verified, forcing a shared `phi_r`
 would just move the error.
 
+#### 2.2.1 The stress resolution is correct — I checked it
+
+The obvious explanation is a mis-resolved fracture angle. It is not that. Each
+deck's `shear_stress_paper_frame_mpa_pp` carries the resolution coefficient
+`0.5 sin(2 theta)` explicitly:
+
+| sample | coefficient | theta from sigma1 | check |
+|---|---|---|---|
+| SW-S3 | 0.424024 | **29.0 deg** | optimal plane for phi ~ 31 deg is 29.5 deg |
+| SW-T1 | 0.449397 | **32.0 deg** | |
+
+and the normal resolution agrees with it. At SW-T1's peak,
+`sigma_n = sigma3 + q sin^2(theta) = 29.945 + 149.737 x 0.2808 = 71.99 MPa`
+total, against a reported effective 59.84 — implying a mean fault pressure of
+12.15 MPa, which sits correctly between the 5 MPa production and 19.2 MPa
+injection pressures. The arithmetic is right.
+
+Nor is the state impossible. The largest friction any plane could mobilise in
+this stress state is `sin(phi_max) = q/(sigma1' + sigma3') = 0.808`, i.e.
+mu_max = 1.371, and SW-T1 sits at 1.12. Admissible — just very high.
+
+#### 2.2.2 Cohesion: a plausible fix, tested and rejected
+
+SW-S4 is documented as a **saw-cut** fracture. If SW-T is instead a tensile
+fracture — rough, mated, interlocked — high strength would be expected, and the
+physical way to carry it is cohesion rather than a 44 deg basic friction angle.
+The model cannot express that: `computeCohesionEffective()` returns a hard-coded
+`0.0`, with no input parameter and no subclass override. A fit that needs
+cohesion therefore has nowhere to put it except `phi_r`. That structural
+limitation is real and worth recording on its own.
+
+But cohesion is **not** the explanation. Solving for the cohesion that closes
+the gap at a physical `phi_r`, restricted to actively-yielding rows only
+(`plastic_slip_increment > 0`):
+
+| sample | rows | mobilised mu | cohesion at phi_r = 30 deg |
+|---|---|---|---|
+| SW-T1 | 2210 | 0.878 – 1.202 | **15.9 ± 9.9 MPa** |
+| SW-S3 | 547 | 0.332 – 0.666 | **−20.2 ± 0.9 MPa** |
+
+A working hypothesis gives a small spread — one cohesion valid at every stress
+level. SW-T1's is ±62%. Rejected.
+
+The contrast in the **scatter** is the real result. SW-S3's yielding is described
+by a single friction law to within 0.9 MPa. SW-T1's mobilised mu swings from 0.88
+to 1.20 across only 35–59 MPa of normal stress, a far wider spread than any
+Barton-Bandis curve produces. So the conclusion is stronger than "the two
+families disagree": **SW-T1's tau/sigma'_n relation is not well described by the
+Barton-Bandis form at all.** The model reproduces SW-T1's tau to 0.999 because
+the loading frame drives it, not because the friction law is right.
+
+**And it cannot currently be settled**, because SW-T1's digitized effective
+normal stress is the degenerate near-constant file identified in §3.2. sigma'_n
+cannot be checked against experiment until that file is replaced — which makes
+task #66 a prerequisite for the friction question rather than a side issue.
+
 ### 2.3 Two different aperture laws
 
 | | SW-S3 | SW-T1 |
