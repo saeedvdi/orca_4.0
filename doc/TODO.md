@@ -357,3 +357,25 @@ two faces of the split), **all** in `fracture_interface`, for all four samples �
 authoritative check.
 
 Not yet done: no mesh-3 deck has been *run*. H3 is why.
+
+---
+
+## I. v27 SW-S4 validation closed — 2026-08-15
+
+All three local v27 SW-S4 runs reached t=3500 with **zero nonlinear exceptions** (2335 steps
+each). Full write-up: `orca_3.0_full/doc/v27_validation_SWS4_2026-08-15.md` (commit `f388f77`
+on `orca_edit_v27`).
+
+Two headline points that bear on work here:
+
+1. **Two of the three runs were the same deck** — `68_02_..._m0.i` and `68_02_..._m0_kernel_SV.i`
+   differ by six lines, all output paths; both already carry the combined kernel. Verified
+   numerically (median relative difference 1.7e-13 across 86 columns × 2335 rows). So that
+   batch contains no split-vs-combined comparison, and A1 is closed for SW-S4 by the exception
+   count, not by a kernel comparison.
+
+2. **Scope is SW-S4 only.** SW-S3/SWT1/SWT2 are untouched by this result — which is exactly
+   what the section D campaign is for. See G2.
+
+Naming lesson for future batches: a `_kernel_SV` suffix on a deck whose parent is already
+kernel_SV conveys nothing and cost ~5 h on 8 cores here. Check the parent before suffixing.
