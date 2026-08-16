@@ -567,10 +567,26 @@ OrcaTHMaterial::computeSolidEffectiveThermalExpansionCoefficient()
         return;
     }
 
-    // lagged option: keep the previous value (stateful)
+    // computed: formulation from PorousFlowConstantThermalExpansionCoefficient
+    // alpha_eff = (biot - phi)*beta_solid + phi*beta_fluid
+    const ADReal alpha_eff_computed =
+        (_biot[_qp] - _porosity[_qp]) * _drained_coeff[_qp] + _porosity[_qp] * _fluid_coeff[_qp];
+
+    // lagged option: keep the previous value (stateful).
+    //
+    // This branch must SEED itself on the first pass. initQpStatefulProperties()
+    // routes through computeQpProperties() and therefore through this same
+    // function, so reading _alpha_eff_T_old at t = 0 returns the zero-initialised
+    // property -- which then becomes the old value for step 1, and so on. The
+    // result is alpha_eff == 0 for the entire run: the kernel's
+    // -alpha_T dT/dt term is silently deleted rather than held constant, and the
+    // solve converges cleanly the whole way with zero thermal pressurisation.
+    // Verified against the pre-fix binary: p stayed at exactly 0.0 while the
+    // closed form called for 3.58 MPa per step. Locked by
+    // test/tests/kernels/thermal_storage (case alpha_eff_lagged).
     if (_effective_thermal_expansion_model == "constant")
     {
-        _alpha_eff_T[_qp] = _alpha_eff_T_old[_qp];
+        _alpha_eff_T[_qp] = (_t_step > 0) ? _alpha_eff_T_old[_qp] : alpha_eff_computed;
         return;
     }
 
@@ -581,10 +597,7 @@ OrcaTHMaterial::computeSolidEffectiveThermalExpansionCoefficient()
         return;
     }
 
-    // computed: formulation from PorousFlowConstantThermalExpansionCoefficient
-    // alpha_eff = (biot - phi)*beta_solid + phi*beta_fluid
-    _alpha_eff_T[_qp] =
-        (_biot[_qp] - _porosity[_qp]) * _drained_coeff[_qp] + _porosity[_qp] * _fluid_coeff[_qp];
+    _alpha_eff_T[_qp] = alpha_eff_computed;
 }
 
 void

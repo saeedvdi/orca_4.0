@@ -579,3 +579,86 @@ it false globally); emitting the warning there is correct behaviour.
 **Status: compile-checked only**, same caveat as §L6 — `orca-opt` is still not relinked while
 the campaign is in flight, so the passing suite did not exercise this path. Verification is
 folded into the same post-campaign rebuild as the total-strain fix (task #59).
+
+## N. Thermal storage term — the kernel's last untested term — 2026-08-16
+
+Branch `orca_v4`. `test/tests/kernels/thermal_storage`, 2 cases, both passing. Suite is now
+**10 tests**.
+
+The combined mass kernel assembles three terms. §K pinned `(1/M) dp/dt`, §L pinned
+`α·div(du/dt)` through Terzaghi. `−α_T dT/dt` was the one nobody had ever exercised — no test
+touched it, and **no production deck touches it either**: nothing in `Examples/` couples
+`temperature` to `OrcaTHMaterial`, so the entire thermal path has been shipping unexecuted.
+
+### N1. The closed form
+
+One element, ThermoHydro, no Darcy kernel, no BCs, no mechanics. Temperature is a nonlinear
+variable driven by `ADTimeDerivative` + `BodyForce`, so the uniform field `T = T0 + r·t` solves
+the FE system exactly and `dT/dt = r` to machine precision. Pressure then obeys
+
+```
+(1/M) dp/dt − α_T r = 0     ⟹     p(t) = M α_T r t
+```
+
+With the SW-T1 constants at α = 0.6 and the `computed` model,
+α_T = (0.6 − 0.001)·2.4e-5 + 0.001·2.1e-4 = **1.4586e-5** 1/K, M = 2.4562999362e11 Pa,
+r = 1 K/s. Measured p(10) = 35827590.870065 Pa against 35827590.869413 — **11 significant
+figures**, the residual difference being the truncation in the hand-supplied M, not the solve.
+
+The **sign** is asserted, not just the magnitude: the term enters as −α_T dT/dt, so heating
+pressurises. A flipped sign produces an equally smooth run that cools and depressurises.
+
+The `alpha_eff_user` case sets `effective_thermal_expansion_coeff = 2.0e-5`, deliberately
+different from the computed 1.4586e-5, so it fails if the user model ever falls through to the
+mixture formula.
+
+### N2. Defect: the lagged α_T is never seeded — thermal coupling silently vanishes
+
+`effective_thermal_expansion_model = constant` read
+
+```cpp
+_alpha_eff_T[_qp] = _alpha_eff_T_old[_qp];
+```
+
+unconditionally. `initQpStatefulProperties()` routes through `computeQpProperties()` and hence
+through this same function, so at t = 0 it returns the **zero-initialised** old property. That
+zero becomes the old value for step 1, and so on. α_T is pinned at 0 for the entire run.
+
+Confirmed against the shipped binary, not inferred:
+
+| model | α_T | p, every step | closed form |
+|---|---|---|---|
+| `constant` | **0.0** | **0.0** | 3.582759e6 Pa/step |
+| `user` | 1.4586e-5 | matches | matches |
+| `computed` | 1.4586e-5 | matches | matches |
+
+The run **converges cleanly the whole way**. No error, no warning, no stall — the thermal
+coupling term is simply deleted, and the answer looks like a legitimate isothermal simulation.
+
+This is the same failure family as §L's `vol_strain_rate` bug and the same reason it survived:
+a stateful property whose "hold the previous value" path is also the path taken on the very
+first call, so it holds a value that was never computed.
+
+**Fix**: compute the mixture formula into a local unconditionally, then seed from it at
+`_t_step == 0` and lag thereafter. The three models keep their documented meanings.
+
+**No production deck affected** — the default is `computed`, and no deck sets the parameter or
+couples temperature at all.
+
+### N3. Conditioning note, recorded because it points the opposite way from §K
+
+`mass_storage` **needs** `automatic_scaling`; this test **must not have it**. There, storage was
+the only equation and the whole residual sat at 1e-14. Here the temperature equation contributes
+an O(1) row, so |R| starts at 0.35 and one Newton step reaches 5e-17. Turning scaling on
+amplifies the pressure row — whose two terms cancel to round-off *by construction* — and pins
+|R| at a 6e-9 floor no tolerance can reach; the solve then reports DIVERGED_LINE_SEARCH on an
+answer that is exact. Both settings are commented in place with the reasoning, because the
+naive rule "always enable automatic_scaling for poromechanics" is wrong in one of these two
+neighbouring tests.
+
+### N4. Status
+
+Test cases N1 pass against the current binary. The **N2 fix is compile-checked only** —
+`orca-opt` is still not relinked while the campaign runs, so the third case, `alpha_eff_lagged`,
+is written out in `tests` as a comment rather than registered, to avoid committing a red suite.
+It lands with the same post-campaign rebuild as §L6 and §M (task #59). Tasks #61, #62.

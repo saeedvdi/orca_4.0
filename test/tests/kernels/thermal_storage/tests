@@ -1,0 +1,61 @@
+[Tests]
+  design = 'OrcaFullySaturatedSinglePhaseMassTimeDerivativeKernel.md'
+  issues = '#N1'
+  [thermal_rate]
+    type = CSVDiff
+    input = 'thermal_storage.i'
+    csvdiff = 'thermal_storage_out.csv'
+    rel_err = 1e-8
+    requirement = 'OrcaFullySaturatedSinglePhaseMassTimeDerivativeKernel shall assemble the thermal '
+                  'storage term as -alpha_T dT/dt, so that heating a sealed sample at a constant rate r '
+                  'drives the closed-form pressure response p(t) = M alpha_T r t, with the sign that '
+                  'pressurises rather than depressurises on heating.'
+  []
+  [alpha_eff_user]
+    type = CSVDiff
+    input = 'thermal_storage.i'
+    # A value deliberately different from the computed 1.4586e-5, so this case
+    # fails if the user model silently falls through to the computed formula.
+    cli_args = 'Materials/rockTH/effective_thermal_expansion_model=user '
+               'Materials/rockTH/effective_thermal_expansion_coeff=2.0e-5 '
+               'alpha_eff_exact=2.0e-5 Outputs/file_base=alpha_eff_user_out'
+    csvdiff = 'alpha_eff_user_out.csv'
+    rel_err = 1e-8
+    prereq = 'thermal_rate'
+    requirement = 'OrcaTHMaterial shall use effective_thermal_expansion_coeff verbatim when '
+                  'effective_thermal_expansion_model = user, in place of the porosity-weighted mixture '
+                  'formula, and the mass kernel shall carry that value into the thermal storage term.'
+  []
+[]
+
+# PENDING (task #59, #62): a third case `alpha_eff_lagged` belongs here, running
+# effective_thermal_expansion_model = constant and asserting alpha_eff is seeded
+# from the computed formula rather than frozen at zero.
+#
+# It is deliberately NOT registered yet. The seeding fix in
+# OrcaTHMaterial::computeSolidEffectiveThermalExpansionCoefficient is compile-
+# checked only -- orca-opt has not been relinked, because the Biot A/B campaign
+# is still running against the current shared library. Registering the case now
+# would commit a red suite.
+#
+# Against the pre-fix binary the case reproduces the defect exactly:
+#
+#   effective_thermal_expansion_model = constant
+#     alpha_eff = 0.0 at every step, p = 0.0 at every step,
+#     closed form = 3.582759e6 Pa per step, solve converges cleanly throughout.
+#
+# Add on rebuild:
+#   [alpha_eff_lagged]
+#     type = CSVDiff
+#     input = 'thermal_storage.i'
+#     cli_args = 'Materials/rockTH/effective_thermal_expansion_model=constant '
+#                'Outputs/file_base=alpha_eff_lagged_out'
+#     csvdiff = 'alpha_eff_lagged_out.csv'
+#     rel_err = 1e-8
+#     prereq = 'alpha_eff_user'
+#     requirement = 'OrcaTHMaterial shall seed the lagged effective thermal expansion coefficient from '
+#                   'the computed mixture formula on the first step, so that '
+#                   'effective_thermal_expansion_model = constant holds a physical value rather than '
+#                   'freezing at the zero-initialised old property and silently deleting the thermal '
+#                   'storage term.'
+#   []
