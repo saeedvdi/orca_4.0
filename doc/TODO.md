@@ -559,3 +559,23 @@ total-strain path is still broken — it simply is not reached, since everything
 incremental. **Due once the campaign drains:** rebuild, re-run the suite, and add a
 `total_strain` case asserting the two strain models agree. Until then the fix is plausible,
 not proven.
+
+---
+
+## M. Guard against α < φ — 2026-08-16
+
+Branch `orca_v4`, commit `e4230e5`. Closes the loop on **why** N3/#51 survived: nothing told
+anyone. `OrcaBiotCoefficientMaterial` range-checks only `0 < α ≤ 1`, which 1e-12 passes
+comfortably; `OrcaTHMaterial` then accepted it silently. `computeBiotModulus` now emits a
+one-time warning naming both values and the sign consequence.
+
+**Warning, not error, on purpose.** The value is a legitimate thing to explore deliberately —
+the A/B campaign is doing exactly that — and erroring would break decks mid-study. Loud
+enough to prevent accidental adoption, quiet enough not to obstruct deliberate use.
+
+The two tests that drive α below φ on purpose now set `allow_warnings = true` (testroot sets
+it false globally); emitting the warning there is correct behaviour.
+
+**Status: compile-checked only**, same caveat as §L6 — `orca-opt` is still not relinked while
+the campaign is in flight, so the passing suite did not exercise this path. Verification is
+folded into the same post-campaign rebuild as the total-strain fix (task #59).
