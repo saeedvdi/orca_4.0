@@ -225,29 +225,54 @@ Peak ratios sim/exp:
 | differential stress | 0.996 | 0.921 |
 | injection pressure | 1.000 | 1.000 |
 | flow rate | 1.039 | **1.168** |
-| fracture permeability | **2.975** | **3.210** |
+| fracture permeability | 1.001 | 1.080 |
 | normal dilation | 0.987 | **1.193** |
 | effective normal stress | 1.008 | 1.006 |
 | shear slip | 1.010 | **1.265** |
 | shear stress | 0.989 | 1.061 |
 | diff-stress nRMSE | 15.8% | **42.9%** |
 
-Two independent problems, and the reported symptoms split cleanly between them:
+**The permeability does not need adjusting — the plot was against a superseded
+file.** `SWS3/SWS3/` holds two permeability digitizations, and both the notebook
+and the first version of the scorecard used the stale one:
 
-1. **Fracture permeability is ~3x high in both arms.** alpha-independent, so it is
-   a plain calibration miss, and the `dilation_scale = 0.038` discount in §2.3 is
-   the prime suspect. This matches "fracture permeability needs to be adjusted".
+| file | sim/exp k |
+|---|---|
+| `permeability_m2_vs_time_sw3.csv` (stale — what the notebook plotted) | **3.03** |
+| `permeability_m2_vs_time_sw3_corrected.table2` | **1.02** (worst point 16%) |
 
-2. **alpha = 0.6 breaks the slip calibration.** Slip 1.01 -> 1.27, dilation
-   0.99 -> 1.19, flow 1.04 -> 1.17, and slip onset moves ~350 s earlier. This
-   accounts for "normal dilation drop is faster and the max is much higher",
-   "shear slip happens sooner and the peak is much higher" and the differential
-   stress and shear traction complaints. The onset envelope was fitted at
-   alpha ~ 0; raising alpha to the physical value raises the pressure drop on the
-   fault and it yields earlier and further.
+The corrected file is right, and the proof does not rest on the simulation
+agreeing with it. Fit on the simulation's own output gives
 
-   The fix is to refit the onset envelope at physical alpha, not to revert alpha.
-   That is task #60, now clearly the blocking item.
+```
+ln Q = 1.501 ln k + 1.441 ln P_inj + c
+```
+
+— the exponent 1.5 on k is the cubic law, exactly as it should be. So a factor
+of 3.0 in k implies a factor of 3.0^1.5 = **5.2 in flow rate**. The measured flow
+rate is matched at **1.04**. The stale permeability curve therefore contradicts
+the flow-rate curve *from the same experiment* by a factor of five in
+transmissivity; the corrected series predicts a Q ratio of 1.02 against the 1.04
+observed. The deck comments had already flagged the old file — "judge on the FLOW
+panel (Q), not the digitized k curve (flagged ~3x low vs its own Q —
+re-digitization pending)" — but the notebook was never repointed.
+
+Fixed here: the notebook and `scripts/sample_scorecard.py` now read the corrected
+series. SW-T1 has no corrected file and does not need one (perm ratio 1.014).
+
+**With that corrected, SW-S3 at alpha = 1e-12 is within 4% on every channel**, and
+exactly one problem is left:
+
+**alpha = 0.6 breaks the slip calibration.** Slip 1.01 -> 1.27, dilation
+0.99 -> 1.19, flow 1.04 -> 1.17, and slip onset moves earlier. This accounts for
+"normal dilation drop is faster and the max is much higher", "shear slip happens
+sooner and the peak is much higher", and the differential-stress and
+shear-traction complaints — all of them are the one root cause. The onset
+envelope was fitted at alpha ~ 0; raising alpha to the physical value stiffens
+the bulk poroelastic coupling, so the fault yields earlier and runs further.
+
+The fix is to refit the onset envelope at physical alpha, not to revert alpha.
+That is task #60, now the single blocking item for SW-S3.
 
 The one panel the user called correct — effective normal stress, ratio 1.006–1.008 —
 is indeed the best-matched channel in both arms.
@@ -305,15 +330,20 @@ unloading" — both peak ~207 s later than the data.
 
 ## 4. Recommended order of work
 
-1. **Verify the SW-T1 digitized set against the paper figure** (task #66). Nothing
+1. **Refit SW-S3's slip-onset envelope at alpha = 0.6** (task #60). Now the only
+   remaining SW-S3 problem, and it explains every symptom in that figure.
+2. **Verify the SW-T1 digitized set against the paper figure** (task #66). Nothing
    downstream of SW-T1 can be scored until this is settled, and it is cheap.
-2. **Set `youngs_modulus = 67e9` in the SW-S3 family** (task #65). Well-evidenced,
+3. **Set `youngs_modulus = 67e9` in the SW-S3 family** (task #65). Well-evidenced,
    low risk, and it removes one variable from every later comparison.
-3. **Refit SW-S3's slip-onset envelope at alpha = 0.6** (tasks #60, #67), then
-   attack the 3x permeability through `dilation_scale`.
 4. **Do not unify `phi_r` yet** (§2.2). Verify the SW-T stress resolution first;
    the mu > 1 result says the targets are suspect, and a forced average would
    bury that.
+
+A general lesson from §3.1 and §3.2: of the problems reported from the figures,
+**two of the three were in the validation data, not the model.** Before tuning
+any deck against a panel, check that the digitized series is the current one and
+is self-consistent with the other measured channels.
 
 New decks for any of this get a name reflecting the change, per the standing
 convention.

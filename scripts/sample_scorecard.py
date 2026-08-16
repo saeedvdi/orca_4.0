@@ -43,7 +43,7 @@ SAMPLES = {
             "differential_stress_MPa": ("differnetial_stress_vs_time_sw3.csv", "differential_stress_mpa_pp", 1.0),
             "injection_pressure_MPa": ("Injection_pressure_vs_time_SW3.csv", "injection_pressure_pp", 1e-6),
             "flow_rate_mlmin": ("flow_Rate_mlmin_vs_time_sw3.csv", "flow_rate_validation_ml_min_pp", 1.0),
-            "frac_perm_m2": ("permeability_m2_vs_time_sw3.csv", "fracture_permeability_pp", 1.0),
+            "frac_perm_m2": ("permeability_m2_vs_time_sw3_corrected.table2", "fracture_permeability_pp", 1.0),
             "normal_dilation_mm": ("normal_dilation_mm_vs_time_sw3.csv", "czm_normal_dilation_paper_mm_pp", 1.0),
             "eff_normal_stress_MPa": ("effective_normal_stress_mpa_Vs_time_SW3.csv", "bb_effective_normal_stress_pp", 1e-6),
             "shear_slip_mm": ("shear_slip_mm_vs_time_sw3.csv", "czm_shear_slip_mm_pp", 1.0),
