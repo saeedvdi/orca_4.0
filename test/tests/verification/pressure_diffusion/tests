@@ -1,0 +1,41 @@
+[Tests]
+  design = 'OrcaFullySaturatedSinglePhaseDarcySUPGKernel.md'
+  issues = '#N1'
+  [half_space]
+    type = CSVDiff
+    input = 'pressure_diffusion.i'
+    csvdiff = 'pressure_diffusion_out.csv'
+    rel_err = 1e-8
+    # The far-end probe and the early-time tail probes sit at the FE solution's
+    # round-off foot (1e-9 Pa against a 1e6 Pa step). Comparing those relatively
+    # is comparing noise; 1e-6 Pa is twelve orders below the inlet step and
+    # three above the foot.
+    abs_zero = 1e-6
+    requirement = 'OrcaFullySaturatedSinglePhaseDarcySUPGKernel shall assemble the Darcy flux as '
+                  '(K/mu) grad p, so that a step inlet on a rigid saturated bar reproduces the '
+                  'half-space solution p = p0 erfc(x / 2 sqrt(c t)) with hydraulic diffusivity '
+                  'c = M k / mu.'
+  []
+[]
+
+# VERIFIED AGAINST THE MATHEMATICS, not just locked as a regression.
+# scripts/pressure_diffusion_analytic.py compares every probe against erfc built
+# from an independently evaluated c = M k / mu:
+#
+#   worst error over four probes and four report times: 0.66% of p0,
+#   and 0.06% of p0 at the final time.
+#
+# The 0.66% is at t = 100 s next to the inlet, where the step is still sharp.
+#
+# CONVERGENCE, halving h and dt together (error at t = 1000 s, as % of p0):
+#
+#   probe     nx=200 dt=5   nx=400 dt=2.5   nx=800 dt=1.25    ratio
+#   x=0.10      -0.0282        -0.0144         -0.0072      1.97, 1.98
+#   x=0.25      -0.0519        -0.0300         -0.0151      1.73, 1.99
+#   x=0.50      -0.0599        -0.0299         -0.0150      2.00, 2.00
+#   x=1.00      +0.0097        +0.0060         +0.0033      1.63, 1.83
+#
+# Clean first order, which is implicit Euler in dt dominating O(h^2) in space.
+# The point is that it converges TO the erfc solution built with c = M k / mu:
+# a mobility with mu on the wrong side would converge just as smoothly to a
+# different curve, which is exactly the failure this test is here to catch.

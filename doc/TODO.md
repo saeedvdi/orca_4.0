@@ -662,3 +662,63 @@ Test cases N1 pass against the current binary. The **N2 fix is compile-checked o
 `orca-opt` is still not relinked while the campaign runs, so the third case, `alpha_eff_lagged`,
 is written out in `tests` as a comment rather than registered, to avoid committing a red suite.
 It lands with the same post-campaign rebuild as §L6 and §M (task #59). Tasks #61, #62.
+
+## O. Darcy flux verified against erfc — 2026-08-16
+
+Branch `orca_v4`. `test/tests/verification/pressure_diffusion`, 1 case, plus
+`scripts/pressure_diffusion_analytic.py`. Suite is now **11 tests**.
+
+`OrcaFullySaturatedSinglePhaseDarcySUPGKernel` had no test of any kind. It is the kernel
+every production deck routes its flow through, and the one whose convention — `K/mu` with
+density as a separate switch — is easiest to get wrong in a way that still looks right.
+
+### O1. The closed form
+
+Rigid skeleton (`coupling_type = Hydro`, no mechanics), so the storage + Darcy pair reduces to
+linear diffusion with
+
+```
+c = M k / mu = 1.2256985710e-4 m²/s
+```
+
+Step inlet on a 4 m bar, 1000 s: `p(x,t) = p0 erfc(x / 2√(ct))`. Diffusion length reaches
+0.70 m, so erfc at the far end is 6.5e-16 and the half-space solution applies to well past the
+precision of the comparison. A `p_far_end` probe asserts that directly — if it ever lifts off
+round-off, every other number in the file is suspect.
+
+Four probes at x = 0.10/0.25/0.50/1.00 m put η = x/(2√(ct)) at 0.14/0.36/0.71/1.43, so erfc
+runs 0.84 → 0.04 and the comparison exercises the whole curve rather than one convenient point.
+
+**Worst error 0.66% of p0** across four probes and four report times; **0.06% at the final
+time**. The 0.66% is at t = 100 s next to the inlet, where the step is still sharp.
+
+### O2. Convergence — halving h and dt together, error at t = 1000 s as % of p0
+
+| probe | nx=200 dt=5 | nx=400 dt=2.5 | nx=800 dt=1.25 | ratio |
+|---|---|---|---|---|
+| x=0.10 | −0.0282 | −0.0144 | −0.0072 | 1.97, 1.98 |
+| x=0.25 | −0.0519 | −0.0300 | −0.0151 | 1.73, 1.99 |
+| x=0.50 | −0.0599 | −0.0299 | −0.0150 | 2.00, 2.00 |
+| x=1.00 | +0.0097 | +0.0060 | +0.0033 | 1.63, 1.83 |
+
+Clean first order — implicit Euler in dt dominating O(h²) in space. Run because §L's
+convergence study caught a spurious "physics defect" that was an uncapped `growth_factor`; the
+same check here says the residual error is discretisation and nothing else.
+
+The load-bearing point is that it converges **to** the erfc curve built with c = M k/mu. A
+mobility with mu on the wrong side converges just as smoothly to a *different* curve.
+
+### O3. Error normalisation — a reporting trap worth recording
+
+The first version of the script divided by the local analytic value and reported **9584%** error
+at x = 1.00, t = 100 s. That is an absolute discrepancy of 0.016 Pa against a 1e6 Pa step: deep
+in the erfc tail the analytic value falls below a Pascal while the FE solution keeps a small
+non-zero foot. The script now normalises by p0 and prints the local ratio only above 0.1% of p0,
+marking the rest `tail`. Same trap set for `CSVDiff`, handled with `abs_zero = 1e-6`.
+
+### O4. Remaining kernel coverage
+
+`use_supg` is **still untested** — every production deck leaves it at the default `false`, and
+the base kernel deliberately does not call `supgStabilization` (see the comment at
+`computeQpResidual`). The stabilisation path is reachable only from derived advection kernels.
+Worth a test if anything ever turns it on; not worth one now.
