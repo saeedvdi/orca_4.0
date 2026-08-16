@@ -168,15 +168,21 @@ now available on both arms, the two error signatures separate cleanly:
 | B − A at stage | σ'_n (MPa) | τ (MPa) | d_s (mm) | d_n (mm) |
 |---|---|---|---|---|
 | 5 (premature slip) | +4.46 | +7.99 | +0.0711 | +0.0381 |
-| 6 (both slipped) | −0.47 | −0.98 | +0.0188 | +0.0095 |
-| 7 (unloading) | +0.33 | +0.68 | +0.0188 | +0.0089 |
+| 6 (both slipped) | −0.47 | −0.98 | **+0.01878** | +0.0095 |
+| 7 (unloading, 24) | +0.33 | +0.68 | **+0.01875** | +0.0089 |
+| 8 (unloading, 20) | +0.69 | +1.24 | **+0.01873** | +0.0068 |
 
-Once both arms have slipped, the **stress state re-converges** — the σ'_n and τ gaps collapse
-from 4.5/8.0 MPa to a few tenths. But the **displacement offset is permanent**: the α=0.6 arm
-stays ~0.019 mm ahead in slip and ~0.009 mm in dilation, essentially unchanged from stage 6 to
-stage 7. Slip is irreversible, so the extra displacement banked during the premature event
-never heals. That is why d_s remains the worst-scoring observable (96 % higher MAE) even
-though the stresses agree again.
+Three distinct behaviours, and they separate cleanly:
+
+- **Slip offset is frozen.** d_s holds at +0.01878 → +0.01875 → +0.01873 mm across three
+  stages — constant to 0.3 %. Slip is irreversible, so the displacement banked during the
+  premature event at 24 MPa is never given back. This is why d_s stays the worst-scoring
+  observable (96 % higher MAE) even where the stresses agree.
+- **Dilation partially recovers.** d_n decays +0.0095 → +0.0089 → +0.0068 mm as normal stress
+  rises through unloading and closes the aperture elastically — the reversible part of the
+  offset.
+- **Stresses re-converge, then drift again.** The σ'_n and τ gaps collapse from 4.5/8.0 MPa at
+  stage 5 to a few tenths at stage 6–7, then widen modestly by stage 8 (+0.69/+1.24).
 
 **Not a reporting artifact.** The paper-frame postprocessors are pure geometry on
 `differential_stress_reaction_mpa_pp` — `σ'_n = 30 − 0.5(p_inj+p_out)·1e-6 + 0.235·Δσ` and
