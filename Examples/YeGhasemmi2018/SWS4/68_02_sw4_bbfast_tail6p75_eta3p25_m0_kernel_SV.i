@@ -1,3 +1,25 @@
+# ==============================================================================
+# 68_02_sw4_bbfast_tail6p75_eta3p25_m0_kernel_SV
+# GENERATED 2026-08-15 from 68_02_sw4_bbfast_tail6p75_eta3p25_m0.i -- do not hand-edit; regenerate instead.
+#
+# Changes applied on 2026-08-15:
+#   1. Storage kernel: the combined AD mass-balance kernel
+#      OrcaFullySaturatedSinglePhaseMassTimeDerivativeKernel, assembling
+#      (1/M)*dp/dt + alpha*div(du/dt) in one correctly-coupled object. This replaces
+#      the split OrcaSinglePhaseMassTimeDerivativeKernel +
+#      OrcaSinglePhaseMassVolumetricExpansionKernel pair, which drops the
+#      grain-compressibility storage (alpha-phi)/K_s and uses porosity where the Biot
+#      coefficient belongs.
+#   2. confining_pressure set to 30e6 Pa (was 29.4e6).
+#      NOTE: confining_pressure is a live BC magnitude here, not just a diagnostic
+#      label -- it feeds the czm_pressure_x / czm_pressure_y BC function expressions.
+#      A 29.4 -> 30.0 MPa change was measured on 68_02 on 2026-08-14 and moved every
+#      Table-2 metric further from target. The 29.4e6 version is preserved unchanged
+#      in 68_02_sw4_bbfast_tail6p75_eta3p25_m0.i.
+#   3. Output file bases repointed to this deck's own name.
+#
+# The parent deck 68_02_sw4_bbfast_tail6p75_eta3p25_m0.i is left untouched as the reference configuration.
+# ==============================================================================
 # ===============================================================================
 # SW4 68 targeted residual sweep: 68_02_sw4_bbfast_tail6p75_eta3p25_m0
 # Parent: completed 67_01_sw4_bbfast_eta3p5_Dc74p5_tail6p75_m0.
@@ -326,7 +348,7 @@ initial_porosity = 0.001
 matrix_permeability = 5e-19          # m^2, intact granite matrix permeability
 
 # --- loading ---
-confining_pressure = 29.4e6    # CONTROL: legacy fitted confinement
+confining_pressure = 30e6  # CONTROL: legacy fitted confinement
 production_pressure = 5e6            # Pa
 fault_pressure_coefficient = 0.86    # CONTROL: legacy fitted fault-pressure attenuation
 side_unload_relax_pressure = 1.2e6    # CONTROL: legacy fitted late confinement unload
@@ -695,32 +717,22 @@ checkpoint_file_base = results_checkpoint/68_02_sw4_bbfast_tail6p75_eta3p25_m0_k
     extra_vector_tags = 'mech_reaction'
   []
 
-  # [fluid_storage]
-  #  type = OrcaSinglePhaseMassTimeDerivativeKernel
-  #  variable = pore_pressure
-  #  multiply_by_fluid_density = true
-  #  save_in = inj_flux_aux
-  # []
+  # (1/M)*dp/dt + alpha*div(du/dt) in one correctly-coupled AD kernel, replacing the
+  # old split fluid_storage + mass_vol_expansion pair. Validated 2026-08-14 on this
+  # exact deck; see memory sw-s4-kernel-alpha-backanalysis-2026-08-14.
+  [fluid_storage]
+    type                 = OrcaFullySaturatedSinglePhaseMassTimeDerivativeKernel
+    variable             = pore_pressure
+    coupling_type        = HydroMechanical
+    multiply_by_fluid_density = true
+    extra_vector_tags    = mass_reaction
+  []
   [darcy]
     type = OrcaFullySaturatedSinglePhaseDarcySUPGKernel
     variable = pore_pressure
     multiply_by_fluid_density = true
     use_supg = true
     save_in = inj_flux_aux
-    extra_vector_tags = mass_reaction
-  []
-  # [mass_vol_expansion]
-  #  type = OrcaSinglePhaseMassVolumetricExpansionKernel
-  #  variable = pore_pressure
-  #  multiply_by_fluid_density = true
-  #  save_in = inj_flux_aux
-  # []
-  # (1/M)*dp/dt + alpha*div(du/dt)  [volume form]
-  [fluid_storage]
-    type                 = OrcaFullySaturatedSinglePhaseMassTimeDerivativeKernel
-    variable             = pore_pressure
-    coupling_type        = HydroMechanical
-    multiply_by_fluid_density = true
     extra_vector_tags = mass_reaction
   []
 []

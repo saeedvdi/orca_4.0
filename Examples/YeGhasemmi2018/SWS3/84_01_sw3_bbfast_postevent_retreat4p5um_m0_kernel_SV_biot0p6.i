@@ -1,6 +1,6 @@
 # ==============================================================================
-# 67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_SV
-# GENERATED 2026-08-15 from 67_11_sw4_mc_dS0p15_s28_w12_m0.i -- do not hand-edit; regenerate instead.
+# 84_01_sw3_bbfast_postevent_retreat4p5um_m0_kernel_SV_biot0p6
+# GENERATED 2026-08-15 from 84_01_sw3_bbfast_postevent_retreat4p5um_m0.i -- do not hand-edit; regenerate instead.
 #
 # Changes applied on 2026-08-15:
 #   1. Storage kernel: the combined AD mass-balance kernel
@@ -10,132 +10,512 @@
 #      OrcaSinglePhaseMassVolumetricExpansionKernel pair, which drops the
 #      grain-compressibility storage (alpha-phi)/K_s and uses porosity where the Biot
 #      coefficient belongs.
-#   2. confining_pressure set to 30e6 Pa (was 29.4e6).
+#   2. confining_pressure set to 30e6 Pa (was 30e6).
 #      NOTE: confining_pressure is a live BC magnitude here, not just a diagnostic
 #      label -- it feeds the czm_pressure_x / czm_pressure_y BC function expressions.
 #      A 29.4 -> 30.0 MPa change was measured on 68_02 on 2026-08-14 and moved every
 #      Table-2 metric further from target. The 29.4e6 version is preserved unchanged
-#      in 67_11_sw4_mc_dS0p15_s28_w12_m0.i.
+#      in 84_01_sw3_bbfast_postevent_retreat4p5um_m0.i.
 #   3. Output file bases repointed to this deck's own name.
 #
-# The parent deck 67_11_sw4_mc_dS0p15_s28_w12_m0.i is left untouched as the reference configuration.
-# ==============================================================================
-# ===============================================================================
-# SW4 final-four coarse-M0 candidate: 67_11_sw4_mc_dS0p15_s28_w12_m0
-# Parent: completed 65_11_sw4_mc_dS0p45_s36_m0.
-# Retain fcs=0.055; use a late-only 0.15 MPa drop at 28um over 12um.
-# The rejected 66 global-fcs axis is not imported because it corrupted pre-event stress.
-# Mesh, BC/load path, hydraulic parameters, outputs, and all unlisted parameters are unchanged.
-# ===============================================================================
-# ==============================================================================
-# SW4 64-series staged refinement: 67_11_sw4_mc_dS0p15_s28_w12_m0
-# Parent: 63_11_sw4_mc_legacy_controls_powerlaw_normal_m0
-# Controlled axis: secondary weakening magnitude only: 1.35 -> 0.75 MPa
-# All BCs, mesh, outputs, and unlisted constitutive parameters are unchanged.
-# ==============================================================================
-# ==============================================================================
-# SW4 mechanical-normal-closure validation: 67_11_sw4_mc_dS0p15_s28_w12_m0
+#   4. biot_coefficient raised 1e-12 -> 0.6. The parent value is below the porosity
+#      (0.001), which is unphysical: Biot's coefficient cannot be smaller than
+#      porosity. At 1e-12 the bulk rock is poroelastically decoupled -- pore pressure
+#      does not enter the bulk effective stress and bulk strain does not drive fluid.
+#      This is a RECALIBRATION, not a normalisation: it changes the Biot modulus by
+#      roughly a factor of 20 and turns on the effective-stress coupling, so the
+#      existing onset timing and strength-envelope tuning will not carry over.
 #
-# Single controlled change from its completed 62 legacy-control M0 baseline:
-# replace the solved K_n=2e13 Pa/m linear contact penalty with the same pre-seated,
-# recoverable power-law BB closure used by successful reference case 62_01.
-# Friction, irreversible shear dilation, hydraulic aperture, BCs, mesh, and outputs
-# are unchanged. Output-only reversible-normal reconstruction remains disabled.
-# This case requires an orca-opt rebuilt from the accompanying source changes.
+# The parent deck 84_01_sw3_bbfast_postevent_retreat4p5um_m0.i is left untouched as the reference configuration.
 # ==============================================================================
 ######################################################################################
-# CONTROLLED SW-S4 OBSERVATION/INPUT BRACKET -- 67_11_sw4_mc_dS0p15_s28_w12_m0
-# Legacy fitted BC/load-path controls and legacy Kn with corrected observation outputs. Compare with 62_11 to measure the combined protocol effect at fixed Kn.
-# This case is a causal control, not an independent validation and not a retuned law.
+# 84_01_sw3_bbfast_postevent_retreat4p5um_m0
+# SW3 Level 84 orthogonal-residual campaign.
+# Parent: SW3_83_KINEMATIC_DECOUPLING/83_01_sw3_bbfast_outputscale0p758_ret0p552_m0
+# Parameters: post-event axial actuator retreat=4.5um over t=2550-2850s
+# Hypothesis: The BBFast shear residual is post-event positive, not globally negative. A delayed retreat should reduce q by about 2.1MPa and paper shear by about 0.9MPa without changing the failure event.
+# Decision rule: Keep only if late shear improves while slip, reported dilation, permeability, and flow remain within their guardrails.
+# Raw CZM slip remains in czm_shear_slip_mm_pp; reported slip is a separate column.
 ######################################################################################
 ######################################################################################
-# CORRECTED SW-S4 RERUN 61_11 -- ADOrcaDecoupledDilationRoughness...CompressionTensile
-# Low-mesh member of a controlled three-mesh study.  The fitted shear/hydraulic law is
-# retained, but validation now uses exact experimental BCs, physical normal compliance,
-# assembled reactions/fluxes, and solved/LVDT-proxy displacements.  Historical 52_25
-# agreement must not be carried forward without this rerun.
+# 84_01_sw3_bbfast_postevent_retreat4p5um_m0
+# SW3 Level 83 kinematic-decoupling campaign.
+# Parent: SW3_82_RESIDUAL_CORRECTIONS/82_00_sw3_bbfast_exact81_00_control_m0
+# Parameters: reported reversible scale=0.758; reclosure retention=0.552; activation=50um
+# Hypothesis: The 82_00 decomposition gives 35.764um irreversible opening plus a 13.028um peak reversible part; the validation peak/end solve directly to scale=0.7574 and retention=0.5517.
+# Decision rule: Keep only if peak and terminal dilation are within 1um and all traction, slip, permeability, and flow columns reproduce 83_00.
+# This is a bounded back-analysis test, not an open-ended sweep.
 ######################################################################################
-# DECK 52_25 MC DROPBRAKE fcs055 s44 w18 (from 52_24, 2026-07-15)
+######################################################################################
+# 84_01_sw3_bbfast_postevent_retreat4p5um_m0
+# SW3 Level 82 residual-correction campaign.
+# Parent: SW3_81_SOURCE_CORRECTIONS/81_00_sw3_bbfast_source_control_m1
+# Parameters: exact 81_00 control; initial dt restored to 0.75 s
+# Hypothesis: The Level 82 build and generator must reproduce the completed BBFast base.
+# Decision rule: Reject all BBFast candidates if this control changes beyond numerical tolerance.
+# This is a bounded back-analysis test, not an open-ended sweep.
+######################################################################################
+######################################################################################
+# 84_01_sw3_bbfast_postevent_retreat4p5um_m0
+# SW3 Level 81 focused source-correction confirmation.
+# Parent: SW3_80_POSTPEAK_SOURCE/80_00_sw3_bbfast_exact78_01_control_m0
+# Parameters: 78_01/80_00 retention=0.06 with new reclosure multiplier=1
+# Hypothesis: The default new source path must reproduce the preferred BBFast parent.
+# Decision rule: Reject the source change if this differs from the parent beyond nonlinear solver tolerance.
+# This is a confirmation bracket, not an open-ended sweep.
+######################################################################################
+######################################################################################
+# 84_01_sw3_bbfast_postevent_retreat4p5um_m0
+# SW3 Level 80 post-peak source validation.
+# Parent: SW3_78_MECHANICS_FIRST_LOCAL/78_01_sw3_bbfast_retention0p06_from77_03_m0
+# Parameters: exact 78_01 mechanics/hydraulics with the new paper-frame postprocessors
+# Hypothesis: Recover a complete, current-build CSV for the user's preferred case; the archived 78_01 CSV was overwritten/incomplete although its figures remain.
+# Decision rule: Must reproduce the archived 78_01 curves and provides the direct control for 80_01/80_02 plus the new paper-frame stress audit.
+# All unlisted load-path, mesh, hydraulic, constitutive, and numerical inputs are inherited unchanged.
+######################################################################################
+######################################################################################
+# 84_01_sw3_bbfast_postevent_retreat4p5um_m0
+# SW3 78-series mechanics-first sweep with local and Slurm launch options.
+# Parent: SW3_77_EFFICIENT_THREE_PER_LAW/77_03_sw3_bbfast_jrc23p35_exp1p4_ld60_eta4e11_m0
+# Parameters: retention=0.06; all shear, dilation, and hydraulic parameters held at 77_03
+# Hypothesis: Primary prediction: retain more post-event opening so terminal normal compression and dilation improve together without changing the already accurate terminal shear slip.
+# Decision rule: Accept if terminal sigma_n decreases toward 24.73 MPa without making peak opening more negative than the 77_03 peak.
+# Numerical policy: automatic residual scaling OFF; initial dt=0.75 s; dtmax=0.75 s.
+# Physical gates are enforced by run_local_78.py and score_78_sweeps.py.
+######################################################################################
+######################################################################################
+# 84_01_sw3_bbfast_postevent_retreat4p5um_m0
+# SW3 77-series efficient back-analysis: three direct cases per law.
+# Parent: SW3_75_CORRECTED_DILATION_SWEEPS/75_01_sw3_bbfast_jrc23p2_dil26_26_eta5e11_m0
+# Parameters: JRC=23.35; weakening exponent=1.4; Ld=60um; eta=4e11; hydraulic p=4; gouge=0.40um after 30um
+# Controlled sweep axis: BBFast weakening-shape conservative exponent
+# Back-analysis: This is the smallest departure from the stable 75_01 constitutive shape. The paired D=60 um again holds the 50-um strength nearly fixed, so the comparison isolates curvature.
+# Numerical policy: automatic residual scaling OFF; initial dt=0.75 s; dtmax=0.75 s.
+# Hydraulic correction is mechanistic, not a permeability multiplier: k remains a_h^2/12.
+######################################################################################
+######################################################################################
+# 84_01_sw3_bbfast_postevent_retreat4p5um_m0
+# 75-series corrected-dilation back-analysis; direct run, no selection gate.
+# Clean parent: SW3_74_REFINED_SWEEPS/74_01_sw3_bbfast_jrc23p8_phi7p5_eta5e11_m0
+# Sweep parameters: jrc=23.2;dilation_deg=26_to_26;eta=5e11
+# Purpose: earliest clean BBFast onset bracket with reduced peak-dilation overshoot.
+# Numerical policy: automatic scaling OFF (retained from the clean completed parent).
+# Loading, E=75 GPa/pc=0.87 common control, mesh, outputs, tolerances, and
+# dtmax=0.75 s are unchanged. Dilation validation is already in millimetres.
+######################################################################################
+######################################################################################
+# 84_01_sw3_bbfast_postevent_retreat4p5um_m0
+# Generated from clean completed source 72_01_sw3_bbfast_dil28_26_eta2p5e11_m0.
+# Sweep parameters: jrc=23.8;phi_tail_deg=7.5;eta=5e11
+# Purpose: central clean BBFast correction from the stable 72 deck.
+# Numerical policy: automatic scaling OFF (the 73 BBFast/BBFlow high-eta preload
+# branches were invalid); physical loading, common E=75 GPa/pc=0.87 control,
+# mesh, constitutive tolerances, dtmax=0.75 s, and outputs are unchanged.
+######################################################################################
+######################################################################################
+# 72_01 BACK-ANALYSIS CORRECTION: BBFast
+# E=75 GPa is fixed by the measured event stiffness. Relative to completed 71_01,
+# dilation 32/29.45 -> 28/26 deg corrects excessive opening and eta 1e12 -> 2.5e11
+# shortens the over-slow traverse. Strength JRC=24 and Dc=55 um are held for attribution.
+######################################################################################
+######################################################################################
+# 71_01: SW3 BBFast correction candidate (effective JRC=24, eta=1e12 Pa.s/m)
+# Direct run: common controls are baked into this input; no Stage-1 selection file is required.
+# Relative to 70_01, JRC delays its 480-s-early onset and eta shortens the slow event.
 #
-# 52_24 proved the AD decoupled path is basically right: pressure/flow/permeability
-# improved and the stress-drop timing moved toward the validation curve. It over-shot
-# the mechanical values, though:
-#   - final slip reached ~85.5 um vs. data ~79.1 um;
-#   - post-peak tau fell to ~1.6 MPa vs. data ~2.2 MPa;
-#   - q after the drop was ~2.4 MPa too low;
-#   - the run stopped at t ~= 3255 s, so late flat extrapolation should not be over-read.
+# Common parent: 59_07 corrected SW3 Table-2 / constant-piston / reaction-force deck.
+# Constitutive material: OrcaBartonBandisContactTractionFastADHardening
+# Calibration status: first SW3 transfer; requires calibration.
 #
-# Diagnosis: 52_24 changed two strong hardening levers at once. The smooth residual
-# friction cut 0.07 -> 0.04 was too large, and the secondary weakening onset 48 -> 40 um
-# lets the cliff engage as soon as the model reaches the measured 40 um shelf. That makes
-# the 1500--1700 s slip acceleration too strong and leaves the residual branch too weak.
+# INVARIANTS ACROSS 70_01/11/21/31:
+#   mesh sw3_mesh_size5.e; full t=0..4802 s SW3 pressure schedule; constant actuator
+#   command after the 55 s preload; coupled bulk HM; fault-pressure coefficient 0.85;
+#   Table-2 a_h0=floor=1.22 um; paper Eq. (9) W/L=0.81; reaction differential stress;
+#   inlet/outlet residual-flux diagnostics; dtmax=0.75 s; identical BCs and outputs.
 #
-# This deck keeps the 52_24 load path and hydraulic settings, but brakes the local AD
-# hardening:
-#   - friction_coefficient_smooth 0.04 -> 0.055, the midpoint implied by final slip/q
-#     back-analysis of 52_23 vs. 52_24;
-#   - secondary_weakening_onset_slip 40 -> 44 um, so the shelf is not immediately erased;
-#   - secondary_weakening_distance 14 -> 18 um, spreading the cliff while retaining its
-#     overall shape.
-#
-# No source change is used here. The backend already has the needed hardening knobs; the
-# 52_24 error is a calibration overshoot, not a missing-law limitation.
+# INTENDED DIFFERENCES: the [Materials]/[czm_contact] block and its law-local
+# calibration/regularization values. Do not call these four laws equally calibrated:
+# BBFlow has the corrected completed parent, MC/PST transfer prior SW3 calibrations
+# onto corrected controls, and BBFast is the explicitly documented first SW3 transfer.
 ######################################################################################
 ######################################################################################
-# DECK 52_24 MC DROPBOOST fcs040 s40 dissm012 (from 52_23, 2026-07-15)
+# DECK 59_07 (SW3_July18, 2026-07-20): audit baseline — Table 2, constant piston,
+# external reaction stress, and two independent flow-rate diagnostics.
 #
-# 52_23 fixed the hydraulic/load-path side but still left the AD law mechanically too locked:
-#   - shear slip ended 4.5 um low (74.6 vs 79.1 um);
-#   - reported normal dilation peak was 5.2 um too shallow;
-#   - shear traction stayed high after the drop (end +0.83 MPa; t=1400 +3.36 MPa).
+# This is intentionally forked from completed case 59_05; 59_05 is not overwritten.
+# Changes are limited to corrections required by the Ye & Ghassemi SW-S3 experiment:
+#   1. Constant actuator command after the t=55 s preload. The paper states that the
+#      loading piston did not move during injection; the 59_05 t=2500–2800 retreat
+#      is therefore disabled instead of being used to manufacture the stress drop.
+#   2. Table-2 hydraulic aperture restored: a_h0 = floor = 1.22 um (k=1.24e-13 m2).
+#      The old 0.709 um / 0.42e-13 curve came from a log-axis digitization error.
+#   3. Hydraulic dilation transfer reset to 0.038 as a first Table-2 back-analysis:
+#      target a_h is 1.22 -> 2.10 -> 1.64 um. This changes permeability only; the
+#      mechanical normal jump remains an independently scoreable output.
+#   4. Paper Eq. 9 W/L=0.81 is the primary validation reconstruction. The numerical
+#      source-node-spacing estimate W/L=0.674 is retained as a separate diagnostic;
+#      moving mesh ports without measured borehole coordinates would be unjustified.
+#   5. Differential stress from the applied top reaction is added. Local fault stress
+#      and bulk/top stress remain diagnostics, but are not mixed into one q curve.
+#   6. Both inlet and outlet residual fluxes plus mass imbalance are exported.
+#   7. dtmax 0.75 s improves resolution of the reported <10 s dynamic interval.
 #
-# This deck keeps the 52_23 load path unchanged and retunes only local constitutive levers:
-#   - friction_coefficient_smooth: 0.07 -> 0.04, sized from the deck's measured ~0.4 MPa
-#     residual-tau movement per 0.015 smooth-friction change;
-#   - secondary_weakening_onset_slip: 48 -> 40 um, so the second weakening stage engages closer
-#     to the measured 40 um slip shelf instead of waiting for the model's delayed 48 um crossing;
-#   - dissipation_margin: 0.16 -> 0.12, per the 52_22 falsifier note, to convert the recovered
-#     slip into a little more solved plastic opening.
+# Deliberately held fixed for attribution: effective JRC=25.1 calibration, JCS,
+# friction/state parameters, contact penalties, pressure-traction coefficient=0.85,
+# and the empirical 29.45-degree dilation clamp. JRC=1.96 is the measured surface
+# value; 25.1 must be treated as an effective strength calibration, not a measurement.
+# FALSIFIERS:
+#   - If q_reaction rises before failure while the piston command is constant, the
+#     rise is an internal poromechanical/model response, not a hidden BC ramp.
+#   - If reaction q differs materially from top-stress q, score only reaction q and
+#     audit boundary force completeness before changing friction.
+#   - If residual flow and Eq. 9 flow disagree at pressure holds, inspect port/path
+#     geometry and transient storage; do not retune aperture to force both to agree.
 ######################################################################################
 ######################################################################################
-# DECK 52_23 MC 54_48LOADPATH poro2p9 srelax1p2 (from 52_22, 2026-07-14)
+# DECK 59_05 (SW3_July18, 2026-07-20, ROUND 4): coupling onset lever (coeff 0.85) - later-onset bracket
 #
-# Port of the load-path and hydraulic lessons from the best 54_48 cohesionless hybrid
-# candidate into the AD decoupled dilation/roughness law.  This keeps the AD law's own
-# roughness/RSF/friction calibration from 52_22, but applies the cross-model controls that
-# should be constitutive-law agnostic:
-#   - poroelastic axial compensation: poro_du = 2.9 um, held after t=1000 s;
-#   - reduced post-onset axial relaxation: axial_relax_du = 2.6 um, preserving the 54_48
-#     end-load-line retreat when combined with poro_du;
-#   - late confining side-unload: side_unload_relax_pressure = 1.2 MPa over t=1900..3300 s;
-#   - hydraulic dilation_scale = 0.0117, matching the 54_48 dscale rebalance.
+# ROUND-3 REALIZED (local 8-rank; MD "Round 4"; data in parens):
+#   deck        onset2  slip_end  tau_end  trough      perm_pk   L_end   note
+#   58_03 PST   2193    83.5      (2.00)   15.02@2742  1.407     (13.86) STOPPED t=3183 (inj still 23.7 -> mid-unload; end-state NOT scoreable)
+#   59_03 BB    2149    83.7       1.03    14.40@2699  1.532      12.91  full run t=4802
+#   DATA        2378    73.7       2.30    15.42@2639  1.231      12.77
+# THE DIAGNOSIS (why the r2->r3 strength sweeps kept overshooting onset):
+#   ONSET TIME IS ILL-CONDITIONED AGAINST THE STRENGTH ENVELOPE. Near the critical
+#   load the creep-to-instability clock is near-vertical: BB jrc 24.7 -> onset 2096,
+#   25.1 -> 2149 (133 s per unit jrc), but 25.5 -> ~2550 (1000 s per unit) - a >7x
+#   sensitivity jump over 0.4 jrc. Any strength lever (jrc, jcs, phi_r; PST peak_mu)
+#   has this pathology because it moves the THRESHOLD while the load creeps up to it.
+#   => onset overshoots every round. THE WELL-CONDITIONED LEVER IS THE LOAD SIDE:
+#   fault_pressure_coefficient sets d(sigma'n)/d(injection), so it shifts onset TIME
+#   ~linearly (~96 s per 0.01, from the injection ramp-rate arithmetic) and cannot
+#   flip to no-burst. Bonus: raising sigma'n during the burst ALSO lifts the trough
+#   (14.4 -> ~15.4) AND tempers the over-drive (stronger fault -> arrests sooner ->
+#   less of the +10 um overshoot) AND lowers perm (less BB-closure opening). One
+#   physical knob moves onset+trough+overshoot+perm all toward the data.
+#   SECOND MISS = RELAX OVERLAP: the servo unload (du) must overlap the burst (data L
+#   drops 14.5->12.7 DURING 2400-2500). r3 relax_t0 2450 fired AFTER the early (2149)
+#   burst had already run at full L 16.6 -> +10 um. Fix: slave relax_t0 to onset.
+#   THIRD (tau_end): 59_03 L_end 12.91 ~ data 12.77 ALREADY; its tau_end 1.03 is
+#   ENTIRELY the slip overshoot (L_end - k*s: 12.91 - 0.142*73.7 = 2.44 if slip were
+#   right). Fix the slip and tau_end self-corrects. Same L-identity as SW-S4.
+# NO SOURCE CHANGE. BB dilation-slaving (the SW-S4 issue) does not bite here: dn is
+#   diagnostic (zeta 0.27) and perm is OVER not under, so the slaved burst dilation is
+#   if anything too generous. The recurring pain was calibration conditioning, not
+#   missing physics - solved on the deck side.
+# ROUND-4 MATRIX (dscale 0.0225 UNCHANGED - coupling+slip-fix drop perm on their own;
+#   trim only if perm still >1.5 next round):
+#   59_04 BB  coeff 0.86  relax_t0 2410  (nominal: onset ~2340)
+#   59_05 BB  coeff 0.85  relax_t0 2500  (later-onset bracket: onset ~2435)
+#   59_06 BB  coeff 0.86  SLIP-TRIGGERED relax (probe: auto-arrest, no timing chase)
+#   58_04 PST coeff 0.86  relax_t0 2410  (nominal)
+#   58_05 PST coeff 0.85  relax_t0 2500  (later-onset bracket)
+# ATTRIBUTION: 04 vs 59_03/58_03 = the coupling+overlap fix; 05 vs 04 = coupling
+#   sensitivity (relax tracks onset); 06 vs 04 = time-relax vs slip-triggered relax
+#   (does auto-relax remove the onset<->relax chase?).
+# THIS DECK: BB coeff 0.88->0.85 (onset ~2435), relax_t0 2450->2500. Brackets 59_04 on the late side so the 0.88/0.86/0.85 triple gives a clean coeff->onset map (relax >= onset in all three).
+# EXPECT: onset 2380-2520; slip end 73-78; tau_end 2.1-2.7; trough 15.2-16.0; perm pk 1.15-1.35; L_end ~12.8. If onset lands 2360-2400 this is the winner.
+# FALSIFIERS: onset >2540 or no burst by 2560 -> coeff too low, back to 0.86 AND relax_t0 -> 2540; trough >16.2 -> coupling over-strengthened, use 0.86; else as 59_04.
+# ---- parent 59_03 banner below ----
+######################################################################################
+# DECK 59_03 (SW3_July18, 2026-07-19, round 3): jrc re-split + relax overlap + dscale
 #
-# AD-specific choice: retain 52_22's relax_t0=1200 / relax_dur=600 timing because that
-# deck explicitly delayed the relaxation past the AD first-yield dt crawl; the end state is
-# still reached at the same trough window as 54_48.
+# 59_02 RESULT (local 8-rank, full t=4802; MD "Round 3"): the AHFLOOR fix + gate 2um
+# + jrc 24.7 SWUNG PAST CENTER: 2um creep at 2096 (data 2380; 59_01 with jrc 25.5
+# never fired), burst 2250-2500 entirely BEFORE the relax (t0 2550) -> full L 17.3
+# -> slip 96.7 um (data 73.7), tau_end 0.69, perm peak 2.35 (data 1.23). The GOOD:
+# sn trough 15.15 ~ data 15.4, sn end 26.1 ~ 24.7, and the creep-clock is now
+# BRACKETED BOTH SIDES: jrc 24.7 -> 2um @ 2096; jrc 25.5 -> ~2550-2650 (59_01,
+# floor-corrected). The tail is post-mortem garbage - do not tune on it.
+# THREE fixes (this deck):
+#   1. jrc 24.70 -> 25.10: log-interp of the measured bracket for 2um ~ 2350 ->
+#      mobilization gate crossed ~2350-2420, burst 2380-2540.
+#   2. relax_t0 2550 -> 2450, relax_dur 400 -> 300: overlap the burst (data L 13.94
+#      at 2500); arrest ladder (L(t)-tau_res)/k: 90/84/75 um at 2550/2650/2750;
+#      du 14.0 kept (locked-fault delivery -0.272 MPa/um -> L_end ~12.8).
+#   3. dilation_scale 0.038 -> 0.0225 (x0.59): 59_02 grew a_h +0.92 um at g_np 53 um
+#      (pinned 29.45-deg dilation x over-slip); data grew +0.506. At corrected slip
+#      ~74: dil*ret 0.40 + BB closure 0.375 lands peak 1.214 (data 1.215), end 0.948
+#      (data 0.953).
+# EXPECT: onset(2um) 2330-2420, burst 2380-2560, end 72-78, tau_end 2.0-2.6, sn
+# trough 15.0-15.8, perm 0.42 -> ~1.2-1.35 -> ~0.8, L_end ~12.8.
+# FALSIFIERS: onset < 2280 -> jrc -> 25.3; no burst by 2500 -> jrc -> 24.9 AND
+# relax_t0 -> 2550 (59_01 starve mode); end > 80 -> relax_t0 -> 2400; end < 69 ->
+# relax_t0 -> 2500; perm peak > 1.5 -> dscale -> 0.019. NOTE flow-rate panel ~6x low
+# at matched perm (SW3 area constant, unaudited) - do not tune physics on it.
+# ---- original 59_02 banner below ----
+# DECK 59_02 (SW3_July18, 2026-07-19, round 2): AHFLOOR bugfix + onset re-arm
+#
+# 59_01 RESULT (full HPC t=4802): NO BURST - slip end 2.2 um vs data 73.7; tau_end
+# 11.84 (elastic lock). FOUR findings from the CSV (full writeup in the SW3 MD):
+#   1. APERTURE FLOOR BUG (deck-cut error, mine): initial_hydraulic_aperture was
+#      corrected to 0.709 um but min_hydraulic_aperture stayed 1.22 (the v6 "floor =
+#      initial" convention) -> a_h clamped straight back to 1.22 and PINNED (perm flat
+#      1.24e-13 all run; hydraulic panel inert). FIXED: floor 0.709.
+#   2. THE DESIGN sn PATH NEVER ARRIVES: round-1 sized the jrc 25.5 envelope to cross
+#      at sn ~ 22, but the REALIZED pre-burst path bottoms at sn 23.4-23.7 (quasi-
+#      steady fracture pressure mean ~17.4 is pinned by the outlet BC at 5 MPa and
+#      sn_tot RISES poroelastically 39.0 -> 41.0). g-crossing with 25.5 came only at
+#      ~2550-2600 - marginal and too late. FIXED: jrc 24.70 -> crossing at sn ~ 25.3
+#      (t ~ 2380-2450) ON THE REALIZED PATH. Residual cost ~0.2 deg at arrest y.
+#   3. GATE UNCROSSABLE: mobilization_onset_slip 4 um (imported from SW-S4 57_05) vs
+#      realized pre-onset creep of only 2.0 um by t=2500 -> the table never started
+#      decaying -> no self-acceleration. SW-S4 forgives late gates (repeated injection
+#      steps); SW-S3 gives ONE window. FIXED: back to v21's empirically-anchored 2 um
+#      (v21 creep-clock hit 2.00 um exactly at its onset; jrc -0.8 speeds the clock
+#      ~x2 -> 2 um by ~2350-2420).
+#   4. RELAX: delivery MEASURED on the locked fault: du 16 um -> L 16.50 -> 12.15 =
+#      -4.35 MPa (-0.272 MPa/um), overshooting data L_end 12.78 by 0.63 -> du 14.0.
+#      And t0 2650 closed the burst window before onset; data L is already 13.9 at
+#      t=2500 (servo retreats DURING the burst tail) -> t0 2550, dur 400 kept.
+# FIVE changes vs 59_01: min_hydraulic_aperture 1.22e-6 -> 0.709e-6; jrc 25.50 ->
+# 24.70; mobilization_onset_slip 4e-6 -> 2e-6; relax_t0 2650 -> 2550; axial_relax_du
+# 16.0e-6 -> 14.0e-6. (delta_p 1.60, df/29.45-pin, kappa 8.0e-9, visc 5e12 all kept.)
+# EXPECT: onset 2380-2520 (data 2380); burst 0 -> 55-65 um by ~2600-2650; sn trough
+# 15-16.5 (data 15.4) NOW REACHABLE (dilation-fed aperture growth unclamped); tail
+# creep arrested by the relax at s_end 71-76; tau_end = L_end - 0.142*s_end ~ 2.2-2.7
+# (data 2.30); perm 0.42 -> ~1.2-1.5 -> ~0.7-0.9e-13 (data 0.42/1.23/0.76).
+# FALSIFIERS: no onset by 2550 (slip < 4 um) -> jrc 24.7 -> 24.4 AND relax_t0 -> 2650
+# (do NOT touch the gate); onset < 2300 -> jrc -> 25.0; burst overshoots (slip@2650 >
+# 80) -> relax_t0 -> 2500 or visc 5e12 -> 8e12; L_end from CSV: > 13.1 -> du -> 15.5,
+# < 12.5 -> du -> 13.0; trough < 14.5 -> check aperture growth (dilation_scale chain)
+# before touching strength. KNOWN SCORING CAVEAT: the flow-rate panel reads ~6x low
+# at MATCHED perm and matched inlet/outlet (0.144 vs 0.84 ml/min in 59_01) -> the
+# flow_rate_validation area/width constant needs an audit for the SW3 mesh; do not
+# tune physics against the flow panel until audited. dn stays DIAGNOSTIC (zeta 0.27).
+# ---- original 59_01 banner below ----
+# DECK 59_01 (SW3_July18, 2026-07-18): SW-S3 VERIFICATION of the SW-S4-validated
+# BB flow-RSF product. Fork of SW3 v21 with the three shared deck corrections
+# (LOADRELAX restored / a_h0 0.709 um / DMGREV kappa 8e-9 -- see the 58_01 banner:
+# v21's own +30 um over-slip is fully explained by its L_end 16.9 vs data 12.78,
+# so the v21 MECHANICS with the corrected load line already lands at ~72 um) plus
+# TWO BB-specific onset fixes sized from the v21 CSV:
+#
+# 1) jrc 23.10 -> 25.50: v21 slipped at t=1684 / sn 27.2 (data 2380 / ~22-23) --
+#    the envelope crossed too early. tan(8.51 + 25.5*log10(300/23))*0.9*23 ~ 15.3
+#    = drive -> crossing at sn ~22 on the corrected (3x slower) pressurization.
+#    Residual cost ~+0.55 deg at y(74/1.6)~0.23. Same documented fiction as 23.1
+#    (no honest BB saw-cut parameterization), resized to the corrected drive path.
+# 2) mobilization_onset_slip 2 -> 4 um (the SW-S4 57_05-validated creep gate):
+#    v21's pre-onset creep hit 2.00 um exactly at its onset -- the convex Barton
+#    table started burning immediately. 4 um of non-damaging creep arrives only
+#    near t ~2350-2400.
+#
+# peak_shear_displacement 1.60 um KEPT (v21 arrest sizing now correct under the
+# restored load line); NO mobilization shelves (SW-S3 is the single-burst sample;
+# the MULTISHELF staircase feature stays default-off).
+# TARGETS: onset ~2380, slip end 73.7 um, tau_end 2.30, sn trough/end 15.4/24.7,
+#   q_end 5.4, k 0.42 -> 1.23 -> 0.76 e-13, Q_pk 0.84.
+# FALSIFIERS: onset still >200 s early -> raise mobilization_onset_slip to 6 um
+#   (NOT jrc: arrest pays); slip < 65 -> dp 1.6 -> 2.0; slip > 80 with L_end ~12.5
+#   -> dp 1.6 -> 1.2; burst dt-crash -> tangential_viscosity 5e12 -> 2e13 (v20
+#   banner ladder), then dp +0.4. W/k print will read ~15-20: expected, the burst
+#   IS supercritical; flow-RSF + viscosity carry the traverse (57_05 precedent).
+# RUN: needs the current MULTISHELF-era build (cluster already has it since 57_05).
 ######################################################################################
 ######################################################################################
-# DECK 52_22 LOADRELAX2 (from 52_21, 2026-07-12, round 11): fix 52_21's numerical death.
-# 52_21 DIED at t=1047: dt collapsed at t=994 (FIRST YIELD, before the relax was even
-# active) and never recovered - the relax's negative dtau/dt landed inside the stick->slip
-# branch transition (the marginal RSF b=0.016 @ visc 5e12 regime; 52_19 crossed the same
-# crawl at dt 0.063 over t=994-1100 and RECOVERED by t=1100 because nothing was unloading).
-# FIX (2 changes + relax retune):
-#   relax_t0  1000 -> 1200 (starts AFTER the measured recovery of the onset crawl; slip ~10um,
-#                           V ~ 4.5e-8 m/s, dt back at 1.5 s in 52_19)
-#   relax_dur  800 -> 600  (full relaxation still reached at the sigma'n trough t~1800)
-#   axial_relax_du 5.7e-6 -> 6.2e-6 and fcs 0.0825 -> 0.07 (see below): sized from the round-11
-#   ARREST-POINT AMPLIFICATION law measured on 54_23 & SW3-v9: Delta_s = Delta_L/(k_sys - k_w),
-#   k_w = local strength slope at arrest. MC k_w ~ 2.9e10 (R-tail 2.3e10 + TS tail 0.6e10) ->
-#   ds/dL = 10.4 um/MPa. du 6.2um: dL 0.775 -> slip 87.1 - 8.1 = 79.0; fcs 0.0825->0.07 lowers the
-#   arrest strength 0.17 MPa (data sits 0.2 below the model mu(s) tail at 79um: 52_19 tau_end 2.19
-#   was AT 87um; S(79.7) ~ 2.40) -> +1.8um back = 80.8um and tau_end = L_end - k_sys*s = 2.20.
-# PREDICT: completes t=3500 (relax outside the crawl window); onset ~1015 (fcs cut moves the
-# PEAK envelope < 0.02 MPa - onset is fcr/R0-controlled); slip_end 80.8 +- 1.5; tau_end 2.20 +- 0.1;
-# L_end 12.30; q_end ~5.0; trough ~14.6; dn_peak ~ -0.0386 (known -6%: plastic part scales with slip;
-# recover next round via dissm 0.16->0.12 if slip lands).
-# FALSIFIERS: dies again near onset -> the crawl is relax-independent, raise visc to 8e12 during
-# a re-issue; slip < 78.5 -> MC k_w is larger than 2.9e10, recompute A from this run's own pair.
+# DECK SW3 v21 BB FLOWRSF ARRESTFIX (from v20, 2026-07-17)
+#
+# v20 LOCAL MIDWAY RESULT (16 ranks, t=0-2400, exit 0 -- NOTE: v20 traversed its whole
+# burst at dt = 1.5 with ZERO failed steps locally, so the HPC "short time step" failure
+# is NOT deck-reproducible; slurm log still wanted). Physics vs data:
+#   burst t ~ 1200-1500 (data ~1500-1700: ~250 s early);
+#   slip 103.5 um at t=2400 and still creeping (data final 73.7: +40% OVERSHOOT);
+#   tau 2.21 MPa at sigma'n 17.7 (data residual ~3.55: OVER-WEAKENED).
+# Both misses point the same way: the tail-pinned delta_p = 1.13 um bottoms the backbone
+# out too deep/too fast, so the burst jumps past the data's arrest point.
+#
+# TWO changes vs v20 (uses the NEW mobilization_onset_slip param -> REBUILD orca-opt):
+#   1. peak_shear_displacement 1.13e-6 -> 1.60e-6: arrest re-sized on the mobilization
+#      table -- backbone at the sigma'n trough (15.25 MPa) crosses the data's residual
+#      ratio 0.233 at s = 84 um (v20: ~104+ and still creeping); mu(74 um, trough) =
+#      0.262 -> residual tau ~ 3.2-3.5 MPa (data 3.55, v20 gave 2.21). W/k 15.0 -> 10.5
+#      (still "> 1: dynamic burst" -- correct for SW-S3).
+#   2. mobilization_onset_slip = 2e-6 (NEW param): the first 2 um of plastic slip do not
+#      decay JRC_mob. v20's pre-burst creep was ~0.35 um by t=1200 and Barton's table is
+#      steepest at x=1, so creep self-fed the early breakaway; the 2 um hold-off delays
+#      burst onset toward the data window WITHOUT raising peak or residual (JRC stays
+#      23.10; the alternative +1.6 JRC would distort the whole envelope).
+# EXPECT: burst onset +200-400 s (toward ~1500), arrest ~80-90 um (data 73.7), residual
+# tau ~3.2-3.5, unchanged early/stick phases. Startup print MUST show: JRC_n 23.1,
+# delta_p 1.6e-06 m (user), W_max/k_tau ~ 10.5 "> 1: dynamic burst".
+######################################################################################
+######################################################################################
+# DECK SW3 v20 BB FLOWRSF (from v19, 2026-07-17) -- NEW MATERIAL
+#
+# SW-S3 on OrcaBartonBandisFlowRSFContactTraction: Barton--Bandis strength (phi_r +
+# JRC_mob*log10(JCS/sigma'n), Barton 1982 post-peak JRC-mobilization table) on the
+# SAME flow-form RSF chassis as v19 (identical penalties, viscosity, RSF set,
+# stick_velocity_floor, load path, hydraulics). Only the [czm_contact] block differs;
+# calibration, the structural shape miss, the W/k ~ 15 cliff warning, and fallbacks
+# are documented at the block. Companion deck: SW4 57_01 (staircase case) -- together
+# they put the BB family and the PST law on identical rate structure and numerics.
+#
+# NOTE v19 STATUS: v19 was reported non-convergent on HPC (2026-07-17, log not yet
+# inspected -- cause unknown; the stick-floor fix IS in that build since SW4 56_02 ran
+# clean on it, so this is a different mechanism, most likely the burst traverse). This
+# deck does not inherit any v19-specific fix beyond the standard guards; its own cliff
+# is HARDER (W/k ~ 15 vs 1.64), so treat the first submission as a numerics probe and
+# apply the block-header fallbacks if it dies in the burst window.
+# REQUIRES a REBUILT orca-opt (new material class: pull + make on the cluster first).
+######################################################################################
+######################################################################################
+# DECK SW3 v19 PST FLOWRSF (from v12, 2026-07-17)
+#
+# SW-S3 with the NEW paper-derived law: OrcaPeakShelfTailFlowRSFContactTraction
+# (see Examples/YeGhasemmi2018/HARDENING_LAW_FROM_YE2018_SW_S3_SW_S4.md).
+#
+# Three changes relative to v12, all motivated by the 0-D study:
+#
+# 1) CONSTITUTIVE SWAP: roughness-decay Coulomb + secondary weakening + referenced
+#    (clamped) RSF -> peak-shelf-tail friction with FLOW-FORM rate-and-state.
+#    Deck-frame backbone: mu_qs = 0.14 + (0.26-0.14)*exp(-s/40um)
+#                                 + (0.68-0.26)*exp(-(<s-10um>/25um)^1.4)
+#    The m_c = 1.4 concentration branch is the rough-saw-cut knob: W_max ~ 2.7e11 Pa/m
+#    at sigma'n = 22 MPa -> W/k ~ 1.4-2 -> single dynamic burst (SW-S3-type), arrested
+#    on the mu_shelf = 0.26 SHELF the v12 roughness law lacked (study section 4.1: v12's
+#    strength had no stable arrest point; HEAVYVISC was standing in for one).
+#
+# 2) VISCOSITY OFF THE CRUTCH: tangential_viscosity 3.0e13 -> 5.0e12 (standard value).
+#    The flow-form a*sigma'n*asinh(V) direct effect now regularizes the burst arrest.
+#
+# 3) LOADRELAX DISABLED: axial_relax_du 16um -> 0. The v9 piston-retreat surgery
+#    emulated missing post-peak creep/relaxation; the flow form creeps physically
+#    (sub-V0 velocities below quasi-static strength), so the artificial load-line
+#    correction is removed. If the post-burst tau tail sits high, first check the
+#    reported creep velocities before reintroducing any relax.
+#
+# Onset sizing: deck peak 0.68 realizes ~0.61-0.65 mobilized at the fault (campaign
+# realization factor ~0.9), i.e. onset mid-ramp 24->28 MPa like the data. If onset
+# lands a step early, raise peak_friction_coefficient by +0.01 first.
+#
+# FAILURE + FIX RECORD (2026-07-17). First full run (HPC, 64 ranks) died min_dt at the
+# ramp->hold transition (last converged t=55.776 s). Root cause, reproduced locally with
+# -snes_linesearch_monitor: with the pure always-flow form the preloaded fault creeps at
+# V ~ 1e-14 m/s, and |R| floors at a dt-INDEPENDENT plateau (measured 1.70/1.69/1.70e-4 N
+# at dt=1.5/0.75/0.375 s; full Newton steps with exact MUMPS solves cannot descend --
+# residual structure at the gamma* = V*dt ~ 1e-13 m excursion scale). The ramp masked it
+# via nl_rel_tol (|R|0 ~ 1e3 N); the first hold step (|R|0 ~ 3e-3 N) exposed it; dt cuts
+# only shrink |R|0 -> death spiral to dtmin. NOT recoverable by IterationAdaptiveDT or
+# line search (l2 landed lambda=1 throughout: direction, not step length).
+# TWO-PART FIX:
+#   1) MATERIAL (rebuild orca-opt required): stick_velocity_floor = 1e-11 m/s (~0.6
+#      nm/min, 30x below measurable creep) takes exact elastic stick below the floor,
+#      half-decade smoothstep blend in ln V, theta keeps aging. Cuts the plateau 4x
+#      and makes preload steps parent-like. All resolvable creep still flows.
+#   2) DECK: nl_abs_tol 1e-6 -> 1e-4 N (the residual floor of edge/transition-band qps
+#      sits at ~4e-5 N here; 1e-4 N is ~1.5e-9 of the 70 kN load scale -- inert).
+#      If a later stage still floors above 1e-4, raise stick_velocity_floor to
+#      3e-11..1e-10 before touching anything else.
+# VERIFIED (local, 8 ranks, fixed build): ramp + hold window incl. the previously fatal
+# step converge at dt=1.5 under these settings; SW4 sibling deck (56_01) clean through
+# t=90 at its own tolerances with the same build.
+######################################################################################
+######################################################################################
+# DECK SW3 v11 BOUNDEDTAIL (from v10-corrected, 2026-07-12, round 12). v10 DIVERGED at
+# t~2610-2750 (HPC dt -> 2e-6, q_end -2.9): the fault ran to 97 um with tau -> 0.01 MPa =
+# TOTAL STRENGTH COLLAPSE, not an arrest. TWO stacked design flaws (MD s29):
+#  (1) UNBOUNDED TAIL: fcs 0.02 R-floor (0.657*0.145*17 ~ 1.7 MPa) MINUS the TS depth 2.5
+#      -> net strength clamps at ZERO once s > ~85 um -> frictionless fault -> runaway
+#      (the aperture deck-41 lesson, now on the strength side: every weakening stack needs
+#      a positive bound the HM feedback cannot pierce).
+#  (2) RELAX-TIMING COUPLING: the weaker tail let slip arrive at s=70 um by t~2650 when the
+#      t=2400->2900 relax had delivered only ~50% -> driving there was ~5.2 not 2.5 MPa ->
+#      blew through the designed arrest and into the zero-strength zone.
+# FIXES (three, each closing one hole):
+#  TS OFF (dS = 0): the tail bound is back to the R-floor ~1.7-2.0 MPa > 0 ALWAYS.
+#  Ld 52 -> 34 um: the tail thinning moves into R itself, which CANNOT undercut the floor:
+#      mu(70um) = 0.02 + 1.2513*(0.1+0.54*e^(-70/34)) = 0.239 -> S(70) ~ 0.7*0.239*18 = 3.0.
+#      Early slope 1.2513*0.54/34e-6*0.7*26e6 = 3.6e11 = 2.5x k_sys -> a REGULARIZED BURST
+#      (v8/v9 already ran at 1.4x under visc 6e12; the data's own slip 0->70 um in ~300 s IS
+#      bursty; dtmin 1e-4 + eta guard it).
+#  relax_dur 500 -> 250 (t0 2400 kept): full relaxation by t~2650 = when the burst arrives,
+#      so the arrest arithmetic uses the FULL-relaxed load line L = 12.45.
+# ARREST PREDICTION (factor 0.7, sigma'n 18): S(68) = 0.7*(0.02+1.2513*0.1731)*18 = 2.98 vs
+# driving(68) = 12.45 - 142*0.068 = 2.79 -> arrest 68-70 um at tau ~2.9-3.0, tau_end 2.4-2.6
+# after unload decay, q_end ~7 (from 16), dn_pk ~ -48, Q_pk ~0.80-0.85 (W/L 0.674 + dilscale
+# 0.038 kept). FALSIFIERS: slip < 64 -> Ld 38; slip > 74 or tau_end < 2.2 -> Ld 31; burst
+# dt-crash -> visc 8e12 (keep Ld). NB fcs/fcr/W-L/dilscale/RSF/visc all kept from v10-corrected.
+######################################################################################
+######################################################################################
+# DECK SW3 v10 ARREST -- CORRECTED SIZING (2026-07-12 evening). The first-cut v10
+# (fcr139/Ld75/TS4e6) was INVALIDATED BY LOCAL RUN before HPC: at t=3078 slip was 6.2 um
+# (predicted onset 2410) - the fcr pairing had used the SW-S4 R0=0.45, but SW-S3 runs at
+# initial_roughness = 0.64 -> peak mu_nom was 0.02+1.37*0.64 = 0.897 vs v9's 0.821 (+1.5 MPa
+# envelope). CORRECTIONS (all re-anchored to R0=0.64 and to v9's own MEASURED arrest):
+#   fcr 1.39 -> 1.27  (mu_peak = 0.02 + 1.2513*0.64 = 0.8208 = v9 exactly -> onset ~2412)
+#   Ld  75 -> 52 um   (revert: the Ld-75 stability arithmetic also used dR=0.35, but dR=0.54;
+#                      v8/v9 ran STABLE at Ld 52 / slope ~1.4x k_sys under visc 6e12 - and the
+#                      corrected-v10 local run itself showed dt_min 1.5 through yield)
+#   TS dS 4.0e6 -> 2.5e6 (tail re-anchored EMPIRICALLY: v9 arrest factor = 6.12/(mu_nom(51.6)*
+#                      sigma'n 19) = 0.657; S(72um) = 0.657*0.3143*18.5 = 3.82; data needs 2.3
+#                      -> TS(72) = 1.5 MPa = 2.5e6*(1-e^(-34/36)); slope 6.9e10 = 0.49*k_sys)
+# ARREST CHECK (corrected): S(70) = 0.657*0.3207*18.5 - 1.47 = 2.43 vs driving 12.45-142*0.070
+# = 2.51 -> arrest 70-72 um at tau ~2.4; mid-branch S(51.6) - TS 0.79 = 4.14 < driving 5.15 (keeps
+# sliding through v9's arrest point). Original (mis-sized) header kept below for the record.
+######################################################################################
+# DECK SW3 v10 ARREST (from v9, 2026-07-12, round 11). v9 RESULT: the LOADRELAX du=16um
+# landed the load line ON the data (L_end 12.45 vs data 12.42, k_sys 1.42e11) but the fault
+# ARRESTED at (51.6 um, tau 6.12@2900 -> 5.17 end) instead of the data's (72, ~2.5 -> 2.2):
+# the RESIDUAL ENVELOPE is ~3 MPa too strong - v8's "slip match" at 79 um was excess load
+# (L_end 16.18) pushing through it. Slip drop 79->51.6 = 27.4 um from a 16 um relax =
+# amplification 1.71 = k_sys/(k_sys-k_w) -> k_w ~ 5.9e10 (the mu(s) tail slope).
+# FIVE sized changes (relax kept EXACTLY as v9):
+#  (1) fcs 0.20 -> 0.02 + fcr 1.17 -> 1.39: holds peak mu_nom 0.6365 (onset 2412 preserved)
+#      while cutting the tail: mu_nom(72um) 0.382 -> 0.341 (with Ld 75 below). Realized-strength
+#      report factor measured from v9's own arrest: 6.12/(0.4234*19) = 0.76.
+#  (2) Ld 52 -> 75 um: MANDATORY with the bigger (fcr-fcs): early weakening slope
+#      (fcr-fcs)*0.35/Ld*0.76*sigma'n(26) must stay < k_sys: Ld52 -> 1.82e11 = CLIFF;
+#      Ld75 -> 1.26e11 = 0.89*k_sys (v8 was 1.29e11 = 0.91*k_sys, stable).
+#  (3) TWOSTAGE ON: dS 4.0e6, s* 38 um, w 36 um (peak slope 1.11e11 = 0.78*k_sys, stable).
+#      SW-S3's own tail demands it: data strength(72um) = L - k_sys*72um = 2.2-2.5 MPa but the
+#      exponential-R floor with ANY fcs >= 0 gives >= 0.76*fcr*0.1*19 = 2.0 + R-tail 1.9 = 3.9.
+#      TS(72) = 4.0*(1-e^(-34/36)) = 2.4 MPa bridges exactly the measured deficit.
+#  (4) FLOW-PANEL FIX: paper W/L was the SW-S4 value 0.81; SW-S3's inlet-outlet path is 1.202x
+#      longer (0.09554 vs 0.07946 m) -> paper_flow_width_over_length_sw_s3 = 0.674. v9's Q_peak
+#      1.228 was 46% over data 0.838 PARTLY from this (corrected: 1.022, still +22%).
+#  (5) dilation_scale 0.06 -> 0.038 (the queued retune, resized post-ppfix): remaining +22%
+#      Q excess needs a_h x0.936; v10 slip grows dilation ~x1.36 -> scale 0.06*0.75/(0.90*1.36).
+# ARREST PREDICTION (sigma'n@2900 ~18.5): S(70) = 0.76*0.3455*18.5 - TS(70) 2.36 = 2.50 vs
+# driving 12.45-142*0.070 = 2.51 -> arrest 70-72 um, tau@2900 ~2.5, tau_end 2.2-2.4, q_end ~6,
+# dn_peak ~ -0.048, Q_peak ~0.85-0.90. FALSIFIERS: slip > 75 -> dS 4.0 too deep, take 3.4;
+# slip < 66 -> raise dS to 4.6 (NOT fcs: onset would move); early cliff/dt crash at ~2450 ->
+# Ld 75 -> 85.
+######################################################################################
+######################################################################################
+# SW-S3 TRANSFER DECK (v5, 2026-07-09): the FULL calibrated SW-S4 deck-52_12 configuration
+# (cohesionless fcr 1.17 + dissipation_margin 0.16 + pcoeff 0.88 + referenced RSF + visc 6e12 +
+# power-law-BB aperture closure + smooth gouge + REVcn reconstruction + compliant compensated frame)
+# transplanted onto the SW-S3 ROUGH saw-cut geometry/protocol. SAME-GRANITE story: only the
+# ROUGHNESS STATE and case geometry/loads change vs SW-S4.
+#
+# SW-S3 back-analysis (validation/ CSVs, 2026-07-09):
+#   q_init 35.0 / tau_init 14.84 / sigma'n_init 32.12 (theta=29deg: tau/q = 0.424 consistent)
+#   NO slip until t~2390 (Pi~26!) at mobilized mu = 0.62 -> ONE unstable burst 0->72 um in ~360 s
+#   (descent ~1.5e11 Pa/m ~ frame-limited = genuine instability; model regularizes via visc+RSF and
+#   will spread it somewhat -- same class as SW-S4's 1650 s event but stronger), immediate re-stick,
+#   tau 3.3->2.30 elastic through unload. sigma'n trough 15.42@2639, end 24.72. Slip 73.8 um.
+#   k: 0.418e-13 -> 1.23e-13 peak -> 0.757e-13 end (a_h 0.709 -> 1.215 -> 0.953 um).
+#   mu(s): 0.62@onset -> ~0.52@20-40um -> 0.29@60 -> 0.23@70: ONE continuous exponential decay ->
+#   TWOSTAGE OFF (dS=0). NORMAL-DILATION digitization UNUSABLE (raw -38..-44 mm) -> dn NOT a
+#   calibration target here (kept SW-S4 dilation/REVcn settings; re-digitize to activate).
+#
+# TRANSFER SIZING (first cut -- gate-calibrate axial_pres_final locally before HPC):
+#   initial_roughness 0.45 -> 0.64: same asperity endpoints fcr 1.17/fcs 0.0825 (same granite),
+#     mu_eff(R=0.64) ~ 0.68 vs data onset 0.62 (+9% side-average margin, the SW-S4 lesson).
+#   roughness_decay_distance 115 -> 52 um: R(72)/R(0)=0.37 from the measured mu drop 0.62->0.23.
+#     NB onset strength slope ~2.2e11 > k_sys ~1.0-1.2e11 -> the burst is REAL (data shows it);
+#     visc 6e12 + RSF are the regularizers; if the run stalls at the event raise visc to 1e13.
+#   Preload: sigma1 65 MPa (q=35 @ sigma3 30). Rigid dsig/du = 4.13e11*(100.28/124.4) = 3.33e11
+#     -> u_rigid(34 MPa) = 102.1 um; spring 65e6/1.2e12 = 54.2 um -> axial_pres_final ~ -1.563e-4.
+#     Same rig -> axial penalty 1.2e12 kept; axial_pres_initial -2.5833e-5 (same -31e6 IC).
+#   Aperture: a_h0 0.709 um (k0 0.418e-13); BB power-law rescaled to SW-S3 peak opening +0.51 um:
+#     Vm 0.85 -> 1.2 um, Kni -> 1.25e13 (sigma0 = Vm*Kni = 15 MPa held), p=2, ref 32.1e6.
+#   Injection: SW-S3 digitized staircase (11 stages Pi 8->28.6->8, ~430 s stages, end 4802 s).
+#   OPEN ITEMS: paper flow W/L kept 0.81 (SW-S4 value; SW-S3 peak Q 0.84 ml/min is 7x SW-S4 --
+#     if flow panel is systematically off rescale W/L, not the physics); flow_rate_residual_volume
+#     PP keeps SW-S4 geometry constants (diagnostic only); gouge/retention kept SW-S4 (dn-coupled,
+#     unverifiable until re-digitization).
 ######################################################################################
 ######################################################################################
 # Ye & Ghassemi (2018) SW-S4 -- DD02 "smooth fracture" replication (cap1e6 slip-cap case)
@@ -308,22 +688,67 @@
 ######################################################################################
 
 # --- mesh / geometry ---
-mesh_file = mesh/ye2018_sw_s4_size5_mesh.e   # Orca_2.0 reference SW-S4 mesh (pre-tagged top/bottom/sides/pins)
-sample_radius = 0.025255             # m, SW-S4 radius (D = 50.51 mm); cylinder radius used by the confining BC
-sample_area = 2.00375499689e-3
-bulk_sin_theta = 0.5
-bulk_cos_theta = 0.8660254037844387
-axial_bc_penalty = 1.2e12          # BATCH4 Pa/m; f*penalty in SERIES w/ rock (k_rigid=1.5e11 tau-slip) -> k_sys ~ k_exp=1.25e11. NOT k_exp itself (batch-3 error #2).
-axial_pres_initial = -2.5833e-5       # BATCH4 = -sigma_zz0/penalty (sigma0=31 MPa isotropic IC): spring pre-compressed so t=0 is in equilibrium
-axial_pres_final   = -9.84e-5         # retained from the 52_22/54_48 preload gate.
-relax_t0 = 1200.0                 # AD-specific carry-over from 52_22: starts after the first-yield dt crawl.
-relax_dur = 600.0                 # Full relaxation still reaches the sigma'n trough window (~1800 s).
-poro_du = 2.9e-6    # CONTROL: legacy fitted poroelastic piston compensation
-poro_dur = 945.0                  # Ramp from t=55 to t=1000, then hold.
-axial_relax_du = 2.6e-6    # CONTROL: legacy fitted late piston relaxation
+mesh_file = mesh/sw3_mesh_size5.e   # SW-S3 rough saw-cut (theta=29deg, D=50.53mm, L=124.4mm), pre-tagged scaffold
+sample_radius = 0.025265             # m, SW-S4 radius (D = 50.51 mm); cylinder radius used by the confining BC
+sample_area = 2.0053421295e-3        # m2, pi*sample_radius^2; nominal area used for applied reaction stress
+axial_bc_penalty = 1.0e13          # SW3-v8 (STIFFFRAME2): 2.4e12 -> 1.0e13. MEASURED from the v6/v7 pair
+                                   # (burst dtau/ds = 1.079e11 @1.2e12 and 1.248e11 @2.4e12): series model
+                                   # 1/k_sys = 1/k_rock + 1/(f*axp) solves to f = 0.334, k_rock = 1.478e11
+                                   # Pa/m -- i.e. k_sys SATURATES at 1.48e11 even rigid (data wants 1.51e11,
+                                   # right at the ceiling). axp 1e13 -> k_sys ~ 1.42e11; slip = dtau_burst/
+                                   # k_sys ~ 10.3e6/1.415e11 ~ 73 um (+ arrest creep) vs data 71-73.
+                                   # effective system than SW-S4: burst dtau/dslip = 10.7 MPa/71 um = 1.51e11
+                                   # Pa/m (SW-S4: 1.25e11). Series estimate with k_rigid ~1.5e11 (tau-slip) and
+                                   # f~0.62: penalty 2.4e12 -> k_sys ~1.36e11 -> burst slip (14.8-3.55)/1.36e11
+                                   # ~ 82 um (v6 predicts ~90 at 1.25e11; data 71). NB k_rigid/f are SW-S4-mesh
+                                   # measurements -- treat v7 as the stiffness AXIS of the sweep, v6 as control.
+                                   # COMPENSATION RE-DERIVED for the new penalty (below) -- a penalty change
+                                   # without it re-breaks the preload (batch-3 bug).
+axial_pres_initial = -3.1e-6          # SW3-v8: = -sigma_zz0/penalty = -31e6/1.0e13 (spring pre-compressed so t=0 equilibrium)
+axial_pres_final   = -6.41358437936e-5 # E=75 GPa; preserves the 31 MPa preload through the axial rock/penalty series
+# relax_t0 removed in DECK59_07: no post-preload actuator retreat.
+                                  # servo retreats DURING the burst tail, not after); 2550 starts just after the
+                                  # predicted onset 2420-2520 so the burst is never starved pre-onset (the 59_01
+                                  # death) yet the tail is caught and arrested at ~72-75 um. Full delivery by 2950.
+# relax_dur removed in DECK59_07: no post-preload actuator retreat.
+                                  # when the 500-s ramp had delivered only ~50% (driving 5.2 not 2.5 MPa) -> blew
+                                  # through the arrest. Full relaxation by ~2650 = burst arrival; arrest math then
+                                  # uses the full-relaxed L = 12.45. (t0 2400 kept = onset, per v9.)
+# axial_relax_du removed in DECK59_07: constant actuator command after preload.
+                                  # = -4.35 MPa for 16 um (-0.272 MPa/um); data wants L_end 12.78, i.e. ~ -3.7 MPa
+                                  # -> du ~ 13.3-14.0. (59_01 note kept:) 0 -> 16um RESTORED (v9-v12 value). v19 disabled LOADRELAX
+                                  # betting flow-form creep would relax the drive; v20/v21 FULL RUNS refute it:
+                                  # L_end = tau_end + k*s_end = 16.9 MPa vs data 12.78 -> the whole +24-30 um
+                                  # over-slip is this load-line error (103 um realized; 103 - 4.45/0.142 ~ 72 =
+                                  # data 73.7). Fault creep cannot retreat the piston; the servo relax is physical.
+                                  # tau/q = 0.424). SIZED FROM v8 LOAD LINE: L_end = tau_end + 1.42e11*s_end = 16.18 vs
+                                  # data 12.77 (+3.4); q_end 12.7 vs data 5.4 (+7.3). Same structure as SW-S4 but 3x
+                                  # larger: SW3's injection phase is 2.4x longer, so the un-relaxed drive accumulates more.
+
+                                   # gate q 37.4/37.8 vs data 35.0: the -65 MPa szz target assumed sigma3_bulk
+                                   # = 30, but the run gives sigma3_bulk ~ 27.0 -> target szz = 27 + 35 = -62.
+                                   # Rock-column slope k_rock,axial = 4.78e11 (v5); series slope at 1e13 =
+                                   # 1/(1/4.78e11 + 1/1e13) = 4.562e11 -> u_final = -31e6/1e13 - 31e6/4.562e11
+                                   # = -7.105e-5 m. Predicted gate: szz -62, q ~35, tau ~15.0, sigma'n ~33.2
+                                   # (= data init 33.2). GATE-VERIFY t=0-120 locally before HPC (done).
+                                 # 1/3.42e11 = 1/k_rock + 1/1.2e12 -> k_rock = 4.78e11; at 2.4e12 the series
+                                 # slope = 1/(1/4.78e11 + 1/2.4e12) = 3.99e11 Pa/m -> u(-65 MPa) = 1.2917e-5
+                                 # + 34e6/3.99e11 = 9.81e-5. GATE-VERIFY t~120 (sigma_zz -65 / q 35 / tau 14.8)
+                                 # BEFORE the full run -- the trim is first-order, expect ~2% correction.
+                                 # (v6 GATEFIX note: -1.563e-4 -> -1.253e-4. The v5 "first cut" was NEVER
+                                 # gate-calibrated (banner said to): measured sigma_zz_top(t=100) = -75.6 MPa
+                                 # vs the -65 target -> q_init 48.8 / tau_init 20.85 vs data 35 / 14.7. That
+                                 # single overshoot cascaded into EVERYTHING v5 got wrong: +6.1 MPa of stored
+                                 # driving tau -> burst stress drop 21.2 (data 10.7) -> slip 186 um (data 71)
+                                 # -> dn -82 (data -44) -> q_end NEGATIVE (-4.9). Slope measured FROM THE v5
+                                 # RUN itself: (75.6-31)e6/(1.563e-4 - 2.5833e-5) = 3.42e11 Pa/m ->
+                                 # u(sigma_zz=-65) = 2.5833e-5 + 34e6/3.42e11 = 1.253e-4. Predicted gate:
+                                 # sigma_zz_top -65, q ~35, tau ~14.8, sigma'n ~32. VERIFY the gate at t~120
+                                 # before the full run.         # DECK46 (Q-FIX) -9.4e-5->-9.84e-5: +1.8 MPa axial sig1 (dsig/du=4.13e11,
+                                     # du=-4.36e-6). Raises q with the confining cut above at fixed sigma'n. WAS DECK35 (RESIDtune): -9.6e-5 -> -9.4e-5. Small trim to offset the ~+4um slip that the shorter Ld adds (holds slip ~77-79). dσ/du=4.13e11 -> ~0.83 MPa less axial. fcs and Ld drive the residual drop; this only protects the slip match.
 
 # --- mechanics (OrcaMechMaterial) : DD02 reference values ---
-youngs_modulus = 67e9
+youngs_modulus = 75e9
 poissons_ratio = 0.32
 strain_model = incremental
 initial_stress = '-31e6 -31e6 -31e6'
@@ -334,7 +759,7 @@ initial_porosity = 0.001
 matrix_permeability = 5e-19          # m^2, intact granite matrix permeability
 
 # --- loading ---
-confining_pressure = 30e6  # CONTROL: legacy fitted confinement
+confining_pressure = 30e6            # SW-S3: paper sigma3 (the SW-S4 Q-FIX -0.6 was case-specific)
                                      # below to RAISE the differential stress q=sig1-sig3 at ~FIXED sigma'n.
                                      # Goal: model initial tau=11.46/q_fault=26.9 -> data tau=12.56/diff=29.2
                                      # (SAME theta=29.2deg, so q and tau move together). d(sigma'n)=cos^2*dsig3
@@ -344,13 +769,7 @@ confining_pressure = 30e6  # CONTROL: legacy fitted confinement
                                      # q~29) and expect to re-trim Ld/load to hold slip 75-79um. This is the
                                      # HONEST fix for the low initial shear (vs deck45's empirical pcoeff).
 production_pressure = 5e6            # Pa
-fault_pressure_coefficient = 0.86    # CONTROL: legacy fitted fault-pressure attenuation
-                                     # closure resize (Vm 0.85->1.05) fixed perm (k_peak 0.949 vs data 0.925)
-                                     # but its aperture->perm->pressure->sigma'n feedback DUG THE TROUGH
-                                     # 15.31 (52_13) -> 14.65 (data 15.28) and added +3.9 um slip (81.6 ->
-                                     # 85.5). Lever: -0.02 pcoeff = +0.5 MPa sigma'n at peak injection ->
-                                     # trough ~15.2-15.3 restored; slip -> ~82, k_peak -> ~0.90-0.91 (do NOT
-                                     # retreat Vm), onset 984 -> ~1000-1010.
+fault_pressure_coefficient = 0.87 # fixed direct common control from completed 72_93
                                      # 14.5-14.9 through t=1750-1850 vs data ~15.3 -- exactly the window where
                                      # ALL the excess slip accrues (model tracks data's ds to +-3um until the
                                      # trough t~1788, then data RE-STICKS at 75-76um while model creeps to 86.6).
@@ -363,9 +782,6 @@ fault_pressure_coefficient = 0.86    # CONTROL: legacy fitted fault-pressure att
                                      # CAVEAT: sigma'n also drives Coulomb strength (mu*sigma'n), so higher
                                      # sigma'n RAISES strength -> may delay onset / reduce slip -> re-check
                                      # tau/slip. Modest 0.035 cut as a probe; full sigma'n fix would need ~0.09.
-side_unload_relax_pressure = 1.2e6    # CONTROL: legacy fitted late confinement unload
-side_unload_t0 = 1900.0
-side_unload_dur = 1400.0
 
 # --- ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile (CZM law) : DD02 reference ---
 #
@@ -379,17 +795,14 @@ side_unload_dur = 1400.0
 #      if the normal-dilation slope needs adjusting.
 #   3. max_plastic_slip_increment: increment caps are incompatible with the on-yield return map; set
 #      to 0 and rely on event-aware substepping + tangential_viscosity (already 1e11) instead.
-penalty_normal = 2.0e13    # legacy fallback only; mechanical response below is power-law
 penalty_tangent = 1e13
-use_hyperbolic_normal_closure_mech = true
-initial_normal_stiffness_mech = 2.443e11
-maximum_closure_mech = 4.591e-5
-maximum_closure_fraction_mech = 0.999
-normal_closure_stress_exponent_mech = 3.28
-normal_closure_offset_mech = 4.433e-5
-initial_roughness = 0.45
+initial_roughness = 0.64             # SW-S3 ROUGH saw-cut (see banner; SW-S4 = 0.45)
 residual_roughness = 0.10
-roughness_decay_distance = 1.15e-4   # DECK52_09: 120->115um, slip counterweight for the deeper TWOSTAGE
+# UNUSED after PST swap: roughness_decay_distance = 3.0e-5    # SW3-v11: 52 -> 34 um. The tail thinning moves from the (runaway-capable)
+                                     # TWOSTAGE into R itself: mu floors at 0.02+1.2513*0.1 = 0.145 > 0 ALWAYS.
+                                     # mu(70) = 0.239 -> S(70) ~ 3.0 = the data arrest strength. Early slope
+                                     # 3.6e11 = 2.5x k_sys -> regularized burst (visc 6e12 + dtmin guard; v8/v9
+                                     # already ran supercritical at 1.4x; the data slip 0->70um/~300s IS a burst).
                                      # (~ -1.7um; predicted final slip 76.6 + 5-7 (TS) - 1.7 ~ 80-82 vs data
                                      # 79.1). dq/dt cost ~ -2.34 -> ~-2.45 (data -1.78) -- acceptable, the
                                      # tau(s) reshape below dominates the late panels. WAS DECK52_01: 95->100um (slip trim half of the fcs give-back). WAS DECK50: 80->95um. TWO targets: (a) deck46 over-slips (89.6 vs data 79.1um;
@@ -397,7 +810,12 @@ roughness_decay_distance = 1.15e-4   # DECK52_09: 120->115um, slip counterweight
                                      # slope is ~2x too steep (dq/dt 1100-1500 = -3.4 vs data -1.8 MPa/100s;
                                      # deck27 showed Ld 70->120 flattens tau@1300 5.8->8.5). Longer Ld also
                                      # raises resid tau ~ +0.3 (deck46 1.98 vs data 2.20 -> lands ~2.3).   # DECK35 (RESIDtune): 90->80um. Shorter Ld -> weakening reaches residual at LESS slip -> DEEPER & sharper post-peak drop (targets the too-gradual differential-stress/shear decline). Ld trend: 120->4.4 resid/62 slip, 90->3.4/75.6; 80 -> ~3.0 resid tau, +~4um slip. Paired with the load trim below to hold slip in band. (Single Ld still can't make the ~1600 s near-vertical cliff -- that's the dynamic event; two-stage weakening in deck 36 targets it.)
-friction_coefficient_rough = 1.17    # DECK52_09: 1.15 -> 1.17. 52_08 MEASURED onset 952 s (data ~1000;
+# UNUSED after PST swap: friction_coefficient_rough = 1.27    # SW3-v10 CORRECTED: 1.17 -> 1.27 (NOT 1.39: that sizing used the SW-S4
+                                     # R0=0.45; SW-S3 initial_roughness = 0.64). Peak envelope preserved exactly:
+                                     # mu_nom(0.64) = 0.02 + 1.2513*0.64 = 0.8208 = v9's 0.20+0.97*0.64 -> onset ~2412
+                                     # (realized 0.657-0.76 factor x sigma'n, = data 0.62). All the cut lands in the
+                                     # tail where R -> 0.1: mu_floor 0.02+1.25*0.1 = 0.145 (v9: 0.297).
+                                     # WAS DECK52_09: 1.15 -> 1.17. 52_08 MEASURED onset 952 s (data ~1000;
                                      # 52_07 with cohR18.5e6 got 1018) -> the original sizing arithmetic said
                                      # 1.17 and the run confirms 1.15 was ~0.2 MPa light: +0.02 fcr = +0.20 MPa
                                      # onset envelope (0.862 report factor x R 0.446 x sn 25.5) = +60-70 s ->
@@ -416,19 +834,18 @@ friction_coefficient_rough = 1.17    # DECK52_09: 1.15 -> 1.17. 52_08 MEASURED o
                                      # later 2um crossing). Expected side-effects vs 52_07: mid-slope ~-0.5..-0.8
                                      # MPa (slip +3-5um risk; trim = Ld 120->115), lock strength ~-0.5 MPa
                                      # (tau_end ~2.4 with the same TWOSTAGE dS=1e6).   # WAS BATCH4: mu endpoints recalibrated to Table 2 (onset 0.447, residual 0.20)
-friction_coefficient_smooth = 0.055  # DECK52_25: 0.04 -> 0.055. 52_24 overshot the residual branch:
-                                     # slip_end 85.5 vs data 79.1 um, tau_end 1.61 vs data 2.20 MPa,
-                                     # and q_end about 2.4 MPa low. Linear 52_23/52_24 interpolation
-                                     # gives fcs ~0.058 from slip/q and ~0.052 from tau; choose 0.055
-                                     # as the center while preserving 52_24's improved drop shape.
-                                     # DECK52_24: 0.07 -> 0.04. 52_23 end tau is +0.83 MPa and slip is -4.5 um;
-                                     # the existing calibration rule (~0.4 MPa and ~1.8 um per 0.015 fcs)
-                                     # points to an additional ~0.03 cut. This is the primary residual/drop lever.
-                                     # Prior DECK52_22: 0.0825 -> 0.07. The data point (79.1um, 2.20 MPa) sits ~0.2 MPa
-                                     # BELOW the model's own mu(s) tail (52_19 measured S(87)=2.19 and the tail slope
-                                     # k_w 2.9e10 puts S(79.7) at 2.40) -> lower the arrest strength by
-                                     # delta_mu_eff = 0.9*0.0125 = 0.011 (0.17 MPa @ trough sigma'n ~15).
-                                     # Moves arrest +1.8um along the load line; tau_end -> 2.20.
+# UNUSED after PST swap: friction_coefficient_smooth = 0.02   # SW3-v10: 0.20 -> 0.02. v9 EXPOSED the v6 sizing: with the load line correct
+                                     # (L_end 12.45 = data 12.42) the fault arrests at 51.6 um / 6.12 MPa - the
+                                     # "arrest ratio 0.233" that pinned fcs 0.20 was v5's DRIVING ratio (excess load),
+                                     # not strength. Data strength at (72um, sigma'n 18.5-19) = 2.2-2.5 MPa -> mu 0.12:
+                                     # even fcs=0 leaves mu_floor = fcr*0.1 = 0.139 -> the last ~2.4 MPa comes from the
+                                     # TWOSTAGE tail below. fcs 0.02 keeps the smooth-branch conditioning nonzero.
+                                     # WAS SW3-v6: 0.0825 (SW-S4 transfer) -> 0.20. SW-S3's own data pins the
+                                     # residual SLIDING friction: at the burst arrest (Pi=28 hold) tau/sigma'n
+                                     # = 3.55/15.25 = 0.233; minus the RSF/viscous rate share ~0.03 -> fcs
+                                     # ~0.20. The SW-S4 0.0825 let v5 weaken ~2.2 MPa too deep (+~18 um slip)
+                                     # and unload to tau ~0. The unloading branch ratios (0.185 -> 0.093) are
+                                     # RE-STICK elastic, NOT friction -- do not fit fcs to them (SW-S4 lesson).
                                      # WAS DECK52_01 (SWEEP B, middle of the slip<->resid tradeoff): 0.095->0.085
                                      # (resid ~2.7, slip +2) paired with Ld 95->100 below (slip -2, resid +0.35):
                                      # net (slip ~84, resid ~2.9) vs deck52's (88, 2.5). Brackets the reachable
@@ -436,8 +853,8 @@ friction_coefficient_smooth = 0.055  # DECK52_25: 0.04 -> 0.055. 52_24 overshot 
                                      # strength shrinks the peak->residual stress drop -> dslip = -dtau_res/k_sys
                                      # ~ -0.27e6/1.25e11 ~ -2um; resid tau +~0.27 (0.4 MPa per 0.015 fcs).
                                      # Slip budget: 89.6 (deck46) -6 (Ld) -2 (fcs) ~ 81-82um; resid tau ~2.2-2.3.   # DECK35 (RESIDtune): 0.115->0.085. PRIMARY residual lever for the Fig-7d gaps (differential stress, shear traction, sigma'n all stay too HIGH after ~1600 s because the fault LOCKS at too high a strength). Empirically ~0.4 MPa resid tau per 0.015 fcs (deck29/32) -> 0.030 cut targets resid tau 3.4->~2.6. Lowers residual shear -> less locked-in q -> sigma'n recovers less high. Does NOT add slip (independent of the slip<->resid tension).
-friction_roughness_exponent = 1.0
-cohesion_rough = 0                       # DECK52_08 (COHESIONLESS): 18.5e6 -> 0. Sawcut fracture carries NO
+# UNUSED after PST swap: friction_roughness_exponent = 1.0
+# UNUSED after PST swap: cohesion_rough = 0                       # DECK52_08 (COHESIONLESS): 18.5e6 -> 0. Sawcut fracture carries NO
                                      # cohesion; the onset envelope is supplied entirely by friction_
                                      # coefficient_rough = 1.15 above (see sizing there). This also removes
                                      # the residual c_eff(R=0.283) = 1.48 MPa that the TWOSTAGE dS had to eat.
@@ -446,13 +863,19 @@ cohesion_rough = 0                       # DECK52_08 (COHESIONLESS): 18.5e6 -> 0
                                      # = c_R*R^2 = c_R*0.2025; 6.5e6 bought +1.33 MPa peak strength = +267 s.
                                      # Need ~+1.0 MPa to re-balance the added driving tau: dc_R = 1.0e6/0.2025
                                      # ~ 5e6 -> 16e6. Residual unchanged: c_eff(R=0.10) = 16e6*0.01 = 0.16 MPa.                    # DECK28: 6.5->11MPa. The higher load (deck26) pulled onset back to 720s; more cohesion raises the peak strength envelope so the fault holds against the higher applied tau until ~950s. c_eff(R=0.45,exp2)=11e6*0.2025=2.23 MPa at peak; c_eff(R=0.10)=11e6*0.01=0.11 MPa at residual (still negligible -> residual tau preserved).
-cohesion_smooth = 0                      # keep 0 so cohesion fully decays out by residual roughness (preserves the calibrated residual tau ~2.75).
-cohesion_roughness_exponent = 2.0        # DECK25: 1->2 so cohesion decays FASTER with roughness -> big at peak (R^2=0.20), negligible at residual (R^2=0.01).
+# UNUSED after PST swap: cohesion_smooth = 0                      # keep 0 so cohesion fully decays out by residual roughness (preserves the calibrated residual tau ~2.75).
+# UNUSED after PST swap: cohesion_roughness_exponent = 2.0        # DECK25: 1->2 so cohesion decays FASTER with roughness -> big at peak (R^2=0.20), negligible at residual (R^2=0.01).
 
 # --- DECK52_07 (LOCKFIX) new knobs vs 52_04 ---------------------------------------------------
-dissipation_margin = 0.12            # DECK52_24: 0.16 -> 0.12. 52_23's reported dn peak is still ~5 um shallow;
-                                     # this restores ~4.8% of the admissible dilation work while fcs/s40 recover slip.
-                                     # Prior DECK52_11 (RESTICK): 0.10->0.16. Two targets: (a) dn peak -0.0436 vs
+# UNUSED after PST swap: dissipation_margin = 0.02            # SW3-v6: 0.16 (SW-S4 RESTICK value) -> 0.02. SW-S3 is the ROUGH surface:
+                                     # data dn/ds = 44/71 = 0.62 -- at the limiter ceiling the plastic share
+                                     # dn_pl <= (1-eps_D)*integral(tau/sigma'n)ds ~ 0.40*slip even at eps_D=0
+                                     # (mu_mob falls 0.62->0.23 through the burst). So for SW3 the limiter BINDS
+                                     # and every % of eps_D costs dilation the data needs: 0.02 keeps ~98% of
+                                     # the admissible budget -> dn_pl ~ -30 um + rev ~ -5 -> peak ~ -35 um vs
+                                     # data -44. The remaining ~9 um is STRUCTURAL for this law (energy-limited
+                                     # dilation; the BB companion law with live angles owns it) -- see the SW3
+                                     # back-analysis MD. WAS DECK52_11 (RESTICK): 0.10->0.16 (SW-S4).
                                      # data -0.0409 at over-slip 86.6 -- ~7% less plastic dn/ds lands the peak
                                      # once slip lands; (b) less kinematic opening relieves less sigma'n ->
                                      # trough up ~+0.1-0.2 (adds to the pcoeff move). NB both dilation measures
@@ -464,22 +887,22 @@ dissipation_margin = 0.12            # DECK52_24: 0.16 -> 0.12. 52_23's reported
                                      # ~29-30um). Also raises sigma'n trough toward data (14.65 -> ~15.0-15.2;
                                      # data 15.28) since less kinematic opening relieves less normal stress.
                                      # The dn-peak loss is bought back with REVcn 5->7e-13 (elastic share).
-secondary_weakening_strength = 0.15e6  # 67_11: measured dS slope predicts slip_end ~80um and tau/q near target.
+# UNUSED after PST swap: secondary_weakening_strength = 4.0e6   # SW3-v10: ON (was OFF). The v9 arrest measurement is the direct evidence a
+                                       # single exponential R-decay CANNOT reach the data's tail: strength(72um)
+                                       # needed = L - k_sys*s = 2.2-2.5 MPa; the R-floor alone gives ~3.9-4.7.
+                                       # dS*(1-e^(-(72-38)/36)) = 4.0*0.611 = 2.44 MPa = the measured deficit.
                                        # (onset 999, tau@2000 2.91, tau_end 2.235 vs data 1000/3.0/2.20) but
                                        # over-slipped 88.8 vs 79.1um. Slip balance (peak_env - lock)/k_sys:
                                        # 52_09 (12.92-2.79)/1.25e11 = 81um + ~8um BURST overshoot (slip surged
                                        # 64.7->81.2um in t=1700-1800 while the TS slope sat at 1.00x k_sys).
                                        # dS 1.35 raises the lock strength to mu(R80)*sn - TS80 = 0.292*14.8-1.21
                                        # = 3.11 MPa = data's 3.12 -> balance slip 78um.
-secondary_weakening_onset_slip = 28e-6 # 67_11: earlier, smaller drop spreads correction before the 1700s overshoot.
-                                       # quickly once the model crossed it; 44um delays the sharp branch
-                                       # without returning all the way to 52_23's too-late 48um onset.
-                                       # DECK52_24: 48 -> 40um. 52_23 reaches the second weakening stage late;
-                                       # the data already sits near the 40um slip shelf by ~1400-1600 s.
-secondary_weakening_distance = 12e-6   # 67_11: dS/w=1.25e10 Pa/m, safely below measured system stiffness.
-                                       # aggressive; widening the branch lowers dS/w from ~0.96e11 to
-                                       # ~0.75e11 Pa/m while keeping the same total drop.
-                                       # DECK52_10: 12 -> 14um. Peak TS slope dS/w = 0.96e11 = 0.77x k_sys
+# UNUSED after PST swap: secondary_weakening_onset_slip = 38e-6 # SW3-v10: 48 -> 38 um. Engage in v9's late slip phase (s>38um is t>2650)
+                                       # so the matched onset/mid-path (to ~45um) is untouched but the tail is cut
+                                       # well before the v9 arrest at 51.6 um (TS(51.6) = 1.24 MPa un-sticks it).
+# UNUSED after PST swap: secondary_weakening_distance = 36e-6   # SW3-v10: 14 -> 36 um. Peak TS slope dS/w = 4.0e6/36e-6 = 1.11e11
+                                       # = 0.78x k_sys(SW3 1.42e11) - same stability margin as the calibrated
+                                       # SW-S4 52_10 (0.77x its k_sys). WAS DECK52_10: 12->14um for k_sys 1.25e11.
                                        # (was 1.00x -> mini-burst). Tames the 1700-1800 surge; with the burst
                                        # gone the ~8um overshoot should shrink to +2-4 -> final slip ~80-82.
                                        # Viscosity kept at 1e13 ON PURPOSE: eta resists the burst, so trimming
@@ -487,13 +910,13 @@ secondary_weakening_distance = 12e-6   # 67_11: dS/w=1.25e10 Pa/m, safely below 
                                        # deliberately AT the stability edge to reproduce the data's sharp
                                        # 1600-1800 s plunge; visc 1e13 regularizes (deck-30/31 mechanism).
 
-normal_traction_tolerance = 0.0
+# UNUSED after PST swap: normal_traction_tolerance = 0.0
 tangential_traction_tolerance = 1e-16
-dilation_angle_peak_degrees = 50.0     # DECK22: 37->50 (the CORRECT dilation lever). Deck21 showed dilation_state decays 1.0->0.47 by peak slip so dilation accrues in the PEAK-angle regime (raising residual 15->22 barely moved it). tan(37)=0.75->tan(50)=1.19 to lift peak dilation -0.022->~-0.031 mm. NB longer Ld cuts slip/dilation so this is deliberately aggressive.
-dilation_angle_residual_degrees = 22.0 # DECK21: raised 15->22 (tan15=0.27->tan22=0.40). Deck19 dilation/slip ratio was ~0.29 (residual-dominated); target 0.031/0.077=0.40. Lifts peak dilation -0.021->~-0.031 mm and (via sigma'n relief) nudges slip 73->~77 um.
-dilation_decay_distance = 1.0e-4
-dilation_decay_exponent = 1.0          # revised law requires >= 1.0 (was 0.5; singular slope at zero slip)
-dilation_opens_joint = true            # V15: route dilation into the joint OPENING (kinematic hardening)
+# UNUSED after PST swap: dilation_angle_peak_degrees = 50.0     # DECK22: 37->50 (the CORRECT dilation lever). Deck21 showed dilation_state decays 1.0->0.47 by peak slip so dilation accrues in the PEAK-angle regime (raising residual 15->22 barely moved it). tan(37)=0.75->tan(50)=1.19 to lift peak dilation -0.022->~-0.031 mm. NB longer Ld cuts slip/dilation so this is deliberately aggressive.
+# UNUSED after PST swap: dilation_angle_residual_degrees = 22.0 # DECK21: raised 15->22 (tan15=0.27->tan22=0.40). Deck19 dilation/slip ratio was ~0.29 (residual-dominated); target 0.031/0.077=0.40. Lifts peak dilation -0.021->~-0.031 mm and (via sigma'n relief) nudges slip 73->~77 um.
+# UNUSED after PST swap: dilation_decay_distance = 1.0e-4
+# UNUSED after PST swap: dilation_decay_exponent = 1.0          # revised law requires >= 1.0 (was 0.5; singular slope at zero slip)
+# UNUSED after PST swap: dilation_opens_joint = true            # V15: route dilation into the joint OPENING (kinematic hardening)
 
 # DECK23: REVERSIBLE (elastic) joint-normal opening -- new source capability. The plastic dilation is
 # thermodynamically capped at dn/ds <= tau/sigma'_n ~ mu ~0.40 (dissipation limiter, .C:1066-1100), so the
@@ -502,7 +925,16 @@ dilation_opens_joint = true            # V15: route dilation into the joint OPEN
 # d_rev = C_n*<sigma_ref - sigma'_n>_+ that opens as injection drops sigma'_n (peak) and closes as it recovers
 # (residual). Decoupled/output-only: does not feed the residual (far-field-governed sigma'_n). Reported normal
 # dilation = g_np + d_rev.
-reversible_normal_compliance = 0.0         # output-only opening reconstruction disabled
+                                          # kappa*g_np*<32.1e6 - sn>_+ -- compliance carries slip history: stiff
+                                          # pre-slip (flat dilation panel before onset, the 57_04 lesson), soft after
+                                          # bulking. kappa = C_n_old/g_np_end = 3.2e-13/(0.55*73.7e-6 ~ 40.7e-6) ->
+                                          # unload branch matches the SW-S3 pin v6 sized; OUTPUT-ONLY (no mechanics).
+                                          # NB SW-S3 reported dn is ~73% NOT fault opening (zeta 0.27, paper-frame
+                                          # study) -> dn stays a DIAGNOSTIC here, never a calibration target.|
+                                     # it: dn recovers only 44->41 um (3 um) while sigma'n rises 15.25->24.79
+                                     # (9.54 MPa) -> C_n = 3e-6/9.54e6 = 3.2e-13 m/Pa. The rough joint stays
+                                     # PROPPED (dilation-locked asperities), unlike the sawcut's 9.5e-13.
+                                     # WAS DECK52_07: 5.0->7.0e-13 (SW-S4 sizing).
                                      # drops ~33->30um; rev share must supply ~11um at the trough deficit
                                      # (31-15.1)e6*7e-13 = 11.1um -> dn peak ~-0.041 (data -0.0409) and
                                      # end-recovery improves (rev_end ~ 3.8um at sigma'n_end ~25.5 ->
@@ -511,8 +943,7 @@ reversible_normal_compliance = 0.0         # output-only opening reconstruction 
                                      # ~mu*dslip ~ 0.4*8um = 3.2um (peak -0.0417 -> ~-0.038); +1e-13 adds
                                      # C_n*(31-13.5)e6 ~ +1.75um reversible at the trough -> peak ~ -0.040,
                                      # end ~ -0.031 (was -0.0345; data -0.0314).    # DECK32: 8.5e-13->6.0e-13. Deck31 peak dil -0.0451 (target -0.041); plastic part is now ~-0.032 (limiter, raised by the higher mid-slip tau), so cut the reversible part harder: rev_peak 6e-13*16e6=0.0096 -> peak dil ~-0.041.
-reversible_normal_reference_stress = 31e6 # Pa: initial preload sigma'_n where d_rev = 0.
-max_plastic_slip_increment = 0.0     # revised law forbids increment caps; substepping + viscosity instead (was 1.0e-6).
+# UNUSED after PST swap: max_plastic_slip_increment = 0.0     # revised law forbids increment caps; substepping + viscosity instead (was 1.0e-6).
                                       # TESTED 3.0e-6 (3x relaxation) and REJECTED: the cap was found to
                                       # bind on 14 timesteps, directly contributing 30% of total slip,
                                       # and relaxing it did close part of the peak shear-slip gap (43.2 ->
@@ -529,19 +960,6 @@ max_plastic_slip_increment = 0.0     # revised law forbids increment caps; subst
                                       # stress-state fit (the more rigorously, independently validated
                                       # quantity) degrades more than the displacement fit improves. Kept at
                                       # 1.0e-6; results_csv/..._cap3e6_experiment.csv preserves the test.
-tangential_viscosity = 5.0e12        # DECK52_19 (MIDPATH): 8->5e12. 52_16 (visc 5e12) had the BEST mid-path
-                                     # of the campaign (slip@1717 = 71.3 um vs data 72.7; 52_17's 8e12 gave
-                                     # 62.7 = ~100 s late) -- it just STALLED numerically at the re-stick
-                                     # (t=1878.7, V decayed to 1.4e-8 m/s, dt collapsed to 1e-6, residual
-                                     # limit-cycled at ~1e-5 with 450-s local-substep residual evaluations).
-                                     # Root cause = the referenced-RSF stick-boundary discontinuity, now
-                                     # cured by rate_and_state_nonnegative (see below), which is what makes
-                                     # 5e12 survivable. Overrun arithmetic (PART IX): pending slip at the
-                                     # trough = overstress/k_sys = (eta*V_trough + rsf)/1.25e11; at 5e12,
-                                     # V~1.5e-7: (0.75+0.2)e6/1.25e11 = 7.6 um -> peak slip ~ 72+7.6 ~ 79-80
-                                     # (data 79.1). At 8e12 the same arithmetic gave the measured +10.6.        # DECK52_13: 6->8e12, partial give-back of window resistance (52_12's
-                                     # excess driving at t1750 was 1.23 MPa -> 11um pending slip).
-                                     # WAS DECK52_12: 1e13->6e12. RSF below takes over part of the rate duty;
                                      # keeps ~60% of the burst guard (TS slope is 0.77x k_sys so margin exists)
                                      # and cuts the mid-slip viscous pedestal ~0.4 MPa (tau@1300 11.0 vs 9.12).
 # --- DECK52_12: referenced regularized rate-and-state (the RE-STICK mechanism) --------------------
@@ -552,32 +970,20 @@ tangential_viscosity = 5.0e12        # DECK52_19 (MIDPATH): 8->5e12. 52_16 (visc
 # mildly NEGATIVE at V<<V0 (late creep) -> eases tau_end ~-0.2 toward data 2.20. a-b=0.012 velocity-
 # strengthening (b/a=0.4). V0=5e-8 sits BELOW the window rate so the window sees +0.15-0.25 MPa brake.
 # First-cut params -- expect one tuning iteration (a scales everything; V0 shifts the neutral rate).
-use_rate_and_state = true
-rate_and_state_a  = 0.020
-rate_and_state_b  = 0.016           # DECK52_13: 0.008->0.016 (b/a 0.8, still a>b velocity-strengthening).
-                                    # Healing doubled: during the 1850-1900 deceleration theta grows and
-                                    # strength recovers ~theta^(b/a) -> the fault re-sticks SOONER (52_12
-                                    # stuck at 85.9um; target ~81-83). Trade: steady-state brake exponent
-                                    # 1-b/a drops 0.6->0.2 (weaker ss brake), the visc bump below covers it.
-rate_and_state_Dc = 5.0e-5           # state distance ~ slip band; theta0 = Dc/V0 = 1000 s
-rate_and_state_V0 = 5.0e-8
-rate_and_state_theta0 = 1000
-rate_and_state_nonnegative = true    # DECK52_19 (CLAMPFIX source feature, 2026-07-11): clamp the referenced
-                                     # RSF term >= 0. The raw form a*(asinh(z)-asinh(1/2)) is -0.481*a*p at
-                                     # V->0, so the slip-branch strength sits ~0.25 MPa BELOW the stick limit:
-                                     # the stick<->slip transition is a non-monotone jump the global Newton
-                                     # limit-cycles across DURING RE-STICK (52_15 died t=1831, 52_16 t=1879,
-                                     # both at V~1.4e-8 m/s while arresting, residual stuck at 1-4e-5 >
-                                     # nl_abs_tol with dt at dtmin). Clamped, slip strength at V->0+ equals
-                                     # the stick limit (continuous, monotone). Cost: the small V<V0 weakening
-                                     # (~0.1-0.2 MPa residual aid) is given up -> tau_end may read +0.1-0.2.
-                                     # Validated: 13/13 suite + FD-vs-AD Jacobian 5.2e-14 with the term ON.
+# UNUSED after PST swap: use_rate_and_state = true
 
 # --- ADOrcaRoughnessDamageFracturePermeability (roughness-coupled) : DD02 reference ---
-initial_hydraulic_aperture = 0.74e-6 # DD02 base aperture (perm ~0.46e-13)
+initial_hydraulic_aperture = 1.22e-6  # DECK59_07: Ye & Ghassemi Table 2 initial aperture (k=1.24e-13 m2)
+                                     # data PEAK aperture (1.215 um) with the initial: the digitized SW-S3 permeability
+                                     # starts at 0.418e-13 m^2 (= a_h 0.709 um) and PEAKS at 1.23e-13 (= 1.215 um) --
+                                     # v20/v21 ran the whole panel 3x high (k_init 1.24e-13) and pressurized the fault
+                                     # 3x too fast (early sigma-n drop -> early onset). BB closure Vm/Kni were sized
+                                     # around a_h 0.709->1.215 (v5 back-analysis) and are consistent again.
+                                     # SW-S3's OWN a_h at Pi=8 (k_init 1.24e-13; v5 started at 0.42e-13, 3x low,
+                                     # and could then never reach the 3.66e-13 peak).
 aperture_scale = 0.001
 normal_stress_aperture_compliance = 2.0e-14 # m/Pa, reversible aperture opening as sigma'_n decreases
-reference_effective_normal_stress = 31.0e6  # Pa: DECK42 preload sigma'_n (opening=0 here).
+reference_effective_normal_stress = 32.1e6  # Pa: DECK42 preload sigma'_n (opening=0 here).
 # DECK42: POWER-LAW BARTON-BANDIS closure (bounded), replacing the linear term. Story: deck41's
 # EXPONENTIAL closure captured the unload stiffening but is UNBOUNDED as sigma'n->0 -> POSITIVE
 # FEEDBACK in the coupled HM (aperture drives fracture Darcy flow -> pore pressure -> sigma'n): at
@@ -589,31 +995,27 @@ reference_effective_normal_stress = 31.0e6  # Pa: DECK42 preload sigma'_n (openi
 # curvature only differs in mid-unload (the fix). Tune: p up = sharper; sigma0(=Vm*Kni) up = stiffer.
 use_nonlinear_normal_closure = true
 nonlinear_closure_type = barton_bandis
-bb_max_aperture_closure = 1.05e-6     # Vm (m): DECK52_17 (PERMPEAK) 0.85 -> 1.05. SINGLE-CHANGE A/B off 52_13.
-                                     # 52_13's k_peak 0.787 vs data 0.925e-13 (~15% low; flow peak 0.082 vs
-                                     # 0.113). WHY NOW: Vm=0.85 was sized on deck 42/43 where the sigma'n trough
-                                     # DROOPED to 12.9 (more closure-release there); the RESTICK line fixed the
-                                     # trough at 15.3, so the BB opening at the trough fell (0.85um*[g(31)-g(15.3)]
-                                     # = 0.255um) and the peak aperture landed 0.972 vs the 1.054um the data
-                                     # needs. Sizing: need +0.082um at sigma'n 15.3 -> Vm = 0.85*(0.337/0.255)
-                                     # ~ 1.05um -> predicted a_h_peak ~1.03, k_peak ~0.89e-13, Q_peak ~0.095.
-                                     # RISK (measured on 42/44): softer closure feeds the aperture->perm->
-                                     # pressure->sigma'n loop; at the RESTICK operating point (dissm 0.16 +
-                                     # pcoeff 0.88 holding the trough) expect droop <= 0.3 MPa; if trough
-                                     # falls below 14.9 or slip grows >84, split the move (Vm 0.95).
-                                     # The REMAINING peak deficit after this (~0.03-0.04e-13) is the DYNAMIC
-                                     # burst spike -- quasi-static + regularization smooths it (structural,
-                                     # NOT a mesh problem; see MD PART VIII).
-                                     # WAS DECK43 1.17->0.85. Deck42 (Vm1.17) was too SOFT ->
+bb_max_aperture_closure = 1.2e-6   # SW-S3: peak opening +0.51um (a_h 0.709->1.215) vs SW-S4 +0.33     # Vm (m): DECK43 1.17->0.85. Deck42 (Vm1.17) was too SOFT ->
                                      # coupled HM feedback drooped peak sigma'n 15->12 (aperture->perm->
                                      # flow->pore pressure->sigma'n) and perm OVERSHOT (peak k 1.22 vs
                                      # data 0.925, unload bias +0.16). Stiffer closure = less opening ->
                                      # less feedback -> sigma'n holds ~14-15 -> perm drops at peak AND
                                      # mid-unload together. Shape (p2, 3.2x stiffening) preserved.
-bb_initial_normal_stiffness = 1.43e13 # Kni (Pa/m): DECK52_17 1.76e13->1.43e13 so sigma0 = Vm*Kni stays 15 MPa (shape preserved, magnitude only)
-bb_stress_exponent = 2.0              # p: power-law closure exponent (1=hyperbola, 2=matches 3.2x stiffening)
-dilation_scale = 0.0117              # DECK52_23: port 54_48 dscale0117 hydraulic rebalance.
-                                     # V15: was 0.4; cut ~17x because the ~17x larger dilation angle grows
+bb_initial_normal_stiffness = 1.25e13 # sigma0 = Vm*Kni = 15 MPa held # Kni (Pa/m): sigma0 = Vm*Kni = 15 MPa (held; Kni up as Vm down)
+bb_stress_exponent = 4.0              # p: power-law closure exponent (1=hyperbola, 2=matches 3.2x stiffening)
+dilation_scale = 0.038               # DECK59_07: first back-analysis to Table-2 a_h 1.22 -> 2.10 -> 1.64 um
+                                     # With W/L corrected (below) v9's Q_peak is still +22% (1.022 vs 0.838) -> a_h
+                                     # needs x0.936; v10's recovered slip grows the dilation-aperture term x1.36 ->
+                                     # scale = 0.06 * 0.75/(0.90*1.36) ~ 0.038. Judge on the FLOW panel (Q), not the
+                                     # digitized k curve (flagged ~3x low vs its own Q - re-digitization pending).
+                                     # WAS SW3-v6: 0.013 (SW-S4 sawcut) -> 0.06. Sized from Table-2 SW-S3
+                                     # END-UNLOAD state (slip locked, closure known): a_h_end 1.64 um =
+                                     # 1.22 + closure(24.8; 0.107) + ds*dn_pl(~31um)*retention(0.28) - gouge
+                                     # (0.234) -> ds ~ 0.06. Physically: the rough surface channels ~5x more
+                                     # of its mechanical dilation into hydraulic aperture than the polished
+                                     # sawcut (less tortuosity/contact clogging). Predicts trough a_h ~1.9-2.0
+                                     # um -> k ~3.2e-13 (data 3.66 peak is the burst spike, quasi-static-
+                                     # clipped as in SW-S4). WAS V15 SW-S4: 0.013.
                                      # cumulative_dilation ~17x. Holds a_h (permeability) at the V14 fit.
                                      # CALIBRATE to the perm/flow curve once the full run is scored.
 retention_residual = 0.28              # DECK38 (from deck35, DECOUPLED perm-only knob): 0.35->0.28.
@@ -636,11 +1038,11 @@ retention_residual = 0.28              # DECK38 (from deck35, DECOUPLED perm-onl
 self_propping_scale = 0.0
 self_propping_exponent = 1.0
 use_slip_damage = true
-slip_damage_scale = 0.28e-6          # DECK52-SWEEP: re-fit to hold the developed unload gouge at slip~84um:
+slip_damage_scale = 0.40e-6          # DECK52-SWEEP: re-fit to hold the developed unload gouge at slip~84um:
                                      # 0.28*(1-exp(-64/30)) = 0.247um (= deck-43/47 unload calibration). WAS DECK50 (=DECK47 values): 0.25->0.29 compensates the onset threshold
                                      # below so the fully-developed unload gouge is preserved (~0.247um at 78um
                                      # slip: 0.29*(1-exp(-(78-40)/20)) = 0.246).
-slip_damage_onset_slip = 20e-6      # DECK52-SWEEP: 40->20um. The HARD 40um threshold caused the perm/flow
+slip_damage_onset_slip = 30e-6      # DECK52-SWEEP: 40->20um. The HARD 40um threshold caused the perm/flow
                                      # SPIKE at t~1380 (deck50) / t~1115 (deck51): aperture rises un-gouged,
                                      # then gouge slams in over char 20um at slip=40um and carves a dip the
                                      # data does not show. Data loading branch only needs gouge~0 up to
@@ -651,7 +1053,10 @@ slip_damage_onset_slip = 20e-6      # DECK52-SWEEP: 40->20um. The HARD 40um thre
                                      # front-loaded by char slip 20um). Delaying gouge onset lets the loading
                                      # aperture rise with the paper while the unload branch is unchanged.
 slip_damage_characteristic_slip = 30e-6 # DECK52-SWEEP: 20->30um (gentler gouge rate, kills the spike)
-min_hydraulic_aperture = 0.74e-6     # paper SW-S4 base aperture; prevents artificial sub-base closure
+min_hydraulic_aperture = 1.22e-6     # DECK59_07: floor equals authoritative Table-2 initial aperture
+                                     # hydraulic_aperture but MISSED this floor -> a_h was clamped straight back to 1.22
+                                     # and PINNED there all run (perm flat 1.24e-13; the whole hydraulic panel inert).
+                                     # Floor = corrected initial (perm data min IS the initial 0.42e-13).
 max_hydraulic_aperture = 8e-6        # numerical cap (caseF found it necessary on the fine mesh to bound
                                      # cubic transmissivity; harmless when a_h stays below it). The coarse
                                      # 2.0 deck left it unset.
@@ -664,13 +1069,14 @@ fault_thickness = 1e-3
 fluid_density_ref = 1000
 fluid_viscosity_ref = 1.002e-3
 fluid_bulk_modulus = 4.7835616438e9
-paper_flow_width_over_length_sw_s4 = 0.81  # inferred from Ye2018 Table 2 SW-S4 Eq. 9 consistency
+paper_flow_width_over_length_sw_s3 = 0.81  # DECK59_07: inferred directly and consistently from SW-S3 Table 2 / Eq. 9
+mesh_flow_width_over_length_sw_s3 = 0.674   # diagnostic only: prior estimate based on numerical source-node spacing
 ml_per_m3_per_min = 6.0e7
 
 # --- output ---
-exodus_file_base = results_exodus/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_SV
-csv_file_base    = results_csv/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_SV
-checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_SV
+exodus_file_base = results_exodus/84_01_sw3_bbfast_postevent_retreat4p5um_m0_kernel_SV_biot0p6
+csv_file_base    = results_csv/84_01_sw3_bbfast_postevent_retreat4p5um_m0_kernel_SV_biot0p6
+checkpoint_file_base = results_checkpoint/84_01_sw3_bbfast_postevent_retreat4p5um_m0_kernel_SV_biot0p6
 
 ######################################################################################
 [GlobalParams]
@@ -712,19 +1118,19 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
   [sidesets_from_nodesets]
     type = SideSetsFromNodeSetsGenerator
     input = file_mesh
-    nodesets_to_convert = 'top bottom sides'
+    nodesets_to_convert = 'top_nodeset bottom_nodeset sides_nodeset'  # SW-S3 mesh names
   []
   [source_in]
     type = ExtraNodesetGenerator
     input = sidesets_from_nodesets
-    coord = '-0.019255 0 0.021745'
+    coord = '-0.023160 0 0.020419'   # SW-S3 mesh injection node (v4 selection)
     new_boundary = source_in
     use_closest_node = true
   []
   [source_out]
     type = ExtraNodesetGenerator
     input = source_in
-    coord = '0.019255 0 0.091255'
+    coord = '0.023160 0 0.103981'   # SW-S3 mesh production node (v4 selection)
     new_boundary = source_out
     use_closest_node = true
   []
@@ -791,8 +1197,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
       # u_pres(t) = u_rigid(t) - sigma_zz_top(t)/penalty, so the SAMPLE sees the same preload state as
       # the rigid deck (05) while the spring provides the series machine compliance during slip.
       # Held constant after t=55 s (fixed piston command); the spring then unloads as the fault slips.
-      # DECK52_23: add 54_48 poroelastic compensation before the AD-specific delayed relax.
-      expression = 'if(t<2.0,${axial_pres_initial},if(t<55.0,${axial_pres_initial}+(${axial_pres_final}-${axial_pres_initial})*(t-2.0)/53.0,${axial_pres_final}+${poro_du}*min((t-55.0)/${poro_dur},1.0)+if(t<${relax_t0},0.0,${axial_relax_du}*min((t-${relax_t0})/${relax_dur},1.0))))'
+      expression = 'if(t<2.0,${axial_pres_initial},if(t<55.0,${axial_pres_initial}+(${axial_pres_final}-${axial_pres_initial})*(t-2.0)/53.0,if(t<2550.0,${axial_pres_final},if(t<2850.0,${axial_pres_final}+4.5e-06*(t-2550.0)/300.0,${axial_pres_final}+4.5e-06))))'
     []
 
   # Injection pressure schedule (Pa): FULL digitized Ye & Ghassemi SW-S4 history -- the complete
@@ -800,10 +1205,10 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
   # caseF-derived schedule contained only the RISING limb (truncated at ~1900 s), so the run stopped
   # before the post-peak phase where the injection decline lets the fault re-stabilize and the
   # differential stress partially recovers. Restored from the Orca_2.0 reference deck.
-  [injection_pressure]
+  [injection_pressure]  # SW-S3 digitized schedule (from v4 deck)
     type = PiecewiseLinear
-    x = '0 39.520164216741705 73.14687685794524 103.95057045328758 130.54475290608298 151.52976505320134 185.17293652746184 218.82795836152286 252.48298019558388 286.1380020296451 319.78644033048386 353.4203948582324 384.2289602681592 409.4212451565288 432.37223199458776 451.3912694507658 470.9733306681428 504.61913555569254 538.2741573897538 571.9291792238146 597.1704455993604 639.2221057055581 670.0375179900361 695.2341480103328 714.8234511142546 734.9672193861866 751.1849634561368 779.1919721385079 812.8469939725692 846.5020158066304 880.1570376406912 913.8120594747525 947.447989062468 978.2606362629926 1003.4541061873424 1028.6483661356788 1045.4320307214462 1059.4036049265023 1087.427730795252 1121.0827526293133 1154.737774463374 1188.3927962974353 1222.0458430715298 1255.6817726592453 1289.2953182340034 1317.8548170244176 1339.6833772833506 1359.2662943600467 1373.243596239006 1401.2647595178055 1434.9197813518667 1468.5748031859275 1502.2298250199888 1535.8802383807943 1569.506292668676 1600.3136730426227 1625.5110930869055 1650.7014029153083 1665.2410043668124 1687.0697621317422 1720.7188587859032 1754.3738806199644 1788.0289024540252 1821.695774647887 1852.5778122885781 1880.6710652561655 1905.966645780798 1925.6526609877606 1946.27663217295 1979.0093010025216 2012.6643228365829 2046.3193446706437 2079.974366504705 2113.637288578633 2147.3193028989067 2178.211479180761 2203.49659188757 2225.98067454948 2248.472657451258 2270.95739846649 2304.6176871271296 2338.272708961191 2371.927730795252 2405.5840693359573 2439.2575250630416 2470.14035272772 2498.23281567132 2523.5254336060025 2541.803626068639 2561.2048376283906 2576.93105510794 2607.7814917891624 2641.436513623224 2675.091535457285 2708.75050741128 2742.4200130184304 2776.1079525186046 2807.0057906390307 2832.2944584537795 2854.7805161756564 2874.467913924596 2894.127660833999 2927.780707608093 2961.4357294421548 2995.0907512762155 3028.753014996822 3062.4337126104515 3093.3199637124058 3118.603101359247 3141.086196491174 3163.5791669229343 3182.139200442831 3214.124901592964 3247.7799234270256 3281.4349452610863 3315.089967095147 3348.744988929209 3382.4000107632696 3404.836691985977'
-    y = '5000000 5254620.82538901 5668743.87518708 6352528.44578387 7074836.09078049 7797143.73577711 7970497.57057629 7970497.57057629 7970497.57057629 7970497.57057629 8066805.25657584 8374989.8517744 8987506.73473153 9704035.91856817 10385894.335445 11148651.2085614 11880589.622158 12015420.3825574 12015420.3825574 12015420.3825574 12015420.3825574 12265820.3661562 12778177.2556738 13431143.3667507 14057143.3257478 14777524.8170244 15492127.8471411 16060343.1945384 16060343.1945384 16060343.1945384 16060343.1945384 16060343.1945384 16339635.4839371 16892441.6015745 17591635.4019312 18279272.279968 18920681.468725 19671881.4195215 19989696.78332 19989696.78332 19989696.78332 19989696.78332 20018589.0891199 20297881.3785186 20904619.8003157 21596108.9857925 22286635.0944092 23006053.5088259 23673465.7728028 24034619.5953011 24034619.5953011 24034619.5953011 24034619.5953011 24102034.9755008 24525788.7938988 25155641.0603358 25797050.2490928 26542471.7387293 27189659.3886463 27877296.2666831 27963973.1840827 27963973.1840827 27963973.1840827 27790619.3492835 27328342.4564856 26634927.1172889 25840388.7077926 25051628.7594563 24217604.1987002 24034619.5953011 24034619.5953011 24034619.5953011 24034619.5953011 23919050.3721016 23524188.8595035 22913598.1302663 22272188.9415093 21578773.6023126 20769789.0399164 20066742.9321196 19989696.78332 19989696.78332 19989696.78332 19970435.2461201 19700773.7253214 19226939.9102036 18545081.4933268 17793881.5425303 17086020.0504336 16360823.174857 16060343.1945384 16060343.1945384 16060343.1945384 16060343.1945384 16002558.5829387 15790681.6737397 15309143.2437419 14615727.9045452 13922312.5653484 13200004.9203518 12391020.3579556 11986528.0767575 12015420.3825574 12015420.3825574 12015420.3825574 11909481.9279578 11533881.9525596 11009968.1407221 10397451.2577649 9718482.07146811 8895051.35617197 8166965.25001537 7970497.57057629 7970497.57057629 7970497.57057629 7970497.57057629 7970497.57057629 7970497.57057629 7970497.57057629'
+    x = '0.0 69.8 171.1 281.0 390.9 500.8 583.5 639.1 676.0 832.0 972.7 1060.7 1125.4 1199.2 1309.1 1418.9 1528.8 1611.7 1645.9 1694.8 1804.7 1914.6 1997.3 2052.9 2089.9 2205.1 2300.4 2383.1 2429.4 2475.7 2569.2 2699.0 2750.3 2795.5 2831.5 2973.5 3115.1 3206.6 3251.8 3324.4 3434.2 3544.1 3626.3 3671.5 3744.2 3854.0 3963.8 4045.6 4090.8 4241.1 4360.1 4392.5 4465.0 4546.9 4656.8 4739.2 4802.4'
+    y = '5754797 5754797 7730940 7840970 7840970 7951000 8985284 10877804 11802058 12019512 12019512 12594276 14244730 15895183 16027219 16027219 16159256 17523630 18731707 19768247 19988308 20032320 21000586 22805082 23949396 24039024 23993408 24785626 26260031 28086533 28565854 28565854 27734436 26194013 24411523 24195122 23949396 23597299 22100888 20120344 19988308 19988308 19460163 18007764 16137250 16027219 15851171 14310748 12462240 12097561 11941463 11432357 9337381 7862976 7840970 7840970 7882927'
   []
 
   [production_pressure_fn]
@@ -811,15 +1216,15 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     value = ${production_pressure}
   []
 
-  # Confining pressure on the cylindrical "sides" surface via the analytic outward normal.
-  # DECK52_23: apply the 54_48 late side-unload trim to the unload branch.
+  # Confining pressure on the cylindrical "sides" surface via the analytic outward normal (constant,
+  # since the bulk carries an isotropic -31e6 initial_stress baseline).
   [sigma3_x]
     type = ParsedFunction
-    expression = '-(${confining_pressure}-${side_unload_relax_pressure}*if(t<${side_unload_t0},0.0,min((t-${side_unload_t0})/${side_unload_dur},1.0)))*x/${sample_radius}'
+    expression = '-${confining_pressure}*x/${sample_radius}'
   []
   [sigma3_y]
     type = ParsedFunction
-    expression = '-(${confining_pressure}-${side_unload_relax_pressure}*if(t<${side_unload_t0},0.0,min((t-${side_unload_t0})/${side_unload_dur},1.0)))*y/${sample_radius}'
+    expression = '-${confining_pressure}*y/${sample_radius}'
   []
 []
 
@@ -845,21 +1250,36 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     extra_vector_tags = 'mech_reaction'
   []
 
-  # (1/M)*dp/dt + alpha*div(du/dt) in one correctly-coupled AD kernel, replacing the
-  # old split fluid_storage + mass_vol_expansion pair.
-  [fluid_storage]
-    type                 = OrcaFullySaturatedSinglePhaseMassTimeDerivativeKernel
-    variable             = pore_pressure
-    coupling_type        = HydroMechanical
-    multiply_by_fluid_density = true
-    extra_vector_tags    = mass_reaction
-  []
+#   [fluid_storage]
+#     type = OrcaSinglePhaseMassTimeDerivativeKernel
+#     variable = pore_pressure
+#     multiply_by_fluid_density = true
+#     save_in = inj_flux_aux
+#   []
   [darcy]
     type = OrcaFullySaturatedSinglePhaseDarcySUPGKernel
     variable = pore_pressure
     multiply_by_fluid_density = true
     use_supg = true
     save_in = inj_flux_aux
+    extra_vector_tags = mass_reaction
+  []
+#   [mass_vol_expansion]
+#     type = OrcaSinglePhaseMassVolumetricExpansionKernel
+#     variable = pore_pressure
+#     multiply_by_fluid_density = true
+#   []
+  # (1/M)*dp/dt + alpha*div(du/dt)  [volume form] -- KERNEL FIX 2026-08-14: combined,
+  # correctly-coupled mass time-derivative kernel, replacing the old split
+  # fluid_storage + mass_vol_expansion pair above (commented out, kept for reference).
+  # Validated against 68_02_sw4_bbfast_tail6p75_eta3p25_m0 (this exact deck) in
+  # SW4_July10/SW4_68_TARGETED_RESIDUAL_SWEEPS/ -- see CHANGELOG/memory
+  # sw-s4-kernel-alpha-backanalysis-2026-08-14 for the full back-analysis.
+  [fluid_storage]
+    type                 = OrcaFullySaturatedSinglePhaseMassTimeDerivativeKernel
+    variable             = pore_pressure
+    coupling_type        = HydroMechanical
+    multiply_by_fluid_density = true
     extra_vector_tags = mass_reaction
   []
 []
@@ -937,19 +1357,19 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
   [confine_x]
     type = FunctionNeumannBC
     variable = disp_x
-    boundary = sides
+    boundary = sides_nodeset
     function = sigma3_x
   []
   [confine_y]
     type = FunctionNeumannBC
     variable = disp_y
-    boundary = sides
+    boundary = sides_nodeset
     function = sigma3_y
   []
   [base_fixed_z]
     type = DirichletBC
     variable = disp_z
-    boundary = bottom
+    boundary = bottom_nodeset
     value = 0
   []
   [axial_load]
@@ -957,7 +1377,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     # A hard Dirichlet = infinitely stiff frame -> caps fault slip/dilation below the paper. penalty=k_machine/A.
     type = FunctionPenaltyDirichletBC
     variable = disp_z
-    boundary = top
+    boundary = top_nodeset
     function = axial_disp_ramp
     penalty = ${axial_bc_penalty}
   []
@@ -1415,7 +1835,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     execute_on = TIMESTEP_END
   []
   [fracture_state_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = fracture_state
     variable = fracture_state
@@ -1431,7 +1851,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     execute_on = TIMESTEP_END
   []
   [roughness_damage_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = roughness_damage
     variable = roughness_damage
@@ -1455,7 +1875,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     execute_on = TIMESTEP_END
   []
   [limit_tau_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = limit_tau
     variable = limit_tau
@@ -1463,7 +1883,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     execute_on = TIMESTEP_END
   []
   [plastic_slip_increment_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = plastic_slip_increment
     variable = plastic_slip_increment
@@ -1479,7 +1899,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     execute_on = TIMESTEP_END
   []
   [cumulative_plastic_slip_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = cumulative_plastic_slip
     variable = cumulative_plastic_slip
@@ -1487,7 +1907,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     execute_on = TIMESTEP_END
   []
   [friction_coefficient_effective_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = friction_coefficient_effective
     variable = friction_coefficient_effective
@@ -1495,7 +1915,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     execute_on = TIMESTEP_END
   []
   [cohesion_effective_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = cohesion_effective
     variable = cohesion_effective
@@ -1530,6 +1950,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     execute_on = TIMESTEP_END
   []
 []
+
 ######################################################################################
 [Materials]
   [mech]
@@ -1575,66 +1996,69 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     pore_pressure = pore_pressure
   []
   [czm_contact]
-    # Revised composite cohesive-contact-friction law. For a pre-existing fault the interface is
-    # initialized fully damaged (enable_tensile_cohesion=false), reproducing the frictional-joint
-    # behavior of the old ADOrcaDecoupledDilationRoughnessContactTraction while adding the coupled
-    # (gamma, g_np) local return map, event-aware substepping, and smooth active sets. The downstream
-    # hydraulic wiring is unchanged: this model still declares dilation_jump_increment,
-    # roughness_state, and cumulative_plastic_slip.
-    type = ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile
+    # Case 70_01: first SW3 BBFast transfer. No prior SW3 BBFast FE calibration exists.
+    # The common experiment comes from corrected 59_07. The shear transfer is sized from
+    # the SW3 paper targets (peak mu about 0.62, arrest mu about 0.23 at 71 um):
+    # JRC=22.5 is the onset-matching value identified by the combined hardening audit,
+    # while Dc=55 um and m=1.6 place the 71-um state near the arrest shelf. JRC=22.5 is
+    # outside Barton's nominal 0-20 range and about 11x measured JRC=1.96; this is an
+    # explicitly labeled effective transfer parameter, not a measured joint property.
+    type = OrcaBartonBandisContactTractionFastADHardening
     boundary = fracture_interface
 
-    enable_tensile_cohesion = false   # pre-existing fault: start fully damaged / frictional
-
-    penalty_normal = ${penalty_normal}
+    # Power-law BB mechanical normal closure. These are the validated SW4 normal-law
+    # starting values; SW3 has no independent normal-closure calibration for this law.
+    use_hyperbolic_normal_closure = true
+    initial_normal_stiffness = 2.443e11
+    maximum_closure = 4.591e-5
+    normal_closure_stress_exponent = 3.28
+    normal_closure_offset = 4.433e-5
+    normal_unload_retention_fraction = 0.06
+    normal_unload_retention_time = 0.0
+    normal_reclosure_stiffness_multiplier = 1.0
+    normal_unload_activation_slip = 5.0e-5
+    reported_reversible_normal_opening_scale = 0.758
+    reported_reversible_normal_opening_retention_fraction = 0.552
+    reported_reversible_normal_opening_retention_activation_slip = 50e-6
     penalty_tangent = ${penalty_tangent}
-    use_hyperbolic_normal_closure = ${use_hyperbolic_normal_closure_mech}
-    initial_normal_stiffness = ${initial_normal_stiffness_mech}
-    maximum_closure = ${maximum_closure_mech}
-    maximum_closure_fraction = ${maximum_closure_fraction_mech}
-    normal_closure_stress_exponent = ${normal_closure_stress_exponent_mech}
-    normal_closure_offset = ${normal_closure_offset_mech}
-    max_local_newton_iterations = 80
-    max_local_substeps = 48
-
-    initial_roughness = ${initial_roughness}
-    residual_roughness = ${residual_roughness}
-    roughness_decay_distance = ${roughness_decay_distance}
-
-    friction_coefficient_rough = ${friction_coefficient_rough}
-    friction_coefficient_smooth = ${friction_coefficient_smooth}
-    friction_roughness_exponent = ${friction_roughness_exponent}
-
-    # NOTE: set directly (not via ${cohesion_rough}) — MOOSE brace substitution of the top-level
-    # negative value was resolving to 0 here, silently zeroing the Coulomb intercept.
-    cohesion_rough = ${cohesion_rough}
-    cohesion_smooth = ${cohesion_smooth}
-    cohesion_roughness_exponent = ${cohesion_roughness_exponent}
-
-    normal_traction_tolerance = ${normal_traction_tolerance}
+    normal_traction_tolerance = 0.0
     tangential_traction_tolerance = ${tangential_traction_tolerance}
 
+    # BB peak envelope plus concentrated SW3 slip weakening.
+    jrc = 23.35
+    jcs = 3.0e8
+    residual_friction_angle_degrees = 7.5
+    use_scale_correction = false
+    use_mobilized_jrc = false
+    compressive_normal_stress_floor = 1e3
+    pore_pressure_strength_coefficient = 0.0
+    use_slip_weakening = true
+    characteristic_slip_distance = 6.0e-5
+    slip_weakening_exponent = 1.4
+    slip_weakening_residual_friction_angle_degrees = 7.5
+
+    # Rough-sample dilation/propping transfer. The 29.45-degree residual is inherited
+    # from the SW3 calibration; the 32-degree peak is the Table-2 dn/ds starting point.
     use_dilatancy = true
-    dilation_angle_peak_degrees = ${dilation_angle_peak_degrees}
-    dilation_angle_residual_degrees = ${dilation_angle_residual_degrees}
-    dilation_decay_distance = ${dilation_decay_distance}
-    dilation_decay_exponent = ${dilation_decay_exponent}
-    max_plastic_slip_increment = ${max_plastic_slip_increment}
-    tangential_viscosity = ${tangential_viscosity}
-    use_rate_and_state = ${use_rate_and_state}          # DECK52_12 (referenced RSF, deck-34 form)
-    rate_and_state_a = ${rate_and_state_a}
-    rate_and_state_b = ${rate_and_state_b}
-    rate_and_state_Dc = ${rate_and_state_Dc}
-    rate_and_state_V0 = ${rate_and_state_V0}
-    rate_and_state_theta0 = ${rate_and_state_theta0}
-    rate_and_state_nonnegative = ${rate_and_state_nonnegative}
-    dissipation_margin = ${dissipation_margin}                          # DECK52_07
-    secondary_weakening_strength = ${secondary_weakening_strength}      # DECK52_07 (TWOSTAGE)
-    secondary_weakening_onset_slip = ${secondary_weakening_onset_slip}  # DECK52_07
-    secondary_weakening_distance = ${secondary_weakening_distance}      # DECK52_07
-    dilation_opens_joint = ${dilation_opens_joint}   # V15: kinematic dilatant hardening (gap opens)
-    reversible_normal_compliance = ${reversible_normal_compliance}         # DECK23: elastic joint-normal opening (recoverable)
-    reversible_normal_reference_stress = ${reversible_normal_reference_stress}
+    use_decoupled_dilation = true
+    dilation_angle_peak_degrees = 26.0
+    dilation_angle_residual_degrees = 26.0
+    dilation_decay_distance = 1.0e-4
+    dilation_opens_joint = true
+    accumulate_irreversible_dilation = true
+    cap_dilation_to_available_closure = false
+    max_dilation_increment = 0.0
+
+    use_roughness_degradation = true
+    roughness_state_initial = ${initial_roughness}
+    roughness_state_residual = ${residual_roughness}
+    roughness_characteristic_slip = 4.0e-5
+
+    max_plastic_slip_increment = 0.0
+    tangential_viscosity = 4.0e11
+    min_tau_limit = 0.0
+    max_return_mapping_iterations = 100
+    relative_tolerance = 1e-10
   []
   [czm_global_traction]
     type = OrcaComputeGlobalTractionSmallStrain
@@ -1693,6 +2117,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     slip_damage_characteristic_slip = ${slip_damage_characteristic_slip}
     slip_damage_onset_slip = ${slip_damage_onset_slip}
     cumulative_plastic_slip_name = cumulative_plastic_slip
+    cumulative_plastic_slip_is_ad = false   # BBFast exports this property non-AD
     slip_damage_aperture_name = slip_damage_aperture
 
     min_hydraulic_aperture = ${min_hydraulic_aperture}
@@ -1846,7 +2271,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
   [injection_pressure_pp]
     type = PointValue
     variable = pore_pressure
-    point = '-0.019255 0 0.021745'
+    point = '-0.023160 0 0.020419'  # SW3-v9 PPFIX: actual SW-S3 injection node (was the SW-S4 coordinate = 4 mm downstream)
   []
   [inj_reaction_sum_pp]
     type = NodalSum
@@ -1870,7 +2295,7 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
   [pp_outlet_pp]
     type = PointValue
     variable = pore_pressure
-    point = '0.019255 0 0.091255'
+    point = '0.023160 0 0.103981'  # SW3-v9 PPFIX: actual SW-S3 production node (was the SW-S4 coordinate)
   []
   [pp_drop_pp]
     type = ParsedPostprocessor
@@ -1880,7 +2305,12 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
   [flow_rate_validation_ml_min_pp]
     type = ParsedPostprocessor
     pp_names = 'hydraulic_aperture_pp pp_drop_pp'
-    expression = '(${paper_flow_width_over_length_sw_s4} / (12.0 * ${fluid_viscosity_ref})) * hydraulic_aperture_pp^3 * pp_drop_pp * ${ml_per_m3_per_min}'
+    expression = '(${paper_flow_width_over_length_sw_s3} / (12.0 * ${fluid_viscosity_ref})) * hydraulic_aperture_pp^3 * pp_drop_pp * ${ml_per_m3_per_min}'
+  []
+  [flow_rate_mesh_geometry_ml_min_pp]
+    type = ParsedPostprocessor
+    pp_names = 'hydraulic_aperture_pp pp_drop_pp'
+    expression = '(${mesh_flow_width_over_length_sw_s3} / (12.0 * ${fluid_viscosity_ref})) * hydraulic_aperture_pp^3 * pp_drop_pp * ${ml_per_m3_per_min}'
   []
   [flow_rate_reference_area_ml_min_pp]
     type = ParsedPostprocessor
@@ -1902,33 +2332,16 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     pp_names = 'inj_reaction_sum_pp prod_reaction_sum_pp'
     expression = 'abs(inj_reaction_sum_pp + prod_reaction_sum_pp) / max(abs(inj_reaction_sum_pp), 1e-30)'
   []
+
+  # --- applied axial stress from the assembled top-boundary reaction ---
   [top_boundary_area_pp]
     type = AreaPostprocessor
-    boundary = top
-  []
-  [axial_command_m_pp]
-    type = FunctionValuePostprocessor
-    function = axial_disp_ramp
-  []
-  [top_disp_z_mean_m_pp]
-    type = SideAverageValue
-    variable = disp_z
-    boundary = top
-  []
-  [machine_spring_gap_m_pp]
-    type = ParsedPostprocessor
-    pp_names = 'top_disp_z_mean_m_pp axial_command_m_pp'
-    expression = 'top_disp_z_mean_m_pp - axial_command_m_pp'
-  []
-  [machine_spring_sigma1_mpa_pp]
-    type = ParsedPostprocessor
-    pp_names = machine_spring_gap_m_pp
-    expression = 'abs(machine_spring_gap_m_pp) * ${axial_bc_penalty} * 1e-6'
+    boundary = top_nodeset
   []
   [top_reaction_z_raw]
     type = NodalSum
     variable = react_disp_z
-    boundary = top
+    boundary = top_nodeset
   []
   [top_reaction_z_abs]
     type = ParsedPostprocessor
@@ -1943,19 +2356,14 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
   [differential_stress_reaction_mpa_pp]
     type = ParsedPostprocessor
     pp_names = sigma1_reaction_mpa_pp
-    expression = 'sigma1_reaction_mpa_pp - ${confining_pressure} * 1e-6'
-  []
-  [reaction_vs_machine_spring_mpa_pp]
-    type = ParsedPostprocessor
-    pp_names = 'sigma1_reaction_mpa_pp machine_spring_sigma1_mpa_pp'
-    expression = 'sigma1_reaction_mpa_pp - machine_spring_sigma1_mpa_pp'
+    expression = 'sigma1_reaction_mpa_pp - 30.0'
   []
 
-  # --- differential stress from the top-surface axial stress average ---
+  # --- secondary differential stress from the top-surface axial stress average ---
   [stress_zz_top_pp]
     type = SideAverageValue
     variable = stress_zz
-    boundary = top
+    boundary = top_nodeset
   []
   [sigma1_pp]
     type = ParsedPostprocessor
@@ -2051,34 +2459,37 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
   []
 
   # --- decoupled-law state diagnostics ---
+  # FastAD publishes the plastic-slip/strength diagnostics below as regular
+  # (non-AD) material properties.  roughness_state and dilation_jump_increment
+  # remain AD properties.
   [cumulative_plastic_slip_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = cumulative_plastic_slip
     boundary = fracture_interface
   []
   [plastic_slip_increment_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = plastic_slip_increment
     boundary = fracture_interface
   []
   [limit_tau_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = limit_tau
     boundary = fracture_interface
   []
   # notebook alias bb_limit_tau_pa -> bb_limit_tau_pp (Coulomb shear strength, same quantity)
   [bb_limit_tau_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = limit_tau
     boundary = fracture_interface
   []
   [friction_coefficient_effective_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = friction_coefficient_effective
     boundary = fracture_interface
   []
   [cohesion_effective_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = cohesion_effective
     boundary = fracture_interface
   []
@@ -2087,9 +2498,9 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     property = roughness_state
     boundary = fracture_interface
   []
-  [dilation_state_pp]
-    type = ADSideAverageMaterialProperty
-    property = dilation_state
+  [bb_dilation_angle_pp]
+    type = SideAverageMaterialProperty
+    property = bb_dilation_angle_degrees
     boundary = fracture_interface
   []
   [dilation_jump_increment_pp]
@@ -2130,6 +2541,12 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     type = ParsedPostprocessor
     pp_names = 'czm_ds_1_pp czm_ds_2_pp'
     expression = 'sqrt(czm_ds_1_pp^2 + czm_ds_2_pp^2) * 1e3'
+  []
+  # Level 84 observation operator. The raw local CZM jump above is retained.
+  [reported_czm_shear_slip_mm_pp]
+    type = ParsedPostprocessor
+    pp_names = czm_shear_slip_mm_pp
+    expression = 'czm_shear_slip_mm_pp * 1'
   []
 
   # --- hydraulics ---
@@ -2197,21 +2614,15 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
   []
   # DECK23: reported normal opening now = irreversible g_np + reversible elastic d_rev (new source
   # property normal_opening_total). czm_dn_pp above (kinematic g_n) is kept for diagnostics/comparison.
+  # Level 83: output-only BBFast reconstruction. The kinematic czm_dn remains above for
+  # diagnostics and continues to drive mechanics/hydraulics; this property is validation only.
   [czm_dn_total_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = normal_opening_total
     boundary = fracture_interface
   []
-  [czm_rev_opening_pp]         # reversible-only component, for diagnostics (mm below)
-    type = ADSideAverageMaterialProperty
-    property = reversible_normal_opening
-    boundary = fracture_interface
-  []
-  [czm_rev_opening_mm_pp]
-    type = ParsedPostprocessor
-    pp_names = czm_rev_opening_pp
-    expression = '-czm_rev_opening_pp * 1e3'
-  []
+
+
   # SIGN FIX: czm_dn follows this model's native convention (positive = opening, negative =
   # closing -- verified from source: interface_displacement_jump = R^T*(disp_neighbor - disp),
   # i.e. normal . displacement_jump_global). The paper's convention is the OPPOSITE (negative =
@@ -2220,8 +2631,8 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
   # (correctly negated) frac_normal_dilation_paper_mm computed from the same underlying jump.
   [czm_normal_dilation_paper_mm_pp]
     type = ParsedPostprocessor
-    pp_names = czm_dn_pp
-    expression = '-czm_dn_pp * 1e3'
+    pp_names = czm_dn_total_pp           # Level 83 reported opening; output only
+    expression = '-czm_dn_total_pp * 1e3'
   []
   # --- Orca_2.0-style normal-dilation procedure: SideAverage of the GLOBAL normal jump, paper sign
   #     (compression positive => opening plotted negative). frac_normal_dilation_paper_mm is the 2.0
@@ -2255,46 +2666,22 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     pp_names = frac_normal_jump_avg
     expression = 'if(frac_normal_jump_avg > 0.0, frac_normal_jump_avg, 0.0)'
   []
-  [bulk_disp_x_upper_pp]
-    type = PointValue
-    variable = disp_x
-    point = '${sample_radius} 0 0.115'
-  []
-  [bulk_disp_z_upper_pp]
-    type = PointValue
-    variable = disp_z
-    point = '${sample_radius} 0 0.115'
-  []
-  [bulk_disp_x_lower_pp]
-    type = PointValue
-    variable = disp_x
-    point = '${sample_radius} 0 0.010'
-  []
-  [bulk_disp_z_lower_pp]
-    type = PointValue
-    variable = disp_z
-    point = '${sample_radius} 0 0.010'
-  []
-  [bulk_delta_x_pp]
+
+  # --- VALIDATION FRAME (Ye et al. specimen transformation, theta = 29 deg) ---
+  # These are reconstructed from the axial reaction and mean end pressure, exactly
+  # like the experimental curves. Keep the local CZM tractions above as separate
+  # constitutive diagnostics; they are not the same observable.
+  [effective_normal_paper_frame_mpa_pp]
     type = ParsedPostprocessor
-    pp_names = 'bulk_disp_x_upper_pp bulk_disp_x_lower_pp'
-    expression = 'bulk_disp_x_upper_pp - bulk_disp_x_lower_pp'
+    pp_names = 'differential_stress_reaction_mpa_pp injection_pressure_pp pp_outlet_pp'
+    expression = '30.0 - 0.5*(injection_pressure_pp + pp_outlet_pp)*1e-6 + 0.23504036788339755*differential_stress_reaction_mpa_pp'
   []
-  [bulk_delta_z_pp]
+  [shear_stress_paper_frame_mpa_pp]
     type = ParsedPostprocessor
-    pp_names = 'bulk_disp_z_upper_pp bulk_disp_z_lower_pp'
-    expression = 'bulk_disp_z_upper_pp - bulk_disp_z_lower_pp'
+    pp_names = differential_stress_reaction_mpa_pp
+    expression = '0.424024048078213*differential_stress_reaction_mpa_pp'
   []
-  [bulk_normal_dilation_paper_mm_pp]
-    type = ParsedPostprocessor
-    pp_names = 'bulk_delta_x_pp bulk_delta_z_pp'
-    expression = '-(bulk_delta_x_pp*${bulk_cos_theta} - bulk_delta_z_pp*${bulk_sin_theta}) * 1e3'
-  []
-  [bulk_shear_slip_mm_pp]
-    type = ParsedPostprocessor
-    pp_names = 'bulk_delta_x_pp bulk_delta_z_pp'
-    expression = 'abs(bulk_delta_x_pp*${bulk_sin_theta} + bulk_delta_z_pp*${bulk_cos_theta}) * 1e3'
-  []
+
 []
 
 ######################################################################################
@@ -2312,25 +2699,25 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
   solve_type = Newton
   line_search = l2
   start_time = 0
-  end_time = 3500              # FULL SW-S4 cycle (was 1800 -> truncated mid-experiment, before the burst)
+  end_time = 4802              # FULL SW-S3 cycle (11 stages, ~430 s each)
 
   [TimeStepper]
     type = IterationAdaptiveDT
-    dt = 1.5                  # conservative transition cadence; v12 rejected ~1.93 s around the first slip jumps
+    dt = 0.75                 # Level 84 controlled initial step
     optimal_iterations = 18
     growth_factor = 1.2
     cutback_factor = 0.5
   []
 
-  dtmax = 1.5
-  dtmin = 1e-4                 # DECK52_19: was 1e-6. At dt<1e-4 the per-step slip resolution
-                               # k_t*V*dt < 1 Pa puts the stick/slip branch decision at round-off
-                               # noise (the 52_15/16 death spiral burned 4 h at dt~1e-6); with the
-                               # RSF clamp the re-stick no longer needs the crawl -- fail fast.
+  dtmax = 0.75
+  dtmin = 1e-6                 # allow fine crawl through the viscously regularized slip burst
   l_max_its = 50
   l_tol = 1e-4
   nl_max_its = 70
-  nl_abs_tol = 1e-6
+  nl_abs_tol = 1e-4            # PST-FLOWRSF: 1e-6 -> 1e-4. The flow form's transition-band
+                               # qps floor |R| at ~4e-5 N (see banner FAILURE+FIX RECORD);
+                               # 1e-4 N ~ 1.5e-9 of the 70 kN load scale. With the parent
+                               # stick-branch laws 1e-6 was reachable; here it is not.
   nl_rel_tol = 1e-6
 []
 
@@ -2355,5 +2742,3 @@ checkpoint_file_base = results_checkpoint/67_11_sw4_mc_dS0p15_s28_w12_m0_kernel_
     num_files = 4
   []
 []
-
-
