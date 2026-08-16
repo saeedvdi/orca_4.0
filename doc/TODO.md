@@ -486,3 +486,76 @@ should move, but that is an expectation until it is checked.
 There is no coverage of the Darcy kernels, the CZM/Barton-Bandis path, or any coupled
 poroelastic response — a 1D Terzaghi consolidation case against the analytical solution is
 the obvious next step and would be the first genuinely *coupled* verification in the repo.
+
+---
+
+## L. Terzaghi consolidation — first coupled verification — 2026-08-16
+
+Branch `orca_v4`, commit `7596413`. Extends §K from unit-level tests of the storage term to
+a verification of the **whole HM path** — `OrcaPoroMechKernel` + Darcy + the combined mass
+kernel in `HydroMechanical` mode — against a closed-form solution.
+
+**L1. Setup.** Terzaghi 1D consolidation, Verruijt *Theory and Problems of Poroelasticity*
+(TU Delft 2013) §2.2. Parameters deliberately identical to MOOSE's own `porous_flow`
+`terzaghi.i`, so any discrepancy is Orca's and not the problem's.
+
+**L2. An algebraic confirmation, free of any numerics.** Verruijt's storativity
+`S = φ/K_f + (α−φ)(1−α)/K` is *identical* to Orca's `1/M` in `computeBiotModulus`. Orca's
+Biot modulus **is** the Verruijt storativity. That independently confirms the formula §K2
+pins numerically.
+
+**L3. Result.** Against the analytic series (`scripts/terzaghi_analytic.py`, committed so
+the check is repeatable):
+
+| probe | z | max rel. error |
+|---|---|---|
+| p0 | 0 | 0.20 % |
+| p2 | 2 | 0.19 % |
+| p5 | 5 | 0.34 % |
+| p8 | 8 | 1.63 % ← adjacent to the drained face |
+| degree of consolidation U | — | 0.25 % |
+| final settlement | — | 1.236270 vs 1.236439 exact (**0.014 %**) |
+
+**L4. A trap worth remembering — apparent non-convergence that was pure time-stepping.**
+The first runs showed **5.1 % error that did not improve under 8× mesh refinement**, which
+reads exactly like a physics defect. It was not. Refining the mesh also refined the
+*initial* dt, but with `growth_factor = 1.4` and no cap, dt still grew to ~2.5 by t=10 in
+every run. Backward Euler decays too *slowly* at large `λ·dt` — amplification `1/(1+λdt)`
+against `exp(−λdt)`.
+
+The diagnostic that settled it: the numeric/analytic ratio was **the same at z=0 and z=5**
+(1.860 at t=10). A uniform multiplicative offset across depths means the spatial mode shape
+is right and only the decay rate is wrong — which points at the integrator, not the
+operator. With dt capped, convergence is clean and first-order:
+
+| nz | dtmax | worst error |
+|---|---|---|
+| 20 | 0.0125 | 1.02 % |
+| 40 | 0.00625 | 0.53 % |
+| 80 | 0.003125 | 0.28 % |
+
+`dtmax` is now set in the deck with a comment saying why it is not optional.
+
+**L5. A silent-coupling bug, found because the analytic solution existed.**
+`computeVolumetricStrain()` was called **only** from `computeIncrementalStrain()`. On the
+`strain_model = total` path it was never called, so `vol_strain_rate` kept the 0.0 from
+`initQpStatefulProperties`, and any `HydroMechanical` mass kernel lost its `α·div(du/dt)`
+term entirely.
+
+It fails silently: the first Terzaghi run completed happily with **zero pore pressure
+everywhere** and settlement jumping straight to the fully-*drained* 1.25 — a self-consistent,
+plausible, wrong answer. With no analytic reference there is no signal at all. This is the
+clearest argument in the repo for why verification tests are worth the effort.
+
+**Scope: no production result is affected.** All 33 mesh-5 decks use
+`strain_model = incremental`, as does the in-flight campaign. This is a trap for future
+work, not a correction to past results.
+
+**L6. Honest status of the fix.** `./run_tests` → **8 passed, 0 failed** (1 → 7 → 8). The
+Terzaghi test is fully verified. The `OrcaMechMaterial` fix is **compile-checked only**, not
+runtime-verified: `orca-opt` was deliberately not relinked (see §K6 — the campaign is
+mid-flight against it). So the passing suite exercises the *old* binary, in which the
+total-strain path is still broken — it simply is not reached, since everything uses
+incremental. **Due once the campaign drains:** rebuild, re-run the suite, and add a
+`total_strain` case asserting the two strain models agree. Until then the fix is plausible,
+not proven.
