@@ -302,21 +302,41 @@ The slip-event kinematics — 0.519 mm of slip and 0.156 mm of dilation — are 
 1–3 %, on a sample whose slip is 7× larger than SW-S3's. Its α=0.6 partner is still inside the
 bracket, so no SW-T1 A/B verdict exists yet.
 
-### 4.4 Baseline SW-S3 quality through stage 6
+### 4.4 SW-S3 baseline — complete run, all stages
 
-For the record, the α=1e-12 arm against Table 2 at the slip event: Q +1.3 %, σ'_n +3.3 %,
-d_n +3.1 %, d_s +2.9 %, τ +29.2 %. Against the promotion gates, dilation is **5/5 in gate**
-(±0.003 mm) and slip **4/5**, the single miss being stage 6 at 0.00206 mm against a ±0.002 mm
-gate — over by 60 nm.
+The α=1e-12 arm **finished** at t=4802 (stage 11's target of 4802.4 falls just past the end, so
+10 of 11 stages are scored). It is a strong match:
+
+| observable | MAE | mean abs % | gate | in gate |
+|---|---|---|---|---|
+| d_n (mm) | 0.00093 | 2.1 % | ±0.003 | **9/9** |
+| d_s (mm) | 0.00062 | — | ±0.002 | **8/9** |
+| σ'_n (MPa) | 0.154 | 0.80 % | — | — |
+| τ (MPa) | 0.286 | 6.5 % | — | — |
+| Q (mL/min) | 0.020 | 9.3 % | — | — |
+
+The single slip miss is stage 6 at 0.002062 mm — over a ±0.002 mm gate by 62 nanometres.
+Through unloading d_s errors fall to 0.0009, 0.0009, −0.0001, −0.0001 mm.
+
+**This confirms §4.3's reading of the τ offset.** SW-S3's per-stage τ error runs
+
+    -0.20, -0.04, +0.10, +0.27, +0.41, **+1.04**, +0.28, +0.13, +0.15, +0.25 MPa
+
+— a spike at the slip event that recovers immediately afterwards. The ~1 MPa is confined to
+the co-seismic drop; the residual level tracks the paper to within a few tenths of an MPa
+through the entire unloading branch.
 
 ### 4.5 Still outstanding
 
-- **SW-T1** — both arms still inside the hand-placed `event_dt_cap` bracket (dt = 0.05 over
-  t ∈ [1740, 1825]), running ~0.2 s of simulated time per wall minute. Stage 6 not reached.
-- **SW-T2** — never started; it waits on SW-T1's ranks. Six full-length decks at 8 MPI ranks
-  do not fit concurrently in 32 cores.
-- **SW-S3 unloading branch** (stages 7–11) — baseline is past the event and accelerating
-  (~8.5 s/min); the α=0.6 arm trails.
+- **SW-T1** — both arms are past the slip event and running at 4–6 s/min; the stage-6 A/B is
+  in §4.1b. Neither arm has finished the unloading branch. They spent ~5 h inside the
+  hand-placed `event_dt_cap` bracket (dt = 0.05 over t ∈ [1740, 1825]).
+- **SW-T2** — the baseline arm **launched at ~08:45**, automatically, when SW-S3's completion
+  freed 8 ranks; its α=0.6 partner stays queued until SW-S3's second arm finishes. Six
+  full-length decks at 8 MPI ranks never fit concurrently in 32 cores, so this pair was always
+  going to run last. No SW-T2 result exists yet.
+- **SW-S3** — the baseline is **complete** (§4.4); the α=0.6 arm is in the unloading branch and
+  should finish around 09:30.
 
 Nothing failed: **zero non-convergence and zero exceptions on all four arms** for the whole
 campaign, including through the slip event.
