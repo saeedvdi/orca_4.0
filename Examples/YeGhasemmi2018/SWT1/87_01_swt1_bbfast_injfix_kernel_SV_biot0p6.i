@@ -154,9 +154,9 @@ paper_flow_width_over_length = 0.814323680496
 mesh_flow_width_over_length = 0.814323680496
 ml_per_m3_per_min = 6.0e7
 
-exodus_file_base = results_exodus/87_01_swt1_bbfast_injfix_kernel_SV_biot0p6
-csv_file_base = results_csv/87_01_swt1_bbfast_injfix_kernel_SV_biot0p6
-checkpoint_file_base = results_checkpoint/87_01_swt1_bbfast_injfix_kernel_SV_biot0p6
+exodus_file_base = results_exodus_hpc_rorqual/87_01_swt1_bbfast_injfix_kernel_SV_biot0p6_hpc
+csv_file_base = results_csv_hpc_rorqual/87_01_swt1_bbfast_injfix_kernel_SV_biot0p6_hpc
+checkpoint_file_base = results_checkpoint_hpc_rorqual/87_01_swt1_bbfast_injfix_kernel_SV_biot0p6_hpc
 
 [GlobalParams]
   displacements = 'disp_x disp_y disp_z'
