@@ -189,19 +189,55 @@ Three distinct behaviours, and they separate cleanly:
 `τ = 0.424·Δσ` — with no `biot_coefficient` anywhere in them, and they use the correct
 load-cell channel rather than the σ₃-hardcoded trap. The shift is physical.
 
+### 4.1b SW-T1 — no premature slip, and α=0.6 is *better* on slip kinematics
+
+**SW-T1 does not reproduce the SW-S3 behaviour, and that changes the conclusion.** Both arms
+slip at stage 6; at stage 5 both are still locked (d_s = 0.0017 and 0.0024 mm against a paper
+value of 0.008). There is no timing shift at all.
+
+| stage 6 | α=1e-12 | α=0.6 | paper | closer |
+|---|---|---|---|---|
+| Q (mL/min) | 6.495 (+4.4 %) | 6.689 (+7.5 %) | 6.22 | α=1e-12 |
+| σ'_n (MPa) | 32.63 (+2.6 %) | 32.70 (+2.9 %) | 31.79 | α=1e-12 |
+| τ (MPa) | 30.61 (+4.3 %) | 30.73 (+4.7 %) | 29.35 | α=1e-12 |
+| d_n (mm) | −0.1555 (−0.95 %) | −0.1580 (+0.6 %) | −0.157 | **α=0.6** |
+| d_s (mm) | 0.5188 (−2.5 %) | 0.5273 (**−0.88 %**) | 0.532 | **α=0.6** |
+
+Aggregated over six stages: α=1e-12 closer on Q, σ'_n and τ by 35–38 %; **α=0.6 closer on
+d_s by 41 % and d_n by 16 %.** A genuinely mixed verdict, and the opposite of SW-S3 on the
+kinematics.
+
+The stress penalty is a small, systematic drift — α=0.6 runs ~0.25 → 0.89 MPa high on σ'_n and
+~0.40 → 1.42 MPa high on τ through the loading branch — the same "poroelastic coupling
+switching on" signature as SW-S3, but here it never reaches the failure envelope early.
+
 ### 4.2 What this does and does not establish
+
+**Read 4.1 and 4.1b together — the SW-S3 result alone is misleading.** Taken by itself, SW-S3
+says "α=0.6 breaks the model". SW-T1 says "α=0.6 slightly improves the slip and slightly
+degrades the stresses". The reconciliation is about *margin*, not about α:
+
+> α=0.6 does not intrinsically mistime slip. It tips a sample into premature failure only
+> where that sample is already marginal at the preceding stage. SW-S3's calibration sits at
+> the edge at 24 MPa, so an 18.8× change in storage compliance is enough to push it over.
+> SW-T1 has margin to spare and is unaffected.
+
+That is a stronger and more actionable statement than the SW-S3-only reading: the fragility
+lies in **how little onset margin SW-S3's calibration carries**, which is a defect worth fixing
+on its own terms, independent of which α is adopted.
 
 **It does not establish that α=1e-12 is right.** It remains unphysical — below porosity, with
 the negative grain-storage term of §2. What the campaign establishes is narrower and more
 useful:
 
-> The deck's slip-onset calibration is **entangled with α**. Swapping α from 1e-12 to 0.6
-> while holding everything else fixed moves the slip event one stage earlier, so α cannot be
-> corrected on its own.
+> The deck's slip-onset calibration is **entangled with α, on samples that lack onset margin**.
+> On SW-S3 swapping α alone moves the slip event a full stage earlier; on SW-T1 it moves
+> nothing and slightly improves the slip magnitude. So α cannot be corrected in isolation —
+> but the blocker is the margin in the onset calibration, not α itself.
 
 This is the outcome §2 anticipated ("a shift in slip-event timing in arm B is an expected
-consequence, not evidence of a bug") — now measured rather than predicted. Two mechanisms act
-together, and this campaign does not separate them:
+consequence, not evidence of a bug") — now measured rather than predicted, and measured to be
+sample-dependent. Two mechanisms act together, and this campaign does not separate them:
 
 1. **Storage compliance rises 18.8×**, changing how fast pressure builds at the fault.
 2. **Pore pressure enters the bulk effective stress at all.** At α=1e-12 the matrix is
@@ -210,8 +246,16 @@ together, and this campaign does not separate them:
    — is that coupling switching on, visible well before any slip.
 
 **Consequence for the paper:** fixing α to a physical value requires **re-fitting the
-slip-onset envelope at that α**. It is not a parameter that can be corrected in isolation.
-That is a new task, not a result of this one.
+slip-onset envelope at that α — for SW-S3 at least, and the refit should be checked against
+SW-T1 where α=0.6 already performs slightly better on slip.** It is not a parameter that can be
+corrected in isolation, but neither is it the underlying defect. That is a new task (#60), not
+a result of this one.
+
+**A caveat on the aggregate scores.** Both samples' MAE tables report α=1e-12 "closer" overall,
+and on SW-S3 that margin is 83–96 %. Almost all of it comes from one mistimed stage on one
+sample. On SW-T1 the same aggregate is 35–38 % on stresses and *reversed* on both displacement
+channels. Quoting the aggregates without the per-stage decomposition would misrepresent the
+result.
 
 ### 4.3 The shear-traction overshoot is a constant ~1 MPa offset, not a percentage
 
