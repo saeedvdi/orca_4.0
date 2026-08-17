@@ -1,33 +1,73 @@
 # =============================================================================================
-# 90_06_sw3_bbfast_jrc5p69_L123p4_kernel_SV_biot0p6
+# 91_05_sw3_bbfast_paperjrc_resc1p65_kernel_SV_biot0p6
 #
-# 90-SERIES: fix the ONSET, keep the RESIDUALS.  Back-analysis 2026-08-17.
-# Parent: 89_02_sw3_bbfast_paperjrc_L123p4_kernel_SV_biot0p6.i -- 21.7% mean normalized RMSE, event 360-390 s early
+# 91-SERIES: fix the RESIDUAL, keep the ONSET.  Back-analysis of the 90-series, 2026-08-17.
 #
-# WHY (campaign-wide).  Every scored case fails at the injection step where its strength margin
-# m = (tau_lim - tau)/tau_lim crosses zero.  The experiment fails at the TOP of the staircase, so
-# a small strength deficit does not advance failure proportionally -- it advances it by a WHOLE
-# STEP (~290 s on SW-T1/T2, ~350 s on SW-S3).  That is the whole "several hundred seconds early"
-# signature.  Measured crossings: SW-S3 84_01-baseline 25-26 MPa (on time), 86_01 26-27 (on time),
-# 89_02 22-23 (360-390 s early);  SW-S4 89_06 17-18 (50-73 s late), 89_01 14-15 (early).
+# Parent: 90_05_sw3_bbfast_paperjrc_L123p4_cohes1p67_kernel_SV_biot0p6.i
 #
-# SW-S3 SPECIFIC.  SLOPE arm, paired with 90_05's level arm -- see that deck's header for the
-# full argument and for why the un-regated 123.40 mm preload (#75) is exonerated.
+# WHAT THE 90-SERIES SETTLED.  The level correction worked.  Every deck that was given more peak
+# strength moved its margin crossing to the top of the staircase and its onset onto the measured
+# event:
 #
-# The uncomfortable question this arm asks: is the model's JRC the same object as the paper's
-# measured JRC?  The paper's is a profilometric roughness number.  In the model it multiplies
-# log10(JCS/sigma'_n) and therefore also carries every OTHER pressure-dependent strengthening
-# mechanism -- real-area-of-contact growth, asperity interlock.  If the fit needs JRC ~= 5.7
-# on a saw cut whose measured roughness is 1.96, that is evidence the model is using JRC as
-# an effective parameter and the paper's value cannot simply be substituted.  Say so in the
-# manuscript rather than quietly fitting it.
+#     specimen  case    crosses 0 at   slip onset (sim vs val)   mean nRMSE (corrected sigma_d)
+#     SW-T1     90_01   24->25 MPa     1610 vs 1650-1725 s        10.6%
+#     SW-T1     90_02   never          locked                     51.3%
+#     SW-T2     90_03   24->25 MPa     2220 vs 2225-2255 s         6.3%
+#     SW-T2     90_04   never          locked                     37.7%
+#     SW-S3     90_05   24->25 MPa     2431 vs 2445 s              8.8%
+#     SW-S3     90_06   24->25 MPa     2428 vs 2445 s              9.1%
+#     SW-S4     90_07   19->20 MPa     1404 vs 1320 s (stage 2)    6.9%
+#     SW-S4     90_08   19->20 MPa     1402 vs 1320 s (stage 2)    6.8%
 #
-# THIS DECK: jrc 1.96 -> 5.69 at the paper's JCS = 1.5e8 and phi_r = 29.756 unchanged.  Derived from the
-# same +13.0% requirement as 90_05: tan(29.756 + JRC*log10(150/21)) = 1.13*tan(31.430) gives
-# 29.756 + 0.85387*JRC = 34.617, JRC = 5.69.
+# THE REPORTING-CHANNEL CORRECTION.  The scores above use differential_stress_reaction_mpa_pp,
+# not differential_stress_mpa_pp.  The latter is (sigma1_pp - 30e6)*1e-6: it subtracts a TOTAL
+# confining stress from a SKELETON axial stress and therefore reads alpha*p ~= 3.5 MPa low for
+# the entire run.  Two independent operators agree against it -- the load-cell reaction
+# (|top reaction|/A - confining) and sigma1 - sigma3_bulk -- and they agree with each other to
+# < 0.4 MPa and with the digitized pre-event plateau to 0.1-0.5 MPa on SW-S4.  The broken channel
+# is referenced nowhere outside [Postprocessors], so no physics was affected and no re-run was
+# needed; the notebooks were repointed instead.  It is the channel the paper-frame tau and
+# sigma'_n operators already consumed, so the margin analysis was never contaminated.
 #
-# PREDICTION: crossing moves from 22-23 MPa to 26-27 MPa.  90_05 and 90_06 are matched at the crossing sigma'_n by construction, so they will separate
-# ONLY in the shape of the approach and in the residual -- which is exactly the discriminator.
+# WHAT IS LEFT, AND IT IS NOT THE ONSET.  With the corrected channel the residual differential
+# stress splits cleanly by fracture type:
+#
+#     SW-T1 90_01   final sigma_d 71.52 vs 62.68 MPa   +8.83   UNDER-weakened   res_c = 11.176 MPa
+#     SW-T2 90_03   final sigma_d 67.36 vs 62.84 MPa   +4.52   UNDER-weakened   res_c = 10.695 MPa
+#     SW-S3 90_05   final sigma_d  1.60 vs  5.50 MPa   -3.90   OVER-weakened    res_c = 0
+#     SW-S4 90_08   final sigma_d  5.36 vs  5.14 MPa   +0.22   correct          res_c = 0
+#
+# The two mated tensile fractures keep too much interlock after the burst; the saw cut that was
+# given none keeps too little.  SW-S4, whose roughness-degradation floor supplies its residual,
+# is already right.  So the 91-series moves residual_cohesion only, at fixed peak envelope, on
+# the three specimens that need it -- and brackets D_c on SW-S4, where the remaining error is
+# the SHAPE of the transition rather than its level.
+#
+# THIS DECK.  ONE change: residual_cohesion 0.0 -> 1.65e6 Pa.  SW-S3 is the only specimen that
+# over-weakens, and it is the only one that was given no residual cohesion at all.
+#
+# WHY 1.65 MPa.  90_05 ends at 1.60 MPa differential stress against 5.50 measured, -3.90 MPa.
+# In SW-S3's paper frame that is 0.424024048078213*3.90 = 1.654 MPa of missing shear traction.
+# The final shear traction itself is 0.68 MPa against 2.33 measured, consistent to within
+# 0.01 MPa -- two independent channels give the same deficit, so this is a real residual-strength
+# gap and not a frame artifact.
+#
+# IT SHOULD ALSO FIX THE SLIP.  90_05 accumulates 0.0905 mm against 0.0734 measured, +23%.  A
+# joint that keeps 1.65 MPa of interlock arrests sooner.  Slip and residual stress are the same
+# defect seen twice, which is why one parameter is being moved and not two.
+#
+# WHAT IS NOT CHANGING.  cohesion stays at 1.67e6 and jrc stays at the paper's measured 1.96.
+# The 90_05/90_06 pair was built to separate a LEVEL correction (cohesion) from a SLOPE
+# correction (JRC 1.96 -> 5.69) and it failed to separate them: over the sampled sigma'_n range
+# the two margin curves differ by a near-constant 0.9 pp and their slopes differ by 3%
+# (1.69 vs 1.74 %/MPa).  The experiment's stress path is too narrow to identify the slope, so
+# the measured JRC is kept and the level correction carries the fit.  That retires the "missing
+# negative feedback is on the strength slope" hypothesis from the 89-series back-analysis:
+# on this loading path the slope is not identifiable, and the defect was a level.
+#
+# PREDICTION.  Onset unchanged (2425-2440 s vs 2445 measured); final sigma_d 4.5-6.0 MPa;
+# final shear traction 2.0-2.6 MPa against 2.33; peak slip 0.075-0.085 mm against 0.0734.
+#
 # =============================================================================================
 # ==============================================================================
 # 89_02_sw3_bbfast_paperjrc_kernel_SV_biot0p6
@@ -1195,9 +1235,9 @@ mesh_flow_width_over_length_sw_s3 = 0.674   # diagnostic only: prior estimate ba
 ml_per_m3_per_min = 6.0e7
 
 # --- output ---
-exodus_file_base = results_exodus_hpc_rorqual/90_06_sw3_bbfast_jrc5p69_L123p4_kernel_SV_biot0p6_hpc
-csv_file_base    = results_csv_hpc_rorqual/90_06_sw3_bbfast_jrc5p69_L123p4_kernel_SV_biot0p6_hpc
-checkpoint_file_base = results_checkpoint_hpc_rorqual/90_06_sw3_bbfast_jrc5p69_L123p4_kernel_SV_biot0p6_hpc
+exodus_file_base = results_exodus_hpc_rorqual/91_05_sw3_bbfast_paperjrc_resc1p65_kernel_SV_biot0p6_hpc
+csv_file_base    = results_csv_hpc_rorqual/91_05_sw3_bbfast_paperjrc_resc1p65_kernel_SV_biot0p6_hpc
+checkpoint_file_base = results_checkpoint_hpc_rorqual/91_05_sw3_bbfast_paperjrc_resc1p65_kernel_SV_biot0p6_hpc
 
 ######################################################################################
 [GlobalParams]
@@ -2150,9 +2190,11 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/90_06_sw3_bbfast_jrc5p69_L
     tangential_traction_tolerance = ${tangential_traction_tolerance}
 
     # BB peak envelope plus concentrated SW3 slip weakening.
-    jrc = 5.69 # 90_06: SLOPE arm, see header. Paper Table 1 measures                        # PAPER Table 1 (measured). Was 23.35 -- 11.9x measured AND outside Barton's 0-20 scale.
+    jrc = 1.96                        # PAPER Table 1 (measured). Was 23.35 -- 11.9x measured AND outside Barton's 0-20 scale.
     jcs = 1.5e8                       # PAPER Sec. 2.1 UCS. Was 3.0e8.
     residual_friction_angle_degrees = 29.756  # pins the envelope through Table 2's last stick stage (23.42 MPa, 14.26 MPa) at the measured JRC/JCS. Was 8.45.
+    cohesion = 1.67e6                  # 90_05: level-only correction, see header.
+    residual_cohesion = 1.65e6 # residual deliberately unchanged from 89_02.  # 91_05: +1.65 MPa, see header. Was 0.0.
     use_scale_correction = false
     use_mobilized_jrc = false
     compressive_normal_stress_floor = 1e3

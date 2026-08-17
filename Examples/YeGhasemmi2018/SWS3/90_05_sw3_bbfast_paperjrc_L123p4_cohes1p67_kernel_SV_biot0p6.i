@@ -1201,9 +1201,9 @@ mesh_flow_width_over_length_sw_s3 = 0.674   # diagnostic only: prior estimate ba
 ml_per_m3_per_min = 6.0e7
 
 # --- output ---
-exodus_file_base = results_exodus_hpc_rorqual/89_02_sw3_bbfast_paperjrc_kernel_SV_biot0p6_hpc
-csv_file_base    = results_csv_hpc_rorqual/89_02_sw3_bbfast_paperjrc_kernel_SV_biot0p6_hpc
-checkpoint_file_base = results_checkpoint_hpc_rorqual/89_02_sw3_bbfast_paperjrc_kernel_SV_biot0p6_hpc
+exodus_file_base = results_exodus_hpc_rorqual/90_05_sw3_bbfast_paperjrc_L123p4_cohes1p67_kernel_SV_biot0p6_hpc
+csv_file_base    = results_csv_hpc_rorqual/90_05_sw3_bbfast_paperjrc_L123p4_cohes1p67_kernel_SV_biot0p6_hpc
+checkpoint_file_base = results_checkpoint_hpc_rorqual/90_05_sw3_bbfast_paperjrc_L123p4_cohes1p67_kernel_SV_biot0p6_hpc
 
 ######################################################################################
 [GlobalParams]
