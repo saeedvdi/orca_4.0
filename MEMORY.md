@@ -48,7 +48,8 @@ digits. The SW-T friction question (§6.5) is therefore unblocked.
 | ~~#73~~ | **DECIDED 2026-08-16** — option (a): scope it, do not drop it. The bound stays in §1, stated as (i) enforced in the Mohr–Coulomb law and (ii) used as an admissibility diagnostic on Table 2. Draft rewritten in §1 and §3.5.3. |
 | ~~#74~~ | **DONE 2026-08-16** — the 89-series SW-S4 decks carry `effective_normal_paper_frame_mpa_pp` and `shear_stress_paper_frame_mpa_pp`. |
 | **#75** | **Score the six 89-series decks.** `89_01`/`89_06` (SW-S4) and `89_03`/`89_05` (SW-T2) are controlled pairs that separate the mesh effect from the strength effect. `89_04`/`89_05` are **candidates, not corrections** — they change dτ/dσ′ₙ by ~40 % and have to beat `87_01`/`87_02` on Table 2 before replacing them. |
-| **#76** | **Build `SWS3/mesh/sw3_mesh_L123p4.jou`** in Cubit (124.40 → 123.40 mm, Table 1). The journal is written; only the `.e` is missing. Effect is 0.8 % on axial stiffness alone. Re-run `scripts/check_source_nodes.py` afterwards — **mandatory**. |
+| ~~#76~~ | **DONE 2026-08-16** — Saeed built it in Cubit at sizes 3 and 5. Verified L 123.40 / D 50.53 / θ 29.000; source nodes re-derived and on the interface at 0.0 µm; deck renamed `89_02_..._L123p4_...`. The 124.40 mm meshes are **kept** — eleven pre-audit decks use them. See §5.9. |
+| **#77** | **Re-gate SW-S3's `axial_pres_final`** on the 123.40 mm mesh. The piston is displacement-controlled and the deck's sizing note has L explicit (`4.13e11*(100.28/L)`), so the rock-compliance part of the −6.41358437936e-5 m gate scales by 123.40/124.40 while the joint and penalty parts do not. Bounded: the correction is between 0 and −0.52 µm, i.e. **at most 0.25 MPa** of preload, so the run is not invalid without it — but it sits right at the 0.5 MPa tolerance. Gate against Table 2 stage 1 (σ′ₙ 31.65, τ 14.70 MPa). |
 | #65 | Unify the rock parameters (§5.1). E is settled. φ_r is now explained rather than open (§5.7 item 2) but the T/S split stands. **Add `normal_unload_retention_fraction` to the list** — it is 0.94 / 0.84 / 0.04 across SW-T1 / SW-T2 / SW-S4 (§4.7) and it is a joint property, not a free knob. Also re-gate SW-S3's `axial_pres_final`, whose comment still reads `# E=75 GPa`. |
 | #69 | Refresh SW-S3's injection schedule from the re-extraction (RMSE 0.243 MPa, lags up to +24 s — acceptable, not ideal). Fold into the next SW-S3 iteration *after* the φ_r bracket resolves, so it does not invalidate `86_01`/`86_02` mid-flight. |
 | #13 | Make the flow measurement mesh-independent |
@@ -617,8 +618,41 @@ modulus "is handed to the fracture fluid, where storage is not negligible during
 the burst". It is read in exactly one place, the matrix `OrcaTHMaterial`; the
 fracture flow uses `fracture_transmissivity`. Real effect ~6 % on matrix storage.
 
-Still outstanding: SW-S3's 1.00 mm length error. `SWS3/mesh/sw3_mesh_L123p4.jou`
-is written but needs Cubit, which is not installed here (#76).
+### 5.9 SW-S3 mesh rebuilt, and what a full sweep of the mesh estate showed — 2026-08-16
+
+Saeed built `sw3_mesh_L123p4.jou` in Cubit at sizes 3 and 5, closing #76. Verified
+with the new `scripts/check_mesh_geometry.py`, which measures L, D and θ **out of
+the built Exodus file** rather than trusting a journal header: L 123.40, D 50.53,
+θ 29.000, plane-fit residual 0.00 µm, node/interface counts 11425/457 — identical
+to the old mesh, so it is a pure axial rescaling of the same discretisation.
+
+**The 1.00 mm error had never been fixed anywhere.** A sweep of every SW-S3 `.e`
+on the machine — 20-odd files across `orca_3.0`, `orca_3.0 (Copy)`,
+`orca_3.0_claude_edit` v1–v4, `orca_3.0_full`, `orca_3.0_full_13_AUG` and both
+`HPC_backup` trees — returned 124.40 mm for all of them. There was no "good copy"
+sitting in another repo, which is what the file-name variety suggested.
+
+The same sweep settled the SW-T2 question by measurement. `ye2018_sw_T2_theta30_
+mesh_*.e` is at 30° while Table 1 prints 31°, which looks like the ported mesh
+introduced an error into a mesh that was already right. It did not. The
+θ-recovery identity on Table 2 returns 30.001° for SW-T2 at all eleven hold
+stages (spread 29.991–30.008), while the same test reproduces Table 1 to three
+decimals for SW-T1 (31.995), SW-S3 (29.00) and SW-S4 (30.029). Not a systematic
+bias in the reduction — specific to SW-T2. `check_mesh_geometry.py` therefore
+encodes 30° as SW-T2's expected angle and flags 31° as the error.
+
+**Old meshes are kept, deliberately.** The rebuild arrived with the 124.40 mm
+meshes deleted, which would have broken the eleven pre-audit SW-S3 decks
+(`83_11`, `84_01`, `84_02`, `86_01`, `86_02` and their `_mesh3` variants) that
+were left untouched precisely so their results stay reproducible. Restored from
+git; the new mesh sits alongside under its own name.
+
+`89_02` renamed to `89_02_sw3_bbfast_paperjrc_L123p4_kernel_SV_biot0p6`. Source
+coordinates re-derived on the new mesh (`-0.023159583 0 0.019919005` /
+`0.023159583 0 0.103480995`, both 0.0 µm from an interface node); the old
+coordinates were 500 µm off the new fracture plane, which `use_closest_node`
+would have absorbed silently. Still open: `axial_pres_final` is displacement
+control on a core that is now 0.8 % shorter (#77).
 
 ---
 

@@ -43,7 +43,8 @@ bit-identical (0.09115854 m), which is how a 118.70 mm specimen ended up with a
 | `SWT1/mesh/ye2018_sw_T1_mesh_size_{3,5}.e` | 32.000° | yes | correct as built |
 | `SWT2/mesh/ye2018_sw_T2_mesh_size_{3,5}.e` | 31.000° | yes | **superseded**, kept for the 87_02 lineage |
 | `SWT2/mesh/ye2018_sw_T2_theta30_mesh_size_{3,5}.e` | 30.000° | yes | used by 89_03, 89_05 |
-| `SWS3/mesh/sw3_mesh_size{3,5}.e` | 29.000° | yes | correct angle, **1.00 mm too long** |
+| `SWS3/mesh/sw3_mesh_size{3,5}.e` | 29.000° | yes | **superseded** (L = 124.40 mm), kept for the 83/84/86 lineage |
+| `SWS3/mesh/sw3_mesh_L123p4_size{3,5}.e` | 29.000° | yes | used by 89_02 |
 | `SWS4/mesh/ye2018_sw_s4_size{1,3,5}_mesh.e` | 28.990° | −2.85 mm | **superseded**, kept for the 68_xx lineage |
 | `SWS4/mesh/ye2018_sw_s4_theta30_size{3,5}_mesh.e` | 30.000° | yes | used by 89_01, 89_06 |
 
@@ -60,17 +61,27 @@ mesh in the campaign, including the corrected SW-S4 one, uses
 without renaming will fail at setup, which is the good case. The 89-series decks
 carry the rename.
 
-## Still outstanding: SW-S3 length
+## SW-S3 length — RESOLVED 2026-08-16
 
 `SWS3/mesh/sw3_mesh_size5.e` is 124.40 mm against the paper's 123.40 mm — 0.8 %.
-The angle and centring are right; only the length is wrong.
+The angle and centring are right; only the length was wrong. Before the rebuild,
+**every** SW-S3 mesh on this machine carried the error: 20-odd files across
+`orca_3.0`, `orca_3.0 (Copy)`, `orca_3.0_claude_edit` v1–v4, `orca_3.0_full`,
+`orca_3.0_full_13_AUG` and both `HPC_backup` trees, all at 124.40 mm with
+identical node counts. It had never been fixed anywhere.
 
-`SWS3/mesh/sw3_mesh_L123p4.jou` is the corrected journal. It has **not** been
-built, because that needs Cubit and Cubit is not installed on this machine. The
-effect is confined to the core's axial stiffness: the fracture ellipse area is
+Saeed rebuilt it from `SWS3/mesh/sw3_mesh_L123p4.jou` in Cubit on 2026-08-16, at
+both size 3 and size 5. Verified with `scripts/check_mesh_geometry.py`:
+L = 123.40 mm, D = 50.53 mm, θ = 29.000°, node/interface counts 11425/457 —
+identical to the old mesh, so it is a pure axial rescaling of the same
+discretisation. The old meshes are **kept**: the 83/84/86-series decks were gated
+on them and their results must stay reproducible.
+
+The effect is confined to the core's axial stiffness: the fracture ellipse area is
 `πD²/(4 sinθ)` and does not contain L, and the flow geometry factor W/L is set
-in the deck from Table 2 rather than from the mesh. It is the smallest finding of
-the audit.
+in the deck from Table 2 rather than from the mesh. It was the smallest finding of
+the audit. Because the piston is displacement-controlled, `axial_pres_final` still
+has to be re-gated on the shorter core — see the deck header.
 
 ## MANDATORY after any mesh rebuild
 

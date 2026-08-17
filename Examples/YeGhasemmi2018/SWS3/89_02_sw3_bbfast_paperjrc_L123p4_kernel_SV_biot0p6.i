@@ -772,7 +772,13 @@
 ######################################################################################
 
 # --- mesh / geometry ---
-mesh_file = mesh/sw3_mesh_size5.e   # SW-S3 rough saw-cut (theta=29deg, D=50.53mm, L=124.4mm), pre-tagged scaffold
+mesh_file = mesh/sw3_mesh_L123p4_size5.e  # SW-S3 rough saw-cut (theta=29.000deg, D=50.53mm, L=123.40mm), pre-tagged scaffold
+                                     # L123p4 2026-08-16: rebuilt from mesh/sw3_mesh_L123p4.jou. The old
+                                     # sw3_mesh_size5.e is L=124.40 mm, 1.00 mm (0.8%) longer than Table 1.
+                                     # It is KEPT in mesh/ because the 83/84/86-series decks were gated on
+                                     # it. Verified with scripts/check_mesh_geometry.py: L 123.40, D 50.53,
+                                     # theta 29.000. Node/interface counts are unchanged (11425/457), so
+                                     # this is a pure axial rescaling of the same discretisation.
 sample_radius = 0.025265             # m, SW-S4 radius (D = 50.51 mm); cylinder radius used by the confining BC
 sample_area = 2.0053421295e-3        # m2, pi*sample_radius^2; nominal area used for applied reaction stress
 axial_bc_penalty = 1.0e13          # SW3-v8 (STIFFFRAME2): 2.4e12 -> 1.0e13. MEASURED from the v6/v7 pair
@@ -1207,14 +1213,18 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/89_02_sw3_bbfast_paperjrc_
   [source_in]
     type = ExtraNodesetGenerator
     input = sidesets_from_nodesets
-    coord = '-0.023160 0 0.020419'   # SW-S3 mesh injection node (v4 selection)
+    coord = '-0.023159583 0.0 0.019919005'   # L123p4: exact interface-node coordinate on the 123.40 mm mesh.
+                                     # Was '-0.023160 0 0.020419' (the 124.40 mm mesh). Shortening the core
+                                     # moves every node on the fracture plane; use_closest_node never errors,
+                                     # so a stale coordinate silently pins injection to a BULK node.
+                                     # Verified on this mesh: closest node IS on the interface, 0.0 um away.
     new_boundary = source_in
     use_closest_node = true
   []
   [source_out]
     type = ExtraNodesetGenerator
     input = source_in
-    coord = '0.023160 0 0.103981'   # SW-S3 mesh production node (v4 selection)
+    coord = '0.023159583 0.0 0.103480995'   # L123p4: exact interface-node coordinate (was '0.023160 0 0.103981')
     new_boundary = source_out
     use_closest_node = true
   []
@@ -2355,7 +2365,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/89_02_sw3_bbfast_paperjrc_
   [injection_pressure_pp]
     type = PointValue
     variable = pore_pressure
-    point = '-0.023160 0 0.020419'  # SW3-v9 PPFIX: actual SW-S3 injection node (was the SW-S4 coordinate = 4 mm downstream)
+    point = '-0.023159583 0.0 0.019919005'  # L123p4: must track the source_in coord above
   []
   [inj_reaction_sum_pp]
     type = NodalSum
@@ -2379,7 +2389,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/89_02_sw3_bbfast_paperjrc_
   [pp_outlet_pp]
     type = PointValue
     variable = pore_pressure
-    point = '0.023160 0 0.103981'  # SW3-v9 PPFIX: actual SW-S3 production node (was the SW-S4 coordinate)
+    point = '0.023159583 0.0 0.103480995'  # L123p4: must track the source_out coord above
   []
   [pp_drop_pp]
     type = ParsedPostprocessor
