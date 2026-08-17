@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=90_08_sw4_bbfast_theta30_jrc5_kernel_SV_biot0p6_hpc
+#SBATCH --chdir=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4
 #SBATCH --account=def-biaoli66
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=90_02_swt1_bbfast_cohesion_c28p0_kernel_SV_biot0p6_hpc
+#SBATCH --chdir=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWT1
 #SBATCH --account=def-biaoli66
 #SBATCH --time=12:00:00
 #SBATCH --nodes=1
