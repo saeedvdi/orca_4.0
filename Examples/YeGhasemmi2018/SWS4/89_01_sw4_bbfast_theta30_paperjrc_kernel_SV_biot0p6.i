@@ -1772,10 +1772,27 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/89_01_sw4_bbfast_theta30_p
     type = AreaPostprocessor
     boundary = fracture_interface
   []
+  # STALE-POINT FIX 2026-08-17. Was `PointValue` at '-0.019255 0 0.021745' -- the borehole of the
+  # OLD 28.99deg / 2.85 mm off-centre SW-S4 mesh. The theta30 mesh swap updated the source_in
+  # `coord` to '-0.018367273 0 0.027536950' but left this sampling point behind, 5.86 mm away.
+  # The BC itself is a FunctionDirichletBC on source_in and was always correct, and these two
+  # postprocessors are read ONLY by other postprocessors -- no Function, BC, Material or Control
+  # touches them -- so the MECHANICS of every SW-S4 run to date is unaffected. What was wrong is
+  # the diagnostics:
+  #   * reported injection pressure came from 5.86 mm inside the matrix: 26.07 MPa at the peak
+  #     against the prescribed 27.96, and 1.50 MPa RMS low over the history;
+  #   * pp_outlet_pp sampled 0.89 mm off the outlet node, INSIDE the pressurised fracture, and
+  #     read ~7 MPa against its own 5 MPa Dirichlet.
+  # The two errors partly CANCEL in effective_normal_paper_frame_mpa_pp (mean shift only
+  # -0.005 MPa, so SW-S4's sigma'_n overestimate is real model behaviour, not this bug) but they
+  # ADD in pp_drop_pp: ~3.9 MPa of ~23 MPa lost, which is 27.5% of the peak
+  # flow_rate_validation_ml_min_pp. That is most of the "underestimates the peak flow rate".
+  # Now matches the SW-T1/SW-T2 decks, which always used the nodeset average and score 1.2% on
+  # injection pressure against SW-S4's ~7%.
   [injection_pressure_pp]
-    type = PointValue
+    type = AverageNodalVariableValue
     variable = pore_pressure
-    point = '-0.019255 0 0.021745'
+    boundary = source_in
   []
   [inj_reaction_sum_pp]
     type = NodalSum
@@ -1796,10 +1813,10 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/89_01_sw4_bbfast_theta30_p
   #     Q = (W/L) * a_h^3/(12*mu) * dP. The inferred SW-S4 W/L ~= 0.81 is consistent between
   #     the first and peak Table 2 points. The previous Orca_2.0 reference-area form is retained
   #     separately as flow_rate_reference_area_ml_min_pp because it is not the paper Eq. 9 value. ---
-  [pp_outlet_pp]
-    type = PointValue
+  [pp_outlet_pp]                    # STALE-POINT FIX 2026-08-17: was PointValue at
+    type = AverageNodalVariableValue # '0.019255 0 0.091255', 0.89 mm from the source_out node.
     variable = pore_pressure
-    point = '0.019255 0 0.091255'
+    boundary = source_out
   []
   [pp_drop_pp]
     type = ParsedPostprocessor

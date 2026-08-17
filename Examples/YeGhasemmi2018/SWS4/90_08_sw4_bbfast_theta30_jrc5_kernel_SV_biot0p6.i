@@ -1,5 +1,30 @@
+# =============================================================================================
+# 90_08_sw4_bbfast_theta30_jrc5_kernel_SV_biot0p6
+#
+# 90-SERIES: fix the ONSET, keep the RESIDUALS.  Back-analysis 2026-08-17.
+# Parent: 89_06_sw4_bbfast_theta30_kernel_SV_biot0p6.i -- 10.5% mean normalized RMSE -- the best SW-S4 case -- event 50-73 s late, residual shear 2.82 vs 2.25 validated
+#
+# WHY (campaign-wide).  Every scored case fails at the injection step where its strength margin
+# m = (tau_lim - tau)/tau_lim crosses zero.  The experiment fails at the TOP of the staircase, so
+# a small strength deficit does not advance failure proportionally -- it advances it by a WHOLE
+# STEP (~290 s on SW-T1/T2, ~350 s on SW-S3).  That is the whole "several hundred seconds early"
+# signature.  Measured crossings: SW-S3 84_01-baseline 25-26 MPa (on time), 86_01 26-27 (on time),
+# 89_02 22-23 (360-390 s early);  SW-S4 89_06 17-18 (50-73 s late), 89_01 14-15 (early).
+#
+# SW-S4 SPECIFIC.  LOWER-JRC arm of the 90_07 bracket; see that deck's header for the design.
+# Together they span JRC 5 - 9 at fixed peak envelope, which brackets the JRC ~= 8.8 implied by
+# the residual-shear interpolation while also testing how much of 89_06's on-time onset
+# survives when the roughness feedback is cut.
+#
+# THIS DECK: jrc 17.5 -> 5.0, jcs 3.0e8 -> 1.5e8, phi_r 7.5 -> 22.72 deg (solved from
+# phi_r + 5*log10(150/24) = 26.70, the same anchor 90_07 uses).
+#
+# PREDICTION: crossing moves from 17-18 MPa to 15-17 MPa.  If BOTH arms hold the onset and only the residual moves, JRC is confirmed as the residual
+# knob and the onset is owned by phi_r -- which would decouple two things that have been fighting
+# each other for four deck generations.
+# =============================================================================================
 # ==============================================================================
-# 89_06_sw4_bbfast_theta30_kernel_SV_biot0p6
+# 90_08_sw4_bbfast_theta30_jrc5_kernel_SV_biot0p6
 # GENERATED 2026-08-16 by scripts/build_paper_corrected_decks.py from
 #   SWS4/68_01_sw4_bbfast_tail6p50_eta3p50_m0_kernel_SV.i
 # -- do not hand-edit; regenerate instead. The parent is left untouched.
@@ -412,7 +437,7 @@ penalty_tangent = 1e13                        # unchanged from deck 43 (tau-slip
 #     Curvature check vs Table 2 holds (Dc=60um): strength-tau = -0.5..+1.4 MPa (viscosity adds
 #     ~+0.5-1 MPa during active slip -> net within ~1 MPa everywhere). NB residual UNLOAD tau
 #     (2.27-2.82) is NOT strength-limited -- the fault re-sticks and holds it elastically.
-bb_jrc = 17.5                        # DECK54_20: 17.0->17.5. Holds the PEAK envelope (onset 996 was a
+bb_jrc = 5.0 # 90_08: see 90_07 header. Was 17.5.                        # DECK54_20: 17.0->17.5. Holds the PEAK envelope (onset 996 was a
                                      # bullseye -- protect it) against the phi_r cut: d(mu_p)/dJRC ~ 0.022
                                      # at sigma'n 26.5 offsets tan-shift of -1 deg phi_r. 54_05 proved what
                                      # happens when phi_r is cut WITHOUT this compensation (onset 604 s).
@@ -427,8 +452,8 @@ bb_jrc = 17.5                        # DECK54_20: 17.0->17.5. Holds the PEAK env
                                      # = +0.92 MPa at 26.5 MPa ~ the added driving tau. Onset -> ~1000 s.
                                      # WAS:                       # back-analyzed effective JRC (polished saw-cut data demand it,
                                      # exactly as the decoupled law needed fcr=0.89)
-bb_jcs = 3.0e8                       # Pa; intact-granite wall strength
-bb_residual_friction_angle = 7.5     # DECK54_20 (LOCKTRIM): 8.5 -> 7.5 deg. 54_07 SCORECARD (2026-07-11):
+bb_jcs = 1.5e8 # 90_08: paper Sec 2.1 UCS. Was 3.0e8.                       # Pa; intact-granite wall strength
+bb_residual_friction_angle = 22.72 # 90_08: re-anchored. Was 7.5.     # DECK54_20 (LOCKTRIM): 8.5 -> 7.5 deg. 54_07 SCORECARD (2026-07-11):
                                      # onset 996 s BULLSEYE, sigma'n trough 15.33 (data 15.28) BULLSEYE, slip
                                      # 82.8 (79.1), dn -0.0425/-0.0318 in band -- the BB shape arithmetic
                                      # holds. Remaining miss = the LOCK, the documented BB structural bias
@@ -568,9 +593,9 @@ paper_flow_width_over_length_sw_s4 = 0.814819511514  # inverted from Table 2 via
 ml_per_m3_per_min = 6.0e7
 
 # --- output ---
-exodus_file_base = results_exodus_hpc_rorqual/89_06_sw4_bbfast_theta30_kernel_SV_biot0p6_hpc
-csv_file_base    = results_csv_hpc_rorqual/89_06_sw4_bbfast_theta30_kernel_SV_biot0p6_hpc
-checkpoint_file_base = results_checkpoint_hpc_rorqual/89_06_sw4_bbfast_theta30_kernel_SV_biot0p6_hpc
+exodus_file_base = results_exodus_hpc_rorqual/90_08_sw4_bbfast_theta30_jrc5_kernel_SV_biot0p6_hpc
+csv_file_base    = results_csv_hpc_rorqual/90_08_sw4_bbfast_theta30_jrc5_kernel_SV_biot0p6_hpc
+checkpoint_file_base = results_checkpoint_hpc_rorqual/90_08_sw4_bbfast_theta30_jrc5_kernel_SV_biot0p6_hpc
 
 ######################################################################################
 [GlobalParams]

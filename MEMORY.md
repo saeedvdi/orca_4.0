@@ -29,8 +29,8 @@ Ordered by what unblocks the most. Numbers are the session task IDs.
 
 | # | item | state |
 |---|---|---|
-| **#70** | **Score the SW-T1 normal-closure stiffness bracket `88_01`/`88_02`/`88_03` (§5.6)** and interpolate the K_ni / V_m pair that lands k_sys on the measured 0.135 MPa/µm. This is the fix for BOTH reported rebound complaints and for the residual permeability unload misfit. | built, `--check-input` clean, ready for HPC |
-| **#68** | **Score `87_01`/`87_02` (SW-T1/SW-T2 injection-schedule refit, §5.5).** Answers how much of the misfit was the driver. Does **not** address the rebounds — §5.6 settled that those are a separate, real defect. | `87_01` running; `87_02` queued locally, better run on HPC |
+| **#70** | ~~Score the SW-T1 normal-closure stiffness bracket `88_01`/`88_02`/`88_03` (§5.6)~~ | **RETIRED 2026-08-16 — Saeed: the SW-T1 results are wrong.** `88_02`/`88_03` ran to completion (t = 3500, 0 non-convergences) and are NOT to be scored; `88_01` never ran and must not be submitted. See §5.10. |
+| **#68** | ~~Score `87_01`/`87_02` (SW-T1/SW-T2 injection-schedule refit, §5.5)~~ | **`87_01` RETIRED with the same call** — it is the parent of the 88 bracket and shares whatever the defect is. `87_02` (SW-T2) not covered by the call; still open. See §5.10. |
 | **#67 / #60** | **Refit SW-S3 slip onset at α = 0.6.** The only remaining SW-S3 problem. Decks `86_01` (φ_r 8.45) and `86_02` (φ_r 9.00) bracket it. | both running, ~10 h left each |
 | **#59** | **Rebuild `orca-opt`** and runtime-verify the three compile-checked-only fixes (§4.2, §4.3, §4.4). Register the `alpha_eff_lagged` test case and generate its gold. | blocked on the campaign draining |
 | **#55 / #52** | Finish scoring the Biot A/B pairs; SW-T2 α = 0.6 arm still running (decelerating through its slip event). | running |
@@ -653,6 +653,136 @@ coordinates re-derived on the new mesh (`-0.023159583 0 0.019919005` /
 coordinates were 500 µm off the new fracture plane, which `use_closest_node`
 would have absorbed silently. Still open: `axial_pres_final` is displacement
 control on a core that is now 0.8 % shorter (#77).
+
+### 5.10 The SW-T1 87/88 lineage is retired — 2026-08-16
+
+Saeed's call: *"cancel sws1 cases, all of the results are wrong."* Nothing had to
+be cancelled — `88_02` and `88_03` had already finished cleanly (t = 3500,
+7522 steps, **zero** non-convergences, 27196 s / 26701 s on 8 ranks), and the
+machine was idle. So this is a **retirement of finished results, not an aborted
+run**. `88_01` (the `vm2x` arm) had never been launched and must not be.
+
+**The cause is not yet identified, and the usual suspects are ruled out.** The
+SW-T1 mesh measures L = 128.80 mm, D = 50.52 mm, θ = 32.000°, plane residual
+0.00 µm — exactly Table 1. `check_source_nodes.py` returns "the closest node IS
+on the fracture interface" for both the injector and the producer on both decks.
+So this is **not** the bulk-node trap (§5.9, [[source-node-pinning-rule]]) and
+**not** a geometry error.
+
+**What the outputs do show** — recorded as evidence, not as a diagnosis:
+
+| deck | e_h range (µm) | k range (1e-13 m²) | mech. aperture max |
+|---|---|---|---|
+| `87_01` | 1.630 – 1.648 | 2.214 – 2.261 | 1.07 µm |
+| `88_02` | 1.630 – 1.879 | 2.214 – 2.935 | 15.4 µm |
+| `88_03` | 1.630 – 2.033 | 2.214 – 3.437 | 25.1 µm |
+| older `sweep_19` | 1.630 – **4.152** | 2.214 – **14.24** | 157 µm |
+
+The bracket does move in the intended direction (softer joint → more opening),
+but the whole 87/88 lineage delivers roughly **an order of magnitude less
+permeability enhancement** than the earlier SW-T1 sweep it replaced. `87_01`, the
+parent, barely opens at all — 18 nm of hydraulic aperture across the entire
+injection history. Since `87_01` is the parent of both 88 arms, retiring the
+bracket without retiring `87_01` would be incoherent, so #68's SW-T1 half goes
+with it. **`87_02` (SW-T2) is a different specimen and is not covered by this
+call.**
+
+Results are **kept on disk**, not deleted — they are the evidence for whatever
+the defect turns out to be. Next SW-T1 work should start from the `87_01`
+regression against `sweep_19`, since that is the narrowest reproducer.
+
+### 5.11 The 89-series back-analysis: failure is quantized by injection step — 2026-08-17
+
+Saeed scored all four specimens against the digitized validation. Summary of his ranking, and
+what a back-analysis of the CSVs says caused it.
+
+**The single organising fact.** Every scored case fails at the injection step where its strength
+margin `m = (tau_lim - tau)/tau_lim` crosses zero. Margin measured as the minimum over each 1-MPa
+bin of injection pressure:
+
+| specimen | case | m @5 MPa | crosses 0 at | timing vs validation | mean nRMSE |
+|---|---|---|---|---|---|
+| SW-T1 | sweep19 b0.6 | +11.9% | **26 MPa** | +22..86 s | 15.3% |
+| SW-T1 | `89_04` +cohesion | +4.4% | 19-20 | −530..595 s | 26.7% |
+| SW-T2 | sweep21 b0.6 | +12.4% | **25-26** | +33..41 s | 9.8% |
+| SW-T2 | `89_03` | +11.5% | 23-24 | −355..360 s | 23.6% |
+| SW-T2 | `89_05` +cohesion | +5.1% | 21 | −430..445 s | 24.9% |
+| SW-S3 | `84_01` baseline | +23.8% | **25-26** | −29..+6 s | 4.0% |
+| SW-S3 | `86_01` phir8.45 | +28.7% | **26-27** | −3..+30 s | 10.0% |
+| SW-S3 | `89_02` paperJRC | +28.1% | 22-23 | −360..390 s | 21.7% |
+| SW-S4 | `89_06` | +13.5% | 17-18 | +50..73 s | 10.5% |
+| SW-S4 | `89_01` paperJRC | +13.1% | 14-15 | early | 12.6% |
+
+The experiment fails at the **top** of the staircase. Because the load is a staircase, a small
+strength deficit does not advance failure proportionally — it advances it by a **whole step**,
+~290 s on SW-T1/T2 and ~350 s on SW-S3. **The 89-series is not mistimed; it is one step too
+weak.** Stop reading "430 s early" as a timing error to be tuned continuously.
+
+**Two independent defects, not one.**
+
+1. *Level* — the SW-T1/T2 cohesion refit (`89_04`, `89_05`). Trading phi_r 44.1/46.29 deg for a
+   constant cohesion is exact at only one sigma'_n, and the refit anchored it at the **failure**
+   stress. At the much higher pre-injection sigma'_n the flat cohesion line sits ~7 percentage
+   points below the steep friction line it replaced: starting margin falls +11.9 -> +4.4 (SW-T1)
+   and +12.4 -> +5.1 (SW-T2). Cohesion adds level but **no slope**.
+2. *Slope* — the paper-JRC collapse (`89_02`, `89_01`). Same starting margin as the incumbent
+   (+28.1 vs +28.7; +13.1 vs +13.5) but steeper decay: 3.20 vs 2.93 %/MPa (SW-S3), 1.35 vs 1.15
+   (SW-S4). `JRC*log10(JCS/sigma'_n)` is the **negative feedback** that strengthens the joint as
+   injection unloads it, `dphi/dsigma'_n = -JRC/(ln10 * sigma'_n)`. Collapsing JRC 23.35 -> 1.96
+   and 17.5 -> 1.19 removes ~92% of it. **This is the missing negative feedback flagged on
+   2026-08-16 — it is on the STRENGTH side, not the aperture side.** See §6 note on the Bakhtar
+   law: that hunt was looking in the wrong place.
+
+**The 1 deg mesh correction, not the constitutive model, is what moved SW-T2.** `89_03` has
+*identical* strength parameters to sweep_21 (JRC 14.63, JCS 1.5e8, phi_r 46.29182452, same
+closure constants). It differs only in the mesh (31 -> 30 deg), the re-digitized schedule, and
+the fluid bulk modulus. Resolving the same (sigma_d, P_p) at 30 deg instead of 31:
+tau 0.441474 -> 0.433013 sigma_d (−1.9%) but sigma'_n +0.265264 -> +0.25 sigma_d (−5.8% of that
+term), so tau/sigma'_n goes 1.2463 -> 1.2776 at sweep21's own onset state — **+2.5% closer to
+failure from geometry alone**. Plus the corrected schedule runs 80-100 s ahead of the old
+idealised staircase at every step. 2.5% is enough to cross one 4-MPa step earlier (~290 s), and
+290 + 90 = 380 s, matching the observed 355-360.
+
+**Therefore: sweep-19/21's win is not evidence that they are right.** Their phi_r = 44.1/46.29 deg
+was fitted on geometry that under-resolved shear by 2%; the calibration absorbed the mesh error.
+On the correct mesh they would fail early too. **Do not revert to them.**
+
+**Two candidate confounds tested and REJECTED.**
+- *SW-S3's un-regated 123.40 mm preload (#75) is exonerated.* `86_01` reaches a pre-event
+  differential stress of 28.29 MPa and `89_02` reaches 28.52 — within 0.23 MPa — yet `86_01` is
+  on time and `89_02` is 360-390 s early. Identical preload, opposite timing.
+- *SW-S4's "injection pressure is wrong" is a postprocessor bug, not a model error.* See below.
+
+**The SW-S4 stale-PointValue bug (fixed 2026-08-17, commit on `orca_v5`).** `injection_pressure_pp`
+and `pp_outlet_pp` in `89_01`/`89_06` were `PointValue` at `-0.019255 0 0.021745` and
+`0.019255 0 0.091255` — the **old 28.99 deg / 2.85 mm off-centre mesh's borehole**. The theta30
+swap updated the `source_in`/`source_out` `coord` but left the sampling points behind, 5.86 mm
+and 0.89 mm off-node. Both postprocessors are read **only by other postprocessors** — no
+Function, BC, Material or Control — so the **mechanics of every SW-S4 run to date is unaffected**
+and no re-run is needed. What was wrong:
+- reported injection pressure 26.07 MPa at the peak against the prescribed 27.96, 1.50 MPa RMS low;
+- `pp_outlet_pp` sampled *inside* the pressurised fracture and read ~7 MPa against its own 5 MPa
+  Dirichlet.
+The two errors **partly cancel** in `effective_normal_paper_frame_mpa_pp` (mean shift −0.005 MPa,
+so SW-S4's sigma'_n overestimate is real model behaviour) but they **add** in `pp_drop_pp`: 3.9 MPa
+of ~23 MPa, which is **27.5% of the peak `flow_rate_validation_ml_min_pp`**. That is most of the
+"underestimates the peak flow rate". Corrected CSVs written alongside the originals as
+`*_ppfix.csv`; both decks now use `AverageNodalVariableValue` on the nodeset, matching SW-T1/T2
+(which score 1.2% on injection pressure against SW-S4's ~7%).
+
+**Open and unresolved: SW-S3's Biot inversion.** `84_01` at `biot_coefficient = 1e-12` scores 4.0%
+and beats itself at 0.6 (20.0%), while SW-T1/T2 both prefer 0.6. 1e-12 is physically
+indefensible (#51), so the best SW-S3 score in the campaign rests on an unphysical parameter.
+Not explained by the margin analysis. Do not quote `84_01` baseline as the reference case in the
+manuscript until this is resolved.
+
+**The 90-series** (8 decks, built and `--check-input` clean 2026-08-17) is the falsifiable test:
+`90_01`/`90_02` and `90_03`/`90_04` bracket the SW-T1/SW-T2 **level** correction by raising peak
+cohesion only (residual_cohesion untouched, since the parents' residuals are their strong suit);
+`90_05` vs `90_06` separates **level from slope** on SW-S3 by pitting a 1.67 MPa cohesion against
+JRC 5.69 at matched crossing strength; `90_07`/`90_08` bracket SW-S4's JRC at **fixed peak
+envelope** (phi_r re-anchored each time) to test whether JRC owns the residual while phi_r owns
+the onset. Each header carries its own derivation and a falsifiable prediction.
 
 ---
 
