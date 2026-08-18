@@ -62,7 +62,7 @@ not yet measured is marked `[PENDING]`; nothing is invented.
 | 3 | Model formulation | The physics and the discretisation. Complete, because a validation claim is worthless if the reader cannot tell what was validated. Sub-sections 3.5 (plasticity: yield, flow rule, the dissipation bound, kinematic routing, softening stability), 3.7 (what each characteristic slip distance controls), 3.8 (admissible vs inadmissible limiters) and 3.9 (numerical implementation) carry the methodological novelty and should not be cut for length — they are what distinguishes this from an application note. **Barton–Bandis is the model** (full derivation, §3.5.2); linear Mohr–Coulomb is stated in one short paragraph as the *baseline* it is compared against in §5, not derived as a coequal candidate. |
 | 4 | Model setup and parameter determination | Geometry, BCs, and — critically — the table separating *measured*, *derived* and *calibrated* parameters. This is the section a sceptical reviewer will read first. |
 | 5 | Results | Verification first, then validation of BBFast against all four specimens, then the MC baseline comparison (§5.5) showing what the nonlinear envelope buys. |
-| 6 | Discussion | Three substantive strands, in order: (i) §6.3, whether the Barton–Bandis law outperforms the Mohr–Coulomb baseline under a matched calibration; (ii) §6.6, how much permeability enhancement survives the first of three injection cycles, and whether the law contains a mechanism for multi-cycle gain at all; (iii) §6.7, whether slip continues after shut-in. Around them: §6.1–6.2 on what the published data can and cannot constrain, §6.4–6.5 on what SW-S4 and the plasticity formulation reveal, then limitations and field-scale implications. |
+| 6 | Discussion | Three substantive strands, in order: (i) §6.3, whether the Barton–Bandis law outperforms the Mohr–Coulomb baseline under a matched calibration; (ii) §6.6, how much permeability enhancement survives the first of three injection cycles, and whether the law contains a mechanism for multi-cycle gain at all; (iii) §6.7, whether slip continues after shut-in. Around them: §6.1–6.2 on what the published data can and cannot constrain, §6.4–6.5 on what SW-S4 and the plasticity formulation reveal, then limitations and field-scale implications. §6.6 is written to be publishable on a negative result: the admissible outcomes and what each would mean are stated before the runs (§6.6.4–6.6.5), so a saturating result is a bounded statement about missing physics rather than an absence of findings. |
 | 7 | Conclusions | Short, numbered, no new material. |
 | A | Appendix A: recovering fracture orientation and load-frame compliance from the published table | The derivation is a genuine methodological contribution and is too long for §4. |
 | B | Appendix B: measuring flow rate in a split-node interface formulation | A trap other MOOSE/FEM users will fall into; worth the page. |
@@ -118,7 +118,14 @@ not yet measured is marked `[PENDING]`; nothing is invented.
 | T3 | Surface area omitted by the planar interface, estimated from JRC | The quantitative form of the saw-cut/tensile hierarchy. Labelled an estimate, not a measurement. |
 | T4 | Model parameters classified measured / derived / calibrated | **The most important table in the paper.** |
 | T5 | Quantitative agreement per sample per observable, BBFast, with MC baseline column | RMS and peak error; MC column exists to be beaten, not analysed in its own right. |
-| T6 | Verification results (mesh convergence, mass balance, preload gate) | Can go to supporting information if space is tight. |
+| F6 | Cyclic: $P_i$, $d_s$, $d_n$, $a_h$ against time over three cycles, one row per specimen, with the three floor holds marked | The floor-to-floor comparison of §6.6 read straight off the figure. |
+| T6 | Mohr–Coulomb baseline scores, five observables, four specimens | The comparison of §6.3; pairs with F2. |
+| T7 | The three-cycle injection schedules | Design of §6.6.1. Fold into the text if space is tight. |
+| T8 | Measured cycle-1 retention, from Ye & Ghassemi Table 2 stages 1 and 11 | The anchor for §6.6 — first-cycle enhancement is *already measured*, and is zero on SW-S4. |
+| T9 | The four slip-history channels as calibrated, per specimen | Shows two of the four channels are inert on most specimens. **Keep**: it is what makes the cyclic prediction specimen-specific rather than generic. |
+| T10 | Exhaustion of each channel at the end of cycle 1 | Arithmetic on calibrated parameters, stated before the runs — the pre-registration of §6.6. |
+| T11 | Barton block-size corrections evaluated at 1, 10, 100 m | Bounds the field-scale extrapolation (§6.9.1). Must be labelled *not used in any run reported here*. |
+| T12 | Verification results (mesh convergence, mass balance, preload gate) | Can go to supporting information if space is tight. |
 
 ## 0.4 Drafting cautions specific to this study
 
@@ -805,9 +812,17 @@ friction angle:
 $$
 \Delta g_n^{p} = \Delta\gamma\,\tan\psi(s),
 \qquad
-\tan\psi(s) = \tan\psi_r + (\tan\psi_p - \tan\psi_r)
-   \exp\!\left[-\left(\frac{s}{L_\psi}\right)^{m_\psi}\right].
+\psi(s) = \psi_r + (\psi_p - \psi_r)\,e^{-s/L_\psi},
+\qquad
+\psi \in [\psi_{\min}, \psi_{\max}].
 $$
+
+The interpolation is on the angle, not on its tangent, and it is a plain exponential in cumulative
+plastic slip $s$ — the same variable that drives slip weakening, but with its own decay length
+$L_\psi$ and no separate exponent. The clamp is inactive in every run reported here: all four
+calibrated angles lie between 13° and 26°, inside the default $[0°, 30°]$ bounds. Note that this
+form permits $\psi_p = \psi_r$, in which case the dilation angle is a constant and the decay channel
+does no work at all; §6.6.3 shows that this is how three of the four specimens are calibrated.
 
 Associativity would force $\psi = \phi$ and over-predict dilation severely: for SW-T1 the mobilised
 friction angle at onset is $49.4°$, against a dilation angle of $16.4°$ implied by
@@ -2128,55 +2143,260 @@ result — the calibration has been pushed past the physical stability limit.
 ### 6.6 Cyclic injection: how much enhancement survives the first cycle
 
 Cyclic or "soft" stimulation is proposed on the grounds that repeated pressurisation produces
-permeability gain comparable to a monotonic injection at lower peak pressure and with smaller
-induced events. The mechanism usually invoked is progressive: each cycle damages asperities a
-little further, so gain accumulates. A model calibrated against a single monotonic cycle can be
-asked directly whether it contains that mechanism, and the answer is informative either way.
+permeability gain comparable to a monotonic injection at a lower peak pressure and with smaller
+induced events. The mechanism usually invoked is progressive: each cycle damages the asperities a
+little further — by fatigue of the contacting points, by subcritical growth of the cracks that root
+them, by comminution of the material they shed — so that gain accumulates across cycles even though
+no later cycle visits a pressure the first one did not. That is a claim about the constitutive
+behaviour of a joint under repeated loading, and a model calibrated against a single monotonic cycle
+can be asked directly whether it contains such a mechanism. The answer is informative either way,
+and the negative answer is the more useful one, because it localises the missing physics.
 
-**The numerical experiment.** Each validated deck is rerun with one change and no others: the
-injection function becomes three cycles to the specimen's own peak pressure, each followed by a
-bleed to the 8 MPa post-peak floor that the published schedules themselves return to, with 200 s
-holds at both the peak and the floor. Everything else — mesh, every constitutive parameter,
-boundary conditions, solver — is byte-identical to the run scored in §5, so the pair isolates
-loading history alone. The peaks are equal deliberately: a rising staircase would confound gain
-from cycling with gain from reaching a pressure never previously visited. The holds exist so that
-the permeability is read at the *same* effective stress in every cycle, and so that the viscous
-overstress of §3.9, which is first order on the ramps, has relaxed before the reading is taken.
+#### 6.6.1 The numerical experiment
 
-The quantity of interest is the **floor-to-floor ratio** — hydraulic aperture and flow rate at the
-8 MPa hold, cycle 1 against cycle 3. Enhancement retained at the same low pressure, with the
-fracture re-clamped, is irreversible enhancement; anything measured at the peak conflates it with
-the elastic part of the closure law.
+Each validated deck is rerun with one change and no others: the injection function becomes three
+cycles to the specimen's own peak pressure, each followed by a bleed to the 8 MPa post-peak floor
+that the published schedules themselves return to, with 200 s holds at both the peak and the floor.
+Everything else — mesh, every constitutive parameter, every boundary condition, the solver and its
+tolerances — is identical to the run scored in §5, so the pair isolates loading history alone.
 
-**What the constitutive law can and cannot produce, stated before the runs.** Every history
-variable in §3.5 is monotone in cumulative plastic slip, and their signs do not all agree. Slip
-weakening $W(s)$ falls and saturates; the dilation angle $\psi(s)$ *decays*, so later slip dilates
-less per unit slip than earlier slip; the plastic normal opening $g_n^p$ accumulates, which is the
-source of retained aperture; and the gouge term $a_{\rm gouge}(s)$ accumulates with the opposite
-sign, closing the void. The first cycle takes the joint from peak to residual strength and produces
-most of the slip; by the second, the strength drop has already been spent and the dilation angle has
-already decayed, while gouge continues to accrue.
+**Table 7.** The three-cycle schedules. Each specimen keeps its own peak, its own ambient pressure
+and its own pressurisation rate, all inherited from the parent deck of §5; the bleed limb uses the
+same rate as the rise limb, so no specimen is cycled faster or slower than it was validated.
 
-The prediction is therefore **saturation, not accumulation** — a large first-cycle gain followed by
-rapidly diminishing increments, and on the two saw cuts, which are the specimens carrying an active
-gouge term, a third cycle that may be net negative. If the runs show that, the conclusion is not
-that cyclic stimulation does not work. It is that this constitutive law reproduces first-cycle
-enhancement but contains no fatigue mechanism, so whatever produces multi-cycle gain in field trials
-— asperity fatigue, subcritical crack growth, progressive roughness degradation — is physics outside
-it, and the model would under-predict the benefit of cycling for exactly that reason. Naming the
-missing mechanism is more useful than reporting a gain factor.
+| Specimen | deck | ambient (MPa) | peak (MPa) | floor (MPa) | rise limb (s) | hold (s) | total (s) | parent (s) |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| SW-T1 | `97_01` | 5.00 | 28.00 | 8.00 | 1638 | 200 | 10 375 | 3 500 |
+| SW-T2 | `97_02` | 5.00 | 28.00 | 8.00 | 2278 | 200 | 13 881 | 2 853 |
+| SW-S3 | `97_03` | 5.75 | 28.57 | 8.00 | 2567 | 200 | 15 793 | 4 802 |
+| SW-S4 | `97_04` | 5.00 | 27.96 | 8.00 | 1719 | 200 | 10 816 | 3 500 |
 
-`[PENDING — the four cyclic runs. Report: floor-to-floor $a_h$ and $Q$ ratios per cycle; whether
-the increment saturates; retained $d_n$ at each floor, to separate dilation-driven from
-roughness-damage-driven enhancement; and the roughness state and dilation angle per cycle to
-attribute it. SW-S4 must be reported separately for the reason given in §5.4 — its flow channel does
-not track its opening.]`
+Three features of the design carry the argument, and each of them rules out a specific confound.
+
+*The peaks are equal.* A rising staircase — the design a stimulation engineer would actually run —
+would confound gain produced by cycling with gain produced by reaching a pressure never previously
+visited. Because every peak here is the same, any difference between cycle 1 and cycle 3 is
+attributable to history alone. The cost is that the experiment answers a narrower question than a
+field trial does; that is the intended trade.
+
+*The readings are taken at holds, not on the limbs.* Two things contaminate a reading taken while
+the pressure is moving. The viscous regularisation of §3.9 contributes an overstress $\eta_t\dot{s}$
+that is first order on the ramps and relaxes to zero at rest — on SW-S4 it reaches 0.87 MPa — and the
+matrix, at $k_m = 5\times10^{-19}$ m², has not equilibrated with the fracture. The 200 s holds let
+both settle, so each cycle is read in the same state.
+
+*The comparison is floor-to-floor.* The quantity of interest is hydraulic aperture and flow rate at
+the 8 MPa hold, cycle 1 against cycles 2 and 3. Enhancement retained at the same low pressure, with
+the fracture re-clamped onto its own asperities, is irreversible enhancement. Anything measured at
+the peak conflates it with the reversible part of the closure law, which by construction returns
+whatever it took (§3.4) and would inflate every cycle equally.
+
+#### 6.6.2 The monotonic control is already in hand — with one qualification
+
+The comparison does not need a separate control run. The 93-series decks of §5 are the same
+specimens, the same parameters and the same meshes taken once to the same peak and back to the same
+floor, so cycle 1 of each cyclic deck is a near-replica of a run that has already been scored
+against measured data. This matters: it means any multi-cycle behaviour reported below is anchored
+to a validated first cycle rather than to an unvalidated one.
+
+The qualification is that "near-replica" is not "replica". The published schedule is an eleven-stage
+staircase; the cyclic decks rise linearly to the same peak over the same interval. The endpoints,
+the rate and the duration match, but the intermediate structure does not, and that structure is not
+cosmetic — the campaign found that slip onset in these specimens is quantised by the injection step
+that triggers it, so cycle 1 will not reproduce the §5 onset *time* exactly even though it
+reproduces the peak state. The floor-to-floor ratios are ratios within a single run and are immune
+to this; a direct comparison of cycle 1 against Table 2 stage by stage would not be, and is not
+made.
+
+Table 2's own first and last stages are, however, exactly a floor-to-floor pair for cycle 1: both
+sit at the 8 MPa floor, one before injection and one after the specimen has been taken to peak and
+bled back. The measured first-cycle retention is therefore already known, and it is strikingly
+uneven across the four specimens:
+
+**Table 8.** Measured cycle-1 retention, from Ye & Ghassemi Table 2 stages 1 and 11 (both at the
+8 MPa floor). $a_h$ is their reported hydraulic aperture; the transmissivity ratio is its cube.
+
+| Specimen | $a_h$ stage 1 (µm) | $a_h$ peak (µm) | $a_h$ stage 11 (µm) | retained | $T$ ratio |
+|---|---:|---:|---:|---:|---:|
+| SW-T1 | 1.63 | 4.05 | 3.36 | +106 % | 8.8 |
+| SW-T2 | 2.11 | 4.92 | 4.21 | +100 % | 7.9 |
+| SW-S3 | 1.22 | 2.10 | 1.64 | +34 % | 2.4 |
+| SW-S4 | 0.74 | 1.07 | 0.74 | 0 % | 1.0 |
+
+The first cycle is worth a factor of 8 in transmissivity on a rough tensile fracture and *nothing at
+all* on the polished saw cut, which returns to its starting aperture to the reported precision. Any
+statement about what cycles 2 and 3 add has to be read against that spread, and the polished saw cut
+sets a floor on the whole argument: a joint with no roughness to damage has no first-cycle gain to
+extend.
+
+#### 6.6.3 What the constitutive law contains
+
+Four history variables in §3.5 and §3.6 depend on cumulative plastic slip $s$. All four are monotone
+in $s$, none of them reverses on unloading, and their signs do not all agree:
+
+$$
+W(s) = \exp\!\left[-\left(\frac{s}{D_c}\right)^{m}\right],
+\qquad
+\psi(s) = \psi_r + (\psi_p - \psi_r)\,e^{-s/L_\psi},
+$$
+
+$$
+g_n^p(s) = \int \tan\psi\,\mathrm{d}s^p ,
+\qquad
+a_{\rm gouge}(s) = a_g\left[1 - e^{-(s-s^\ast)_+/L_g}\right].
+$$
+
+$W$ multiplies both the friction coefficient and the cohesive intercept, so it carries the entire
+strength drop; $\psi$ sets how much normal opening each increment of slip produces; $g_n^p$ is that
+opening accumulated, and is the source of retained aperture; and $a_{\rm gouge}$ *subtracts* from the
+hydraulic aperture, representing wear products filling the void. The first three raise permeability
+and the fourth lowers it.
+
+Their calibrated values are not uniform across the four specimens, and two of the four channels are
+switched off by parameter choice on most of them:
+
+**Table 9.** The slip-history channels as calibrated. $\psi_p = \psi_r$ means the dilation angle is
+constant, so the decay channel is inert; a dash means the term is disabled in the deck.
+
+| Specimen | $D_c$ (µm) | $m$ | $\psi_p \to \psi_r$ (°) | $L_\psi$ (µm) | $a_g$ (µm) | $s^\ast$ (µm) | $L_g$ (µm) |
+|---|---:|---:|---|---:|---:|---:|---:|
+| SW-T1 | 150 | 1.4 | 16.44 → 16.44 | 150 | — | — | — |
+| SW-T2 | 150 | 1.4 | 13.97 → 13.97 | 150 | — | — | — |
+| SW-S3 | 60 | 1.4 | 26.00 → 26.00 | 100 | 0.40 | 30 | 30 |
+| SW-S4 | 74.5 | 1.10 | 24.00 → 13.00 | 100 | 0.28 | 20 | 30 |
+
+**SW-S4 is the only specimen whose dilation angle decays at all**, and the two saw cuts are the only
+ones carrying a gouge term. On SW-T1 and SW-T2 the calibration is monotone-positive throughout:
+nothing in the law makes later slip open the joint less than earlier slip, and nothing closes it. On
+SW-S4 both negative channels are active at once. The four specimens are therefore not four samples
+of one prediction — they are four different combinations of the available mechanisms, which is what
+makes the comparison worth running.
+
+#### 6.6.4 How much of each mechanism the first cycle already spends
+
+Substituting each specimen's *measured* end-of-cycle-1 slip into the expressions above gives the
+state the joint is in when cycle 2 begins. This is arithmetic on the calibrated parameters, not a
+model result, so it can be stated before the runs:
+
+**Table 10.** Exhaustion of each slip-history channel at the end of cycle 1, evaluated at the
+measured final slip of Ye & Ghassemi Table 2.
+
+| Specimen | slip (µm) | $W$ | strength spent | $\psi$ (°) | dilation decay spent | gouge spent |
+|---|---:|---:|---:|---:|---:|---:|
+| SW-T1 | 521 | 0.003 | 99.7 % | 16.44 | inert | inactive |
+| SW-T2 | 552 | 0.002 | 99.8 % | 13.97 | inert | inactive |
+| SW-S3 | 73 | 0.268 | 73.2 % | 26.00 | inert | 76 % (0.305 of 0.40 µm) |
+| SW-S4 | 79 | 0.344 | 65.6 % | 17.99 | 55 % | 86 % (0.241 of 0.28 µm) |
+
+Three readings follow, and they pull in different directions.
+
+The tensile fractures reach residual strength within the first cycle and stay there — $W$ is
+$3\times10^{-3}$, so the cohesive intercept that carries most of their peak strength (§6.3) has been
+destroyed. But their dilation channel is untouched, because $\psi$ is constant: *if* cycles 2 and 3
+produce slip, that slip opens the joint at exactly the same rate as cycle 1's did, and there is no
+gouge term to take it back. For SW-T1 and SW-T2 the model contains no saturating mechanism in the
+aperture channel at all.
+
+The saw cuts are the opposite. Their strength is only two-thirds spent, so more weakening is
+available, but their gouge terms are 76 % and 86 % exhausted — the characteristic slip $L_g = 30$ µm
+is small against the 73–79 µm the first cycle produces. What remains is 0.095 µm of closure on
+SW-S3 and 0.039 µm on SW-S4, against apertures of 1.64 and 0.74 µm. The gouge term can therefore
+*reduce* a later cycle's gain but, at these parameters, cannot plausibly drive the aperture below
+its cycle-1 floor by more than a few per cent. **The net-negative third cycle is possible but not
+predicted; it would require cycles 2 and 3 to produce very little new slip while spending what
+little gouge capacity remains.**
+
+The dilation decay is a live channel on SW-S4 alone, where $\psi$ has fallen from 24° to 18.0° —
+just over half way to its residual. That is the one specimen in which later slip genuinely does
+dilate less per unit slip than earlier slip.
+
+#### 6.6.5 Three admissible outcomes, and what each would mean
+
+The runs can only land in one of three places, and the design is such that each is interpretable.
+
+1. **No new slip.** The load frame sheds differential stress as the fracture slips (§3.5.5,
+   §6.9), so by the time cycle 1 ends the driving shear stress may sit below the residual strength.
+   Returning to the same peak pressure then reactivates nothing, every subsequent excursion is
+   elastic, and the floor-to-floor ratio is 1.000 to solver precision. This is the most likely
+   outcome for SW-T1 and SW-T2, whose strength is fully spent and whose stress drop was largest. Its
+   meaning is sharp: in this model *permeability enhancement is a function of the highest pressure
+   ever reached, not of the number of times it is reached*, and cycling at a fixed peak buys nothing
+   whatsoever.
+2. **Diminishing gain.** Some new slip occurs each cycle, dilating at the surviving angle, and the
+   floor-to-floor increment shrinks monotonically. This is saturation, and it is the outcome that
+   most resembles the field observation while still failing to explain it, since the field claim is
+   that the increment persists.
+3. **Net loss on the saw cuts.** Gouge outruns dilation and the cycle-3 floor sits below the
+   cycle-1 floor. Table 10 bounds how large this can be — a few per cent of aperture, hence at most
+   ten per cent or so of transmissivity — so if a large loss is observed it is not the gouge term
+   and the run should be re-examined.
+
+Outcome 1 and outcome 2 are distinguished by whether cumulative plastic slip increases at all after
+cycle 1, which is a directly reported quantity; no inference is required.
+
+#### 6.6.6 What the law cannot produce, whichever outcome occurs
+
+None of the three outcomes is accumulation. That is not an accident of the calibration but a
+structural property of the formulation: **every history variable is monotone in slip and every one
+of them is either spent or spending, so nothing in the model makes a repeat cycle more damaging than
+the first.** The mechanisms the soft-stimulation literature invokes for multi-cycle gain are all
+absent by construction —
+
+- *asperity fatigue*, which requires damage to accumulate with the number of load reversals rather
+  than with the slip they produce, and therefore requires a cycle counter or a damage variable
+  driven by stress amplitude; there is none;
+- *subcritical crack growth* in the wall rock, which requires a time- and stress-dependent
+  strength-degradation law with no slip in it at all;
+- *progressive roughness degradation* independent of slip — the roughness state here is a function
+  of $s$ alone, so a cycle that produces no slip produces no roughness change;
+- *thermal effects*, excluded here by design (§2.4), which in the field contribute a contraction
+  that reopens the joint on each cool-down.
+
+If the runs saturate, the finding to report is therefore not "cyclic stimulation does not work". It
+is that a constitutive law calibrated to reproduce four monotonic injection tests to 2.4–6.1 %
+reproduces first-cycle enhancement and contains no mechanism for multi-cycle gain, so whatever
+produces that gain in field trials lies outside it — and the model would systematically
+under-predict the benefit of cycling for exactly that reason. Naming the missing mechanism, and
+bounding how much of the observed effect it has to supply, is more useful to the next model than
+reporting a gain factor from this one.
+
+#### 6.6.7 Why the experiment is at specimen scale
+
+It would be natural to ask this question on a field-scale fault instead, and we do not, for three
+reasons in descending order of weight.
+
+First, the Barton–Bandis formulation carries explicit scale corrections to JRC and JCS which are
+disabled in all four calibrations (§6.9). Moving to field scale means switching on precisely the one
+term this dataset does not validate, and Table 11 shows it is not a small correction.
+
+Second, the claim would change character. At specimen scale, cyclic-against-monotonic is a
+controlled numerical experiment on a validated model: same mesh, same parameters, same boundary
+conditions, only the loading history differs, and the control has been scored against measured data.
+At field scale it is an unvalidated demonstration in which every parameter has been extrapolated and
+no residual can be computed. The first supports a conclusion about the constitutive law; the second
+supports only an illustration.
+
+Third, cost — a new mesh, a new in-situ stress state, new boundary conditions and new solver tuning
+— for a result that would still rest on the extrapolation the first reason objects to.
+
+The field-scale statement this study can support is made instead through the compliance argument of
+§6.9, which transfers a mechanism rather than a parameter set.
+
+`[PENDING — the four cyclic runs. Report: (i) floor-to-floor $a_h$ and $Q$ ratios, cycle 2 and
+cycle 3 against cycle 1; (ii) cumulative plastic slip at each floor, which decides between outcomes
+1 and 2 above; (iii) retained $d_n$ at each floor, to separate dilation-driven from
+damage-driven enhancement; (iv) $W$, $\psi$ and $a_{\rm gouge}$ per cycle, to attribute the result
+to the channels of Table 9; and (v) the peak-to-floor ratio within each cycle, which isolates the
+reversible part. SW-S4 must be reported separately for the reason given in §5.4 — its flow channel
+does not track its opening, so its $Q$ ratio and its $d_n$ ratio are two findings, not one.]`
 
 Two caveats will travel with the result. SW-S4's parent deck carries fitted, time-anchored
 loading-frame terms — a piston relaxation and a confinement bleed — which saturate and then hold, so
-they do not diverge on a longer run but do sit at their saturated values for most of it. And cycles
-2 and 3 start from the 8 MPa floor rather than from ambient, so cycle 1's excursion is longer in
-pressure range even though all three share a peak; this is why the comparison is floor-to-floor.
+they do not diverge over a run three times longer than the one they were fitted on, but they do sit
+at their saturated values for most of it. And cycles 2 and 3 start from the 8 MPa floor rather than
+from ambient, so cycle 1's excursion is the longest in pressure range even though all three share a
+peak; this is a second reason the comparison is made floor-to-floor rather than cycle-total to
+cycle-total.
 
 ### 6.7 Shut-in: whether slip continues once injection stops
 
@@ -2264,6 +2484,17 @@ require a mechanism this formulation lacks, and would point at which one.
     $\sigma'_n$ and $\tau$ but differ by up to 10.8 % in the normal-displacement error metric, giving
     a floor of about 0.08 percentage points on mean nRMSE. Differences below roughly 0.1 points
     between calibrations are therefore not meaningful and no ranking in §5 rests on one.
+16. Two of the four slip-history channels are inert in most of the calibrations (§6.6.3). The
+    dilation angle is constant on SW-T1, SW-T2 and SW-S3 — the fits chose $\psi_p = \psi_r$ — so
+    only SW-S4 exercises the dilation-decay law, and the gouge term is enabled only on the two saw
+    cuts. The monotonic tests these parameters were fitted to do not distinguish a decaying dilation
+    angle from a constant one, which is why the fits are free to collapse it; a cyclic or
+    reverse-shear test would.
+17. The Barton block-size corrections to JRC and JCS are disabled in every run (§6.9.1). This is
+    correct at the 95–104 mm fracture trace length of these specimens, but it means the study
+    supplies no evidence for the one term a field-scale application must enable, and Table 11 shows
+    the correction is large — at a 10 m joint length it would remove three-quarters of SW-T1's JRC
+    and compress the four-specimen roughness contrast from 7.8× to 2.3×.
 
 ### 6.9 Implications
 
@@ -2300,16 +2531,79 @@ spread in that factor against its spread in JRC, to say whether joint roughness 
 predictor of field-scale permeability gain or whether the retention fraction — which forms no part
 of the published JRC characterisation — dominates it instead.]`
 
-A caution about extrapolating any of this to field scale. The Barton–Bandis formulation carries
-explicit scale corrections, $\mathrm{JRC}_n = \mathrm{JRC}_0 (L_n/L_0)^{-0.02\,\mathrm{JRC}_0}$ and
-$\mathrm{JCS}_n = \mathrm{JCS}_0 (L_n/L_0)^{-0.03\,\mathrm{JRC}_0}$, which reduce both quantities as
-the joint length grows. They are disabled in all four calibrations here, because the specimens are
-at laboratory scale and the correction's reference length is the laboratory sample itself. Applying
-these parameters to a field-scale fault therefore requires enabling a correction that nothing in
-this dataset validates, and the rough specimens — where the exponent is largest — would be reduced
-the most. The implications drawn above are mechanistic, transferred through $k_{\rm sys}$ and the
-stability criterion, and should not be read as licensing numerical transfer of the calibrated JRC
-and JCS to a larger joint.
+#### 6.9.1 What the calibrated roughness parameters may and may not be carried to
+
+A caution about extrapolating any of this numerically. The Barton–Bandis formulation carries
+explicit block-size corrections,
+
+$$
+\mathrm{JRC}_n = \mathrm{JRC}_0 \left(\frac{L_n}{L_0}\right)^{-0.02\,\mathrm{JRC}_0},
+\qquad
+\mathrm{JCS}_n = \mathrm{JCS}_0 \left(\frac{L_n}{L_0}\right)^{-0.03\,\mathrm{JRC}_0},
+$$
+
+in which $L_0$ is the laboratory reference length and $L_n$ the length of the joint being modelled.
+Both exponents are negative and both are proportional to $\mathrm{JRC}_0$, so a joint longer than
+the laboratory sample is predicted to be *both smoother and weaker-walled*, and the reduction is
+steepest for the specimens that were roughest to begin with. The corrections are disabled in all
+four calibrations reported here. That is the correct choice at laboratory scale — the fracture
+trace length, the major axis of the ellipse of §4.1.1, is 95–104 mm against the 100 mm reference, so
+$L_n/L_0 \approx 1$ and the correction would do nothing — but it means this study supplies no
+evidence whatever for the one term that any field-scale extrapolation would have to switch on.
+
+The size of that gap can be priced without running anything, by evaluating the corrections at the
+calibrated $\mathrm{JRC}_0$ of each specimen:
+
+**Table 11.** The Barton block-size corrections evaluated on this study's calibrated roughness, for
+joints 1, 10 and 100 m long against the $L_0 = 0.1$ m laboratory reference. JCS is 150 MPa for all
+four specimens. No run reported in this paper uses these values; the table exists to bound the
+extrapolation, not to license it.
+
+| $L_n$ | | SW-T1 | SW-T2 | SW-S3 | SW-S4 |
+|---|---|---:|---:|---:|---:|
+| 0.1 m (lab) | JRC | 15.32 | 14.63 | 1.96 | 5.00 |
+| | JCS (MPa) | 150 | 150 | 150 | 150 |
+| 1 m | JRC | 7.57 | 7.46 | 1.79 | 3.97 |
+| | JCS (MPa) | 52.1 | 54.6 | 131.0 | 106.2 |
+| 10 m | JRC | 3.74 | 3.80 | 1.64 | 3.15 |
+| | JCS (MPa) | 18.1 | 19.9 | 114.4 | 75.2 |
+| 100 m | JRC | 1.85 | 1.94 | 1.50 | 2.51 |
+| | JCS (MPa) | 6.3 | 7.2 | 99.9 | 53.2 |
+
+Two consequences deserve emphasis, because neither is apparent from the formulas at a glance.
+
+**The correction is not a mild adjustment on the rough specimens.** At a 10 m joint length SW-T1
+retains 24 % of its JRC and 12 % of its JCS. Since JCS enters the strength envelope inside a
+logarithm and JRC multiplies it, the roughness angle $\mathrm{JRC}\log_{10}(\mathrm{JCS}/\sigma'_n)$
+falls from fifteen degrees or more to a few, and at high effective stress the logarithm can reach
+zero and the roughness contribution vanish altogether — the mobilisation limit already discussed in
+§3.5.2, but reached at field scale by ordinary reservoir stresses rather than by the extreme ones it
+takes in the laboratory. The calibrated envelope does not survive the transfer in a recognisable
+form, and neither does the aperture law that reads the same JRC (§3.6).
+
+**The correction collapses the contrast this study is built on.** The four specimens were chosen
+because they span JRC 1.96 to 15.32, a factor of 7.8, and §6.3 turns on comparing their behaviour
+across that range. Applying the corrections compresses that spread to 4.2× at 1 m, 2.3× at 10 m and
+1.7× at 100 m; by 100 m the roughest tensile fracture is *smoother* than the polished saw cut was in
+the laboratory. Taken at face value, Barton's correction says that at field scale a fault's
+laboratory roughness class barely matters — which, if true, would limit the transferability of any
+laboratory roughness calibration, this one included. Whether it is true is not something these
+experiments can address: the corrections were established on joint-length series in jointed rock
+masses, not on 100 mm cores, and nothing in this dataset varies $L_n$ at all.
+
+We therefore make no numerical transfer of JRC, JCS or the fitted cohesions to a larger joint. The
+implications drawn above are mechanistic — they are carried by $k_{\rm sys}$ and the stability
+criterion of §3.5.5, which are statements about how a compliant surrounding medium interacts with a
+weakening interface and contain no length scale of their own.
+
+A cheap way to close part of the gap, which we recommend to anyone extending the model rather than
+attempt here, is to rerun the existing decks unchanged except for the scale correction enabled at
+two or three values of $L_n$, and report how much of the calibrated strength and permeability
+response it removes. That is a one-parameter sensitivity on a validated deck: no new mesh, no new
+stress state, no new solver tuning, and it prices the extrapolation directly. It would not
+*validate* the correction — only a joint-length series can do that — but it would convert an
+unquantified caveat into a bounded one, which is the more defensible position for a formulation that
+will eventually be asked to run at reservoir scale.
 
 ---
 
