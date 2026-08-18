@@ -350,10 +350,15 @@ $\theta$ column as revised in Appendix A)*
 `a plane to the nodes shared by the two element blocks rather than trusting the journal.`
 `All four specimens now honour their Appendix-A angle, so the claim in §1 and the`
 `Abstract that the geometry is recovered rather than fitted is no longer contradicted by`
-`the setup. Inventory: Examples/YeGhasemmi2018/MESHES.md. One item remains: the SW-S3`
-`mesh is 124.40 mm against Table 1's 123.40 mm. The corrected journal is written but`
-`needs Cubit to build; the effect is 0.8 % on axial stiffness alone, because the fracture`
-`ellipse area does not contain L and W/L is taken from Table 2.]`
+`the setup. Inventory: Examples/YeGhasemmi2018/MESHES.md. The last outstanding item, the`
+`SW-S3 mesh at 124.40 mm against Table 1's 123.40 mm, was closed when that mesh was`
+`rebuilt on 2026-08-16; every deck from the 90-series onward, including the SW-S3 final`
+`92_03 that Table 5 reports, runs on it. Re-measured directly from the four .e files`
+`used by the production decks: length 128.80 / 132.70 / 123.40 / 118.70 mm and diameter`
+`50.52 / 50.52 / 50.53 / 50.51 mm, each equal to its Table 1 entry to the quoted`
+`precision, and fracture angles of 32.000° / 30.000° / 29.000° / 30.000° against the`
+`Appendix-A values 32.00 / 30.00 / 29.03 / 30.02°. No specimen dimension or orientation`
+`in the model now differs from the published one by more than 0.03°.]`
 
 ### 2.2 What the published data constrains
 

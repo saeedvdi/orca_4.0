@@ -652,7 +652,19 @@ OrcaTHMaterial::computeBiotModulus()
     // phi = 1e-3 for a long time on exactly that silence. Warn once rather than
     // erroring: the value is a legitimate thing to explore deliberately, and
     // erroring would break existing decks mid-study.
-    if (MetaPhysicL::raw_value(_biot[_qp]) < MetaPhysicL::raw_value(_porosity[_qp]))
+    //
+    // Skip the check on the initialisation pass. initQpStatefulProperties()
+    // routes through computeQpProperties(), and at that point the coupled
+    // biot_coefficient_qp property has not been computed yet: it reads back as
+    // the zero-initialised value, which is below every physical porosity. The
+    // warning therefore fired on EVERY deck, including alpha = 0.6 ones, and
+    // because it is a mooseDoOnce the false positive consumed the single firing
+    // and silenced the real check for the rest of the run. Under run_tests,
+    // which passes --error, it also turned the warning into a fatal error and
+    // took down six of the ten regression tests. Same _t_step > 0 idiom as
+    // computeSolidEffectiveThermalExpansionCoefficient() above.
+    if (_t_step > 0 &&
+        MetaPhysicL::raw_value(_biot[_qp]) < MetaPhysicL::raw_value(_porosity[_qp]))
         mooseDoOnce(mooseWarning(
             "biot_coefficient (", MetaPhysicL::raw_value(_biot[_qp]),
             ") is below porosity (", MetaPhysicL::raw_value(_porosity[_qp]),

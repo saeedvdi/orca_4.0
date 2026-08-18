@@ -2223,6 +2223,23 @@ behaviour may rest on them.
 | cross-model | Sneddon pressurised crack | *specified* |
 | cross-model | inclined fracture under far-field compression | *specified* |
 
+The eight implemented entries expand to fifteen `run_tests` cases once the
+parameterised variants are counted (four Biot-modulus regimes, three cohesion
+regimes, two storage cases each for the mass and thermal kernels). All fifteen pass
+as of 2026-08-18. They were **not** passing before that date, and the reason is worth
+recording because it is a failure mode this framework is prone to: `OrcaTHMaterial`
+warned when the Biot coefficient fell below the porosity, but ran the check on the
+initialisation pass as well, where the coupled `biot_coefficient_qp` property has not
+been computed and reads back as zero. Every deck therefore tripped it, including
+$\alpha = 0.6$ ones; because it is a `mooseDoOnce`, the false positive also consumed
+the single firing and silenced the real check for the rest of the run; and under
+`run_tests`, which passes `--error`, it was fatal and took six of the ten then-active
+cases down with it, skipping five more through `prereq` chains. The guard is now
+`_t_step > 0`, the same idiom the effective-thermal-expansion branch already used
+three functions above it. The gold files were unaffected — the property is correct
+from the first real timestep — so no result in this document or in the manuscript
+changes.
+
 The gap is concentrated in exactly the place a reader of Parts IV and V would care
 about most: **no interface constitutive law currently has a single-element
 verification test against a closed form.** The `bb_cohesion` test covers one term of
@@ -3951,15 +3968,18 @@ deviatoric part of $\sigma'_n$ 6.1% low / high.
 > from the journal.
 >
 > The 68/86/87 decks still load the as-found meshes, deliberately, so their results
-> stay reproducible. The 89-series decks load the corrected ones. Inventory and the
-> full verification procedure: `Examples/YeGhasemmi2018/MESHES.md`.
+> stay reproducible. Every deck from the 89-series onward loads the corrected ones.
+> Inventory and the full verification procedure: `Examples/YeGhasemmi2018/MESHES.md`.
 >
-> **SW-S3's length is still outstanding**: the mesh is 124.40 mm against Table 1's
-> 123.40 mm. `SWS3/mesh/sw3_mesh_L123p4.jou` is the corrected journal but has not
-> been built, because that needs Cubit and Cubit is not installed here. The effect
-> is 0.8 % on the core's axial stiffness and nothing else — the fracture ellipse
-> area $\pi D^2/(4\sin\theta)$ does not contain $L$, and the deck takes $W/L$ from
-> Table 2 rather than from the mesh.
+> **SW-S3's length was the last item and is now closed.** The mesh had been 124.40 mm
+> against Table 1's 123.40 mm; it was rebuilt from `SWS3/mesh/sw3_mesh_L123p4.jou` on
+> 2026-08-16 at both sizes, as a pure axial rescaling of the same discretisation
+> (identical node and interface counts). All four production meshes were re-measured
+> straight from the `.e` files on 2026-08-18: lengths 128.80 / 132.70 / 123.40 /
+> 118.70 mm and diameters 50.52 / 50.52 / 50.53 / 50.51 mm, each equal to its Table 1
+> entry, and plane fits through the shared interface nodes give 32.000° / 30.000° /
+> 29.000° / 30.000° against Appendix A's 32.00 / 30.00 / 29.03 / 30.02°. Nothing in
+> the model geometry now differs from the published specimen by more than 0.03°.
 >
 > **After any mesh rebuild, run `scripts/check_source_nodes.py`.** It is not
 > optional. `ExtraNodesetGenerator ... use_closest_node = true` never errors: if the
