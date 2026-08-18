@@ -24,6 +24,11 @@ step 6.
 10. Record the negative results
 ```
 
+Two things sit outside that sequence and are covered at the end: **auditing the plumbing**, which
+comes before all ten and has to be redone after any mesh or geometry change, and **building the
+baseline model** for a two-law comparison, which comes after them and has its own way of going
+wrong.
+
 ---
 
 ## 1. Score it yourself first
@@ -79,6 +84,62 @@ establish that it measures what its name says.
 repoint the consumers at a correctly-named sibling. Silently changing what an existing name
 means poisons every earlier result that quoted it.
 
+### 2a. The reporting path can be *fitted*, not just broken
+
+Cases A and B above are accidents — a wrong frame, a stale coordinate. There is a worse version:
+a material can expose parameters that the source itself labels **OUTPUT ONLY**, which change no
+physics but reshape a reported quantity. A calibration can then land on them, and the scorecard
+cannot tell.
+
+**Rule.** Diff the **output-only** parameters across cases before you compare their scores, not
+just the constitutive ones. If one case sets one off-default and the others do not, its column is
+not commensurable with theirs.
+
+> **Case.** `ADOrcaBartonBandisContactTractionFastAD` declares
+> `reported_reversible_normal_opening_scale` (default 1.0) and
+> `reported_reversible_normal_opening_retention_fraction` (default 0.0), documented as touching
+> "aperture, permeability and flow" not at all — only the reconstruction of
+> `normal_opening_total`, which is exactly the column the gate scores for `d_n`. **One specimen of
+> four** ran 0.758 and 0.552. Scoring `d_n` off the raw kinematic jump instead:
+>
+> | specimen | via `normal_opening_total` | via raw jump | delta |
+> |---|---|---|---|
+> | SW-T1 | 9.06 | 9.06 | 0.00 |
+> | SW-T2 | 2.06 | 2.06 | 0.00 |
+> | **SW-S3** | **2.46** | **7.42** | **+4.96** |
+>
+> The two decks at defaults agree **exactly**, which is what proves the knobs and not the channel
+> choice are the effect — the same sibling-agreement test as Case A, run across specimens instead
+> of across operators. SW-S3's headline mean moves **3.59 % → 4.58 %**, and its rank moves with it.
+
+Note the shape of the evidence: the *absence* of a difference on the control cases is what makes
+the difference on the suspect case interpretable. Always look for a case where the suspected
+mechanism is switched off, and check it reads zero.
+
+**Corollary: a harmless-looking inconsistency and a real one look identical until you measure.**
+On the same audit, a fourth specimen scored `d_n` off a *different channel name* than the other
+three. That looks like the bug and is not one — with the knobs at defaults the two channels are
+the same number. Fix it for consistency, but do not report it as a defect; the defect was
+elsewhere.
+
+### 2b. Harmonise the instrumentation before comparing cases
+
+**Rule.** Cases that will be compared must emit the **same set** of channels. Otherwise the
+comparison is silently restricted to the intersection, and whichever question needs the missing
+channel simply cannot be asked of three of your four cases.
+
+> **Case.** One specimen carried 87 postprocessors and the other three carried 70. The extra 17
+> were the strength-envelope evolution, the loading-frame diagnostics and the bulk kinematics —
+> i.e. precisely the channels you reach for when a specimen misbehaves. Three of four specimens
+> could not plot their own envelope evolution. Harmonising to one 91-channel set was a
+> prerequisite for the cross-specimen comparison, not a tidy-up.
+>
+> Watch the per-specimen constants when porting: the bulk-kinematics channels resolve onto the
+> fracture with `sin θ`/`cos θ`, and copying the donor specimen's θ would have produced four
+> plausible, wrong curves. Same for probe locations — put them on **one stated rule**
+> (here `z = L/2 ± 50 mm`, a 100 mm gauge on every specimen) rather than inheriting one
+> specimen's ad-hoc values.
+
 ---
 
 ## 3. Score against the source, and know which columns are independent
@@ -120,6 +181,23 @@ weight whichever quantity has the biggest numbers.
 Report **both** the normalised score and the raw absolute error. The normalised score ranks
 cases; the absolute error is what you reason with physically ("+1.4 MPa of residual traction" is
 a thought you can have; "8.3%" is not).
+
+### 4a. Exclude the rows that are constructed rather than measured
+
+**Rule.** A row the scoring procedure *forces* to agree is not a test. Drop it, state that you
+dropped it, and state the resulting `n` beside every statistic. This is a convention, so it only
+has to be **consistent and declared** — but an undeclared one silently changes headline numbers.
+
+> **Case.** Table 2 prints `d_n = d_s = 0.000` at stage 1 for all four specimens and the gate
+> zeroes the model there, so stage 1 is exactly zero by construction for both displacements.
+> Including it dilutes their RMSE by exactly `sqrt(10/11)` — a 4.6 % reduction that lands on two
+> of five observables. Two write-ups included it and two did not, so the four specimens were not
+> comparable with each other: SW-T1 read 4.34 % instead of **4.44 %**, SW-S3 3.55 % instead of
+> **3.59 %**.
+
+The general form: **look for any row whose value follows from the procedure rather than from the
+run** — a datum row, a normalisation anchor, an initial condition you imposed. It belongs in the
+comparison table (so the reader can see it agrees) and not in the error statistic.
 
 ---
 
@@ -261,6 +339,27 @@ you between steps.
 window — **67 kPa of cohesion**. The onset is not tunable below ±70 s with a static envelope.
 Say that out loud rather than sweeping into the noise.
 
+**The same discipline applies to a geometric fix: enumerate what the mesh can actually reach.**
+Correcting a deck is not the same as correcting the run. When the quantity you are fixing lives on
+a discrete grid, compute the neighbouring attainable values before claiming the fix closed
+anything.
+
+> **Case.** One deck's injection coordinate was 1.678 mm off the nearest interface node.
+> `use_closest_node = true` had silently snapped it, so the run had always used the snapped pair
+> and the "fix" — writing the true node into the deck — changes **no number**. The interesting
+> question is what remains. The intended injection–production separation was 72.690 mm; the pair
+> actually used spans 69.335 mm, **4.62 % short**. Enumerating the symmetric node pairs on that
+> mesh gives 69.335 and 78.002 mm and nothing between — the snapped pair is already the closer of
+> the two, so **mesh 5 cannot do better without remeshing**, and the residual is a stated
+> limitation rather than an open action.
+>
+> Then trace it forward. `Q = (W/L)/(12 µ) · a_h³ · Δp` with `W/L` a fixed constant inverted from
+> the source table, so the path length enters through the measured pressure drop and a
+> first-order `Q` bias of about that size is expected — on the specimen that happens to have the
+> campaign's largest `Q` error. And the finer mesh reaches 71.501 mm, so the convergence pair
+> differs by **3.1 % in source separation, which is not discretisation**: a control that was never
+> as clean as it looked. None of that is visible from "the coordinate was wrong, now it is right".
+
 ---
 
 ## 9. Write the falsifiable prediction into the deck header
@@ -316,10 +415,90 @@ you interpret a single result:
 | **Output `file_base`** | A copied deck inherits its parent's path and silently **overwrites the parent's results**. Grep every new deck for the parent's name. |
 | **Solver caps vs. the knob you think you're turning** | One "diverged" batch was blamed on the Krylov restart when the real cap was the linear iteration limit. Read which limit the message actually names. |
 | **Stateful properties that branch on "hold previous value"** | That branch also runs at initialisation and can pin the property at 0 forever. |
+| **Output-only material parameters** | They change no physics, so nothing you check about the physics will catch them — but they reshape a scored column, and a calibration can land on them. Diff them across cases; see §2a. |
+| **Instrumentation asymmetry between cases** | Nothing errors when a case is missing a channel; the comparison just silently narrows to the intersection. Count the postprocessors per case and expect one number. |
+| **Per-specimen constants inherited when porting a channel** | A `sin θ`/`cos θ` or a probe coordinate copied from the donor case produces a plausible, wrong curve rather than a failure. |
 
 **Then audit the outputs against the deliverable.** List every quantity the paper/report needs and
 check it exists in *every* case's output. Found this way: three of four specimens cannot plot the
 strength-envelope evolution, because those diagnostic channels exist on one deck only.
+
+**And audit the frame constants against the geometry each case actually loads.** Where a deck
+hard-codes trigonometric constants for a reporting frame, recover the angle from the mesh itself
+(an SVD plane fit on the interface nodeset) and check it against the constants — per deck, not per
+specimen family.
+
+> **Case.** Doing this across a deck estate found a Mohr-Coulomb pair in which the **two
+> specimens' angles had been swapped**: a 32° mesh carrying 31° constants and a 31° mesh carrying
+> 32°. At the campaign's differential stress that is ≈ 2.3 MPa on `σ'ₙ` — about **three times the
+> best specimen's entire `σ'ₙ` RMSE** — so every strength parameter fitted in those decks was
+> fitted against mis-resolved stress and none of it could be ported. A one-line check retired four
+> decks.
+
+---
+
+## Building the baseline for a two-model comparison
+
+A back-analysis usually ends with "model A reproduces the data this well, and here is the residual
+we cannot remove". The next thing anyone asks is whether a simpler model would have done as well.
+That comparison has its own failure mode, and it is not the one people expect.
+
+**The trap.** Re-calibrating the baseline B independently produces a comparison of *two
+calibration efforts*, not of two constitutive laws — and whichever model you tuned harder wins. A
+baseline that was fitted for one afternoon against a primary model fitted over twenty deck
+generations tells the reader nothing.
+
+**Rule.** Build B by **transferring A's calibrated envelope**, and hold everything that is not the
+law itself byte-identical.
+
+**Holding everything else fixed.** Clone the primary deck and replace exactly one block. Then
+*verify* the claim rather than asserting it: diff the pair and classify every changed hunk. On the
+eight pairs built this way, the diff reduced to the material block, a 7-for-7 postprocessor swap,
+the AD-flavour promotions the second law forces, and one flag — nothing else. Mesh, source
+coordinates, boundary conditions, schedule, frame constants and solver all verified equal.
+
+**Transferring the envelope, in this order:**
+
+1. **Look for the branch that transfers exactly, and take it first.** The Barton-Bandis
+   slip-weakened envelope is `τ = c_res + σ'ₙ·tan(φ_r,sw)` — already a straight Coulomb line, so
+   the residual branch transfers with zero error. Do the exact part before approximating anything;
+   it also tells you how much of the difference between the laws is real.
+2. **Match the peak at the point that decides the outcome, not on average.** Least-squares over
+   the whole stress range spreads the error everywhere, including at onset. Instead **tangent
+   match** — value *and* slope — at the onset normal stress, i.e. the last stick stage's `σ'ₙ`
+   from the source table. The payoff is that the two models' strength margin over the measured
+   `τ` becomes identical at every stick stage, so **slip onset is inherited rather than
+   refitted**. That matters precisely because onset is quantised by the load step (§8): a baseline
+   that fires one step early would swamp the constitutive signal you are trying to measure.
+3. **Correct for the starting internal state.** If B's strength interpolates on a normalised
+   internal variable, the match must be divided by that variable's initial value or B starts
+   weaker than A. Here `Rbar₀ = (R₀ − R_res)/(1 − R_res)` was 1.00, 1.00, 0.60 and 0.389 across
+   four specimens — ignoring it would have made two of the four baselines ~2× too weak at onset,
+   and the resulting "Mohr-Coulomb fails early" conclusion would have been an arithmetic slip.
+4. **Copy verbatim anything a *downstream* object consumes.** Trace the internal variables out of
+   the block you are replacing. `roughness_state` feeds the permeability material and therefore
+   the scored flow rate, so its initial value, residual value and decay distance had to match A's
+   exactly, or the flow would differ for reasons having nothing to do with shear.
+5. **Then state what the two laws are still free to disagree about** — that list *is* the result.
+   Here: envelope curvature (they separate by up to 1.25 MPa at the far end of the unloading
+   branch), the shape of the weakening path between identical endpoints, and B having one
+   characteristic distance where A has two. Where that last one forces a choice, say which way you
+   chose and why: the shared distance was set from A's *roughness* length rather than its
+   *strength* length, to keep the scored flow path identical, which leaves B's strength weakening
+   over a slightly different distance on two of four specimens. A known, priced difference between
+   the laws is a finding; an unstated one is a confound.
+
+**Report the transfer accuracy as a number**, the way you would report a score: max |B − A| over
+the stages that decide onset (0.015–0.091 MPa here) and over the full range (0.03–1.25 MPa). If
+the first number is not small, the comparison is not controlled and nothing downstream is
+interpretable.
+
+**Finally, write down what a *build* error would look like, as distinct from a physics result.**
+The baseline is expected to score worse — that is the point. So state in advance the signatures
+that would instead mean the swap leaked: onset landing on a different load step than the primary
+(the peak envelopes agree to 0.09 MPa, so it must not), flow differing before anything yields, or
+any difference at all at stage 1 where both laws are still on the same elastic branch. Without
+that list you cannot tell a result from a bug.
 
 ---
 
@@ -337,6 +516,16 @@ strength-envelope evolution, because those diagnostic channels exist on one deck
 - A quantity that is **right at the end and wrong in the middle** → a distribution problem, not a
   magnitude problem. Go to §5.
 - **One case wins on stress and another wins on displacement** → §6b, every time.
+- **One case scores conspicuously better on exactly one observable** → diff its *output-only*
+  parameters against the others before you explain the win physically. §2a.
+- **Two cases that should differ on a channel agree to the digit** → that is a control reading
+  zero, and it is evidence, not a coincidence. Use it to isolate the case that does differ.
+- **A case emits a different number of channels than its siblings** → the comparison you think you
+  are making is narrower than you think.
+- **A headline number that moves when you change nothing but the convention** → the convention was
+  never declared. §4a.
+- **A geometric "fix" that changes no result** → correct, and not the end of it: enumerate what the
+  discretisation can actually reach and price the residual. §8.
 
 ---
 
@@ -352,11 +541,18 @@ strength-envelope evolution, because those diagnostic channels exist on one deck
 | Assume a bad number is a bad model | Check who consumes the channel; check its siblings |
 | Bury the failed arm | It is the most reusable thing you produced |
 | Keep going when the shape is unreachable | Name the model-form limit and publish it |
+| Fit an output-only knob | Fit physics; if a reporting knob is off-default, disclose it beside the score |
+| Re-calibrate the baseline model independently | Transfer the primary's envelope so the comparison isolates the law |
+| Compare cases with different channel sets | Harmonise the instrumentation first, then compare |
+| Score a row your own procedure forced to agree | Exclude it, declare it, print `n` |
+| Call a coordinate fix "done" because the deck now matches | Enumerate the reachable values and price what is left |
 
 ---
 
 ## The one-line version
 
-**Measure it yourself; distrust the channel before the model; localise the error in the load
-path; then ask whether the knob can reach it — and if the bracket has closed or the shape is
-unreachable, say so and stop.**
+**Measure it yourself; distrust the channel — and the reporting knobs behind it — before the
+model; localise the error in the load path; then ask whether the knob can reach it. If the bracket
+has closed or the shape is unreachable, say so and stop. And when you finally compare two models,
+transfer the calibration rather than repeating it, so the comparison is of the physics and not of
+how hard each one was tuned.**
