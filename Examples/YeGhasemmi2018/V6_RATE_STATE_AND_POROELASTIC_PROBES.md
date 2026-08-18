@@ -233,3 +233,143 @@ Use `/home/geomechanics/miniforge/envs/moose/bin/mpiexec` — `/usr/bin/mpiexec`
 exactly the 1–2 named constants and nothing else; the 95 decks by exactly the material type,
 `tangential_viscosity → 0`, five RSF parameters and four postprocessors; every deck's
 postprocessor set equals its parent's (plus the four new ones on the 95s) with no duplicates.
+
+---
+
+# 6. RESULT — the SW-S4 rate-law experiment (2026-08-18)
+
+Four decks ran locally on mesh 5, 8 ranks each. **The pre-registered hypothesis of §2.4 is
+falsified.** The section below is written against the prediction as it was recorded *before*
+the runs, not reverse-engineered from the answer.
+
+| run | `a` | `b` | reached | wall | outcome |
+|---|---|---|---|---|---|
+| `93_07` control | — (`eta = 3.5e12`) | — | t = 3500 | 3.6 h | complete |
+| `95_13` | 9.523e-3 | 0 | t = 3500 | 5.2 h | complete |
+| `95_14` | 0.010 | 0.005 | t = 3500 | 5.5 h | complete |
+| `95_16` | 0.010 | 0.015 | **t = 1554.9** | 9.6 h | **stalled, killed** |
+
+`93_07` had never actually been run. It was queued behind the 95s specifically for this
+comparison, because the previously scored SW-S4 final (`90_08`) predates the 92-series channel
+fixes and carries neither `reported_czm_shear_slip_mm_pp` nor
+`flow_rate_mesh_geometry_ml_min_pp` — scoring the 95s against it would have confounded the rate
+law with a change in what the postprocessors *mean*.
+
+## 6.1 Build validation — clean
+
+`95_13` and `93_07` produced an **identical time grid**: 2335 rows, `max|Δt| = 0.0`, the same
+2334 steps, the same final `dt`. They agree on Table-2 stages 1–4 to four decimals, with slip
+onset differing by 3 s (1254.0 vs 1257.0). The level-matched control is indistinguishable from
+the Perzyna viscosity right up to first slip — which is exactly what `eta*V0 = sigma'_n*a*ln 2`
+was constructed to guarantee, and it rules out the "build error" branch of §2.5.
+
+`rsf_overstress_mpa_pp` matches `sigma'_n * a * ln(1 + V/V0)` to `2.9e-2 MPa` on a `0.53 MPa`
+peak. The residual is not a defect: the check uses `effective_normal_paper_frame_mpa_pp` while
+the class uses the internal `_bb_effective_normal_stress`, and side-averaging a nonlinear
+function of `V` carries a Jensen gap.
+
+## 6.2 Result 1 — `b` does not heal the hold stages (hypothesis falsified)
+
+Stage-4 `d_s` [mm] is where SW-S4's deficit lives. Paper target **0.0170**:
+
+| `93_07` | `95_13` (b=0) | `95_14` (b=.005) | `95_16` (b=.015) |
+|---|---|---|---|
+| 0.0038 | 0.0037 | 0.0039 | 0.0043 |
+
+The **entire** `b` bracket buys 0.0005 mm of a 0.013 mm deficit — 4 % — while stage 5
+degrades monotonically in the same direction (0.0476 → 0.0634 → 0.0659 → 0.0664 against a
+paper value of 0.0410). `b` is flat where the hypothesis needs it to move and harmful where it
+need not move at all.
+
+Per §2.4 this closes the question: **the SW-S4 staircase timing is set by the injection
+protocol, not by a hold-stage healing deficit.** That is consistent with the earlier campaign
+finding that this specimen slips on ramps rather than holds, and it means `D_rs` is *not* the
+next thing to bracket — the mechanism is absent, not mis-scaled.
+
+Onset (first `d_s > 5 µm`) does respond to `b`, monotonically: 1254.0 / 1257.0 / 1233.6 /
+1164.1 s. But onset was never the failing observable, and note that `b > 0` **advances** slip
+rather than delaying it — the opposite of what was expected when the bracket was designed.
+Recorded here because it was predicted wrong.
+
+## 6.3 Result 2 — velocity weakening destabilises the solver, as predicted
+
+`95_16` (`a-b = -0.005`) is the only run that produced discrete slip events: 7.2 µm over
+t = 1347.1 → 1350.8 and 2.3 µm over t = 1353.9 → 1354.1. At the first event `d_s` went
+11.18 → 41.24 µm, `theta` collapsed 376 → 1.21 s, the overstress reached **−1.51 MPa**, `tau`
+dropped 11.53 → 8.14 MPa and `dt` fell 1.5 → 2.36e-4 s. It recovered (`dt` back to 1.5 by
+t = 1468, `theta` re-healed to 144 s), then stalled permanently at t = 1554.86 with `V = 0`,
+`d_s` frozen at 67.93 µm, overstress −0.146 MPa and the nonlinear residual oscillating in
+`[0.98, 1.94]e-2` with no descent — **0.85 s of simulation in 264 steps**, at which rate
+reaching t = 3500 needs ~600 000 more. Killed at 09:52 elapsed.
+
+This is a quasi-static solver meeting a genuine dynamic instability, not a code fault: on the
+stick branch the state term leaves a negative overstress that lowers strength and promotes
+slip, while slipping consumes `theta` and raises strength back, so Newton flip-flops across the
+active-set boundary. It is the same failure family as the long-standing SW-S3/SW-S4 slip-arrest
+non-convergence, and `95_16` is now a **cheap deterministic reproducer** for it — far more
+useful than waiting for a spontaneous stall.
+
+## 6.4 Result 3 — the fitted viscosity was inflating `tau` (the keeper)
+
+This is the one transferable finding, and it survives the falsified hypothesis.
+
+Over slipping steps the Perzyna term supplies a mean **0.3138 MPa** (peak 0.8713, n = 615)
+while the level-matched RSF supplies **0.1405 MPa** (peak 0.5346, n = 594). The reason is
+structural: `ln` saturates and `eta*V` does not. Matched at `V0` by construction, they diverge
+above it, and this problem runs above it — peak `V` was 2.489e-7 m/s (control) and 6.353e-7 m/s
+(RSF), 5–13× `V0`.
+
+Table-2 MAE, SW-S4, all 11 stages:
+
+| observable | n | ctrl `93_07` (η) | `95_13` (b=0) | `95_14` (b=.005) |
+|---|---|---|---|---|
+| Q_ml_min | 11 | 0.0025268 | **0.0021171** | 0.0020857 |
+| sigma_n_MPa | 11 | 0.43615 | **0.38502** | 0.38627 |
+| tau_MPa | 11 | 0.72571 | **0.62359** | 0.62462 |
+| dn_mm | 10 | **0.0012594** | 0.0022237 | 0.0024404 |
+| ds_mm | 10 | **0.0042428** | 0.0066070 | 0.0071509 |
+
+RSF improves Q, `sigma'_n` and `tau` by ~14 % each and degrades `d_n` by 76 % and `d_s` by
+56 %. The `tau` gain localises cleanly: stages 1–4 are identical; at stage 5 the control reads
+`tau = 7.514` against a paper value of 6.48 (+1.03) while `95_13` reads 5.847 (−0.63), a
+control-minus-RSF difference of **1.667 MPa** of which `eta*V` contributes 0.58; stages 6–11
+carry a flat ~0.13 MPa residual where `eta*V` is already zero, i.e. a slip-history offset
+rather than a rate effect.
+
+**For the manuscript:** the rate term is not a regulariser, and at SW-S4's fitted `eta` it is
+worth over 1 MPa of shear strength at the decisive stage — enough to be visible in Table 2.
+Stating that, and stating that a laboratory-valued `a` reduces it, is a credibility result
+independent of whether RSF is adopted.
+
+## 6.5 Verdict
+
+**RSF at a physical `a` is not a net improvement for SW-S4.** It trades displacement accuracy
+for stress and flow accuracy at roughly equal magnitude, so adopting it would be a lateral
+move dressed as a physical upgrade.
+
+The deeper read is that neither law addresses the actual defect. SW-S4's slip is too
+**concentrated**: too little by stage 4, too much by stage 5, with the total roughly right.
+Both `eta*V` and the RSF overstress act on *velocity*, so they can only rescale how fast slip
+proceeds once it starts — neither changes *when the envelope yields*. That points back at the
+onset envelope, not at the rate law.
+
+## 6.6 Consequences for the queued HPC batch
+
+- **Keep** the three remaining level-matched `b = 0` controls (`95_01` SW-T1, `95_05` SW-T2,
+  `95_09` SW-S3). Those three have fitted viscosities 8–20× *below* the laboratory range, so
+  the `tau`-inflation result may be SW-S4-specific and is worth one deck each to establish.
+- **Drop or defer** the nine `b > 0` decks for SW-T1/T2/S3, and `95_15`. The `b` bracket has
+  been run to exhaustion on the specimen where it had the best case and returned flat;
+  spending 9 HPC jobs to re-establish that is not justified.
+- **`95_15`** (`a = b = 0.010`, velocity neutral) is not worth running: it is bracketed on both
+  sides by `95_14` and `95_16`, and both bounds are already known.
+- **Keep all eight 96-series decks unchanged.** They probe the poroelastic constants and are
+  entirely independent of the rate law; nothing here touches them.
+
+## 6.7 A note on the negative result
+
+The `b` bracket was designed to be falsifiable and it falsified. That is worth recording as
+plainly as a success would be: the hold-stage healing hypothesis for SW-S4 is now closed, the
+`D_rs` follow-up it would have spawned is cancelled, and the campaign is one live hypothesis
+lighter. The two things that came out of it — a measured `tau` inflation and a deterministic
+reproducer for the slip-arrest stall — were both by-products.
