@@ -291,12 +291,23 @@ def score_run(csv_path: Path, sample: str, tag: str | None, tol_mpa: float,
             used[key] = name
 
     # Sample the last output row at or before each stage time.
-    rows = []
+    #
+    # A run that stops a fraction of an output interval short of the final stage time is not a
+    # truncated run -- it is a completed run whose last CSV row simply predates the schedule's
+    # final point. SW-S3 hits this exactly: end_time = 4802 against a schedule whose last knot is
+    # at 4802.4 s, which silently dropped stage 11 (the end of unloading) from every SW-S3 score
+    # in the campaign. Allow a grace window of two output intervals and record where it was used;
+    # a genuinely truncated run misses by hundreds of seconds and still scores None.
+    dt_out = float(np.median(np.diff(model["time"]))) if len(model) > 2 else 0.0
+    grace = 2.0 * dt_out
+    rows, clamped = [], []
     for t in times:
-        if t > t_end:
+        if t > t_end + grace:
             rows.append(None)
+            clamped.append(False)
             continue
-        rows.append(int(model.index[model["time"] <= t][-1]))
+        clamped.append(t > t_end)
+        rows.append(int(model.index[model["time"] <= min(t, t_end)][-1]))
 
     out = pd.DataFrame({
         "stage": range(1, 12),
@@ -305,6 +316,7 @@ def score_run(csv_path: Path, sample: str, tag: str | None, tol_mpa: float,
         "stage_time_s": times,
         "sample_time_s": [np.nan if r is None else float(model["time"].iloc[r]) for r in rows],
         "Pi_model_MPa": [np.nan if r is None else float(model["Pi_MPa"].iloc[r]) for r in rows],
+        "sample_clamped": clamped,
     })
 
     paper = TABLE2[sample]
@@ -375,6 +387,10 @@ def print_run(res: dict) -> None:
     print(f"{res['sample']}  {res['csv'].name}")
     print(f"  deck        {res['deck'].name}")
     print(f"  run end     t = {res['t_end']:.1f} s;  stages reached {res['reached']}/11")
+    cl = res["table"].loc[res["table"]["sample_clamped"], "stage"].tolist()
+    if cl:
+        print(f"  NOTE        stage(s) {cl} sampled at the run's last row, within two output "
+              f"intervals of the schedule time (run ended marginally short, not truncated)")
     print(f"  datum       {res['datum']} "
           f"(dn offset {res['offsets']['dn_mm']:.6g} mm, ds offset {res['offsets']['ds_mm']:.6g} mm)")
     print(f"  columns     " + ", ".join(f"{k}<-{v}" for k, v in res["used"].items()))
