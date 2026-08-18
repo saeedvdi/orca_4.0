@@ -1788,6 +1788,30 @@ Choose $\eta_t$ so that $\eta_t V \ll Y$ at the slip rates of interest, and
 always report the value used. It is a numerical parameter with physical
 consequences.
 
+> **Remark: in practice this rule gets violated, and the violation is invisible unless
+> you measure it.** $\eta_t$ is the knob a calibration reaches for when a run will not
+> get through a slip event, and each increase is locally justified. But the increments
+> accumulate silently, because nothing in the output reports $\eta_t V$ against $Y$. In
+> one campaign the four calibrations of the same law ended up within a factor of one of
+> each other on three specimens and **8.75 times higher on the fourth** — the one that
+> had been hardest to converge — where the overstress reached 0.87 MPa against a shear
+> strength of order 10 MPa. At that point $\eta_t$ is a fitted rate law, not a
+> regularisation, and a strength calibration performed at that viscosity is partly a
+> calibration of the viscosity.
+>
+> Two consequences worth acting on. First, **export $\eta_t V$ as a postprocessor and
+> plot it against $Y$** — it costs nothing and turns an invisible drift into a visible
+> one. Second, because the overstress is proportional to slip rate, it **relaxes to zero
+> during holds**: a model compared against data at held stages can look clean while
+> carrying a first-order error on the ramps between them. If the observable of interest
+> lives on a ramp, $\eta_t$ is in it.
+>
+> Replacing the viscosity with an explicit rate-and-state term is the principled fix and
+> was tried (`ADOrcaBartonBandisRateStateHardening`, Part V). It confirmed the
+> diagnosis — the rate-and-state runs reproduced the same strength inflation — but did
+> not improve the fit at the held stages, and $a-b<0$ made the solve considerably
+> harder. Reporting $\eta_t V$ honestly is the cheaper remedy.
+
 #### Smooth active sets
 
 Discussed in Section [`sec:smoothing`](#sec-smoothing). Every hard `if` in a constitutive law is
