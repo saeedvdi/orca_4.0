@@ -16,13 +16,14 @@ four are **resolved in the model**; one remains a drafting decision:
 | SW-S4 meshed at 28.99° and 2.85 mm off centre; SW-T2 at 31° against its own data's 30° | **fixed** — corrected meshes ported; decks `89_01`, `89_03`, `89_05`, `89_06` |
 | SW-S3/SW-S4 JRC, JCS and φ_r invented rather than measured | **fixed** — refitted to the paper's Table 1 and Sec. 2.1; decks `89_01`, `89_02` |
 | SW-T1/SW-T2 need φ_r = 44–46°, above any granite basic friction angle | **fixed** — `cohesion`/`residual_cohesion` added to the law; decks `89_04`, `89_05` |
-| §1/§3.5.3 claim a dissipation bound the *validated* law does not implement | **still a drafting decision** — see the `[SCOPE CORRECTION]` note in §3.5.3 |
+| §1/§3.5.3 claim a dissipation bound the *validated* law does not implement | **fixed** — §1, §3.5.3, §6.5 and conclusion 6 now scope the bound to the Mohr–Coulomb formulation, and claim it only as an admissibility diagnostic on the published data |
 
-**The numerical content of §5 must not be quoted.** Every score in §5 was produced by the
-pre-audit decks. The 89-series decks are built and syntax-checked but not yet run, so §5 is
-`[PENDING]` in its entirety until they are. Two of them (`89_04`, `89_05`) are explicitly
-*candidates* rather than corrections: they change dτ/dσ′ₙ by ~40 % and must be scored against
-Table 2 before they can replace `87_01`/`87_02`.
+**§5 now reports the 93-series runs.** The scores quoted in §5.2 are the completed mesh-5
+Barton–Bandis runs `93_01`, `93_03`, `93_05` and `93_07`, scored by
+`scripts/table2_gate.py` with an independent recomputation, and cross-checked in
+`Examples/YeGhasemmi2018/HPC_90_91_92_TABLE2_ERROR_ANALYSIS.md`. What remains outstanding is
+§5.5 and §6.3 (the four Mohr–Coulomb runs, built and smoke-tested, queued), §6.6 and §6.7 (the
+cyclic and shut-in runs, likewise), and the post-slip branch of the mesh-convergence comparison.
 
 Working and derivations: `doc/paper_vs_model_audit_2026-08-16.md`;
 `scripts/paper_parameter_audit.py` (states the problem);
@@ -30,13 +31,18 @@ Working and derivations: `doc/paper_vs_model_audit_2026-08-16.md`;
 `scripts/build_paper_corrected_decks.py` (generates the decks);
 `Examples/YeGhasemmi2018/MESHES.md` (mesh provenance).
 
-Revised 2026-08-11 to align §3.6/§4.3/§6/Notation with the
-state-dependent fracture pressure–area coefficient (tasks #22/#24) and to give §6 an actual
-discussion — including the currently open SW-S4 Barton–Bandis discrepancy (§6.4) — rather than
-report-style validation prose. The Methodology (§3–§4) is written to submission
-standard. §1, §2, §5–§7 are complete drafts requiring the pending production runs before the
-numerical content of §5 can be finalised. Every number in this document that is not yet
-measured is marked `[PENDING]`; nothing is invented.
+Revised 2026-08-18 against the current source and the four validated decks. That revision corrected
+six places where the stated formulation did not match the code that produced the results — the
+normal-closure exponent (§3.4), the hydraulic-aperture law and its per-specimen term activation
+(§3.6), the reason the Barton–Bandis–Bakhtar closed form was not adopted (§3.6), the scope of the
+dissipation bound (§3.5.3), the envelope-discriminability premise (§3.5.2), and the fracture
+pressure–area coefficient, which is a fitted constant rather than the state-dependent function an
+earlier draft described (§3.6.1). It also wrote §5 from the completed runs and retired a
+long-standing §6.4 discrepancy that turned out to be a reporting-frame error. Full audit:
+`doc/DOC_AUDIT_2026-08-18.md`.
+
+The Methodology (§3–§4) is written to submission standard. Every number in this document that is
+not yet measured is marked `[PENDING]`; nothing is invented.
 
 ---
 
@@ -56,7 +62,7 @@ measured is marked `[PENDING]`; nothing is invented.
 | 3 | Model formulation | The physics and the discretisation. Complete, because a validation claim is worthless if the reader cannot tell what was validated. Sub-sections 3.5 (plasticity: yield, flow rule, the dissipation bound, kinematic routing, softening stability), 3.7 (what each characteristic slip distance controls), 3.8 (admissible vs inadmissible limiters) and 3.9 (numerical implementation) carry the methodological novelty and should not be cut for length — they are what distinguishes this from an application note. **Barton–Bandis is the model** (full derivation, §3.5.2); linear Mohr–Coulomb is stated in one short paragraph as the *baseline* it is compared against in §5, not derived as a coequal candidate. |
 | 4 | Model setup and parameter determination | Geometry, BCs, and — critically — the table separating *measured*, *derived* and *calibrated* parameters. This is the section a sceptical reviewer will read first. |
 | 5 | Results | Verification first, then validation of BBFast against all four specimens, then the MC baseline comparison (§5.5) showing what the nonlinear envelope buys. |
-| 6 | Discussion | What the roughness range reveals about BBFast; where BBFast fails and why; the MC baseline referenced only to support that argument, not discussed on its own terms; implications for field-scale EGS. |
+| 6 | Discussion | Three substantive strands, in order: (i) §6.3, whether the Barton–Bandis law outperforms the Mohr–Coulomb baseline under a matched calibration; (ii) §6.6, how much permeability enhancement survives the first of three injection cycles, and whether the law contains a mechanism for multi-cycle gain at all; (iii) §6.7, whether slip continues after shut-in. Around them: §6.1–6.2 on what the published data can and cannot constrain, §6.4–6.5 on what SW-S4 and the plasticity formulation reveal, then limitations and field-scale implications. |
 | 7 | Conclusions | Short, numbered, no new material. |
 | A | Appendix A: recovering fracture orientation and load-frame compliance from the published table | The derivation is a genuine methodological contribution and is too long for §4. |
 | B | Appendix B: measuring flow rate in a split-node interface formulation | A trap other MOOSE/FEM users will fall into; worth the page. |
@@ -160,13 +166,11 @@ trim before submission, likely by folding the new #3 into #1 or dropping the flo
 Results-only.]`
 
 1. A cohesive-zone hydromechanical model with a Barton–Bandis interface law reproduces
-   injection-induced shear slip in four granite fractures spanning JRC 1.19 to 15.32
-   `[PENDING confirmation]`
+   injection-induced shear slip in four granite fractures to 2.4–6.1 % normalised RMS error
 2. The published data over-determines fracture orientation and load-frame compliance, allowing
    calibration without free geometric parameters
-3. A linear Mohr–Coulomb baseline misses slip onset and stress path across the sampled stress
-   range `[PENDING: confirm once §5.5 numbers are in]`, showing the nonlinear envelope is load-bearing,
-   not cosmetic
+3. A linear Mohr–Coulomb baseline is compared under a matched calibration procedure
+   `[PENDING: state the outcome once §5.5 numbers are in]`
 4. Simulated flow is about half the reported rate at matching aperture, a geometry-factor
    difference rather than a constitutive error
 
@@ -184,15 +188,18 @@ hydromechanical model in which the fracture is represented as a zero-thickness c
 interface embedded in a Biot poroelastic matrix, and validate it against the laboratory
 experiments of Ye and Ghassemi (2018) on four Sierra White granite cores. The four specimens
 span a wide roughness range — two tensile fractures and two saw cuts, with joint roughness
-coefficients from 1.19 to 15.32 — and each was subjected to an eleven-stage injection cycle
+coefficients from 1.96 to 15.32 — and each was subjected to an eleven-stage injection cycle
 under 30 MPa confinement at constant piston displacement. We show that the published data
 over-determines two quantities usually treated as free: the fracture orientation and the series
 compliance of the loading column are both recoverable from the tabulated stress and displacement
 histories alone, to within 0.03° and 3 % respectively. This removes the geometric parameters from
-the calibration and makes the remaining comparison a test of the interface constitutive law. We
-compare a linear Mohr–Coulomb envelope with a Barton–Bandis envelope across the roughness range
-`[PENDING]`. Simulated flow rates fall consistently below the reported values at matching
-hydraulic aperture; we show this reflects the difference between a one-dimensional slab
+the calibration and makes the remaining comparison a test of the interface constitutive law. The
+model reproduces the eleven-stage flow, stress and displacement histories to a mean normalised RMS
+error of 2.4 % to 6.1 % across five independent observables. We compare a linear Mohr–Coulomb
+envelope with a Barton–Bandis envelope under a matched calibration procedure `[PENDING]`, and show
+that this loading path cannot separate cohesion from joint roughness, so the two must be reported as
+one constrained combination. Simulated flow rates fall consistently below the reported values at
+matching hydraulic aperture; we show this reflects the difference between a one-dimensional slab
 reduction and the three-dimensional flow field, and quantify it.
 
 ---
@@ -274,13 +281,9 @@ We make four contributions.
    the published measurements, the same inequality shows that both saw-cut specimens report a
    dilation angle exceeding their own mobilised friction angle — which no amount of shear dilation
    can produce, and which identifies elastic joint decompression inside the LVDT signal (§3.5.3).
-   `[SCOPE — the sentence above is the scoped form agreed on 2026-08-16. The bound is`
-   `implemented in the Mohr–Coulomb law; the Barton–Bandis law validated in §5 bounds ψ by`
-   `clamping instead. Do not restore the unqualified claim. See the note in §3.5.3.]`
    The dilation is routed kinematically as a normal eigen-opening rather than as a
-   contact-stress reduction, which reverses the sign of its feedback on strength, produces a
-   normal displacement jump directly comparable with an LVDT measurement, and makes the mechanical
-   gap the single source of truth for the hydraulic aperture (§3.5.4).
+   contact-stress reduction, which reverses the sign of its feedback on strength and produces a
+   normal displacement jump directly comparable with an LVDT measurement (§3.5.4).
 2. **An explicit account of what each characteristic slip distance controls, and of which
    limiters are admissible.** Every history-dependent term carries its own distance; we tabulate
    what each governs, which observable identifies it, and how it fails at either extreme (§3.7).
@@ -622,12 +625,30 @@ over a factor of four and the closure response of a real joint is strongly nonli
 Bandis-type hyperbolic closure with a stress exponent,
 
 $$
-v(\sigma'_n) = \frac{\sigma'_n}{K_{ni} + \sigma'_n / v_m}, \qquad
-p_c \;\text{such that}\; v(p_c) = \langle -g_n \rangle_+ + c_0 ,
+v(\sigma'_n) = \frac{v_m\,{\sigma'_n}^{\,p}}{\sigma_0^{\,p} + {\sigma'_n}^{\,p}}
+\qquad\Longleftrightarrow\qquad
+\sigma'_n(v) = \sigma_0 \left[\frac{v}{v_m - v}\right]^{1/p},
+\qquad \sigma_0 = K_{ni}\,v_m ,
 $$
 
-where $v_m$ is the maximum closure, $K_{ni}$ the initial normal stiffness, and $c_0$ a
-pre-seating offset representing the closure already accumulated at the reference confining stress.
+evaluated on the pre-seated closure $v = \langle -g_n \rangle_+ + c_0$, where $v_m$ is the maximum
+closure, $K_{ni}$ the initial normal stiffness, $\sigma_0$ the effective normal stress at which
+half the maximum closure is reached, and $c_0$ a pre-seating offset representing the closure
+already accumulated at the reference confining stress.
+
+Setting $p = 1$ recovers the classical Bandis hyperbola $v = \sigma'_n/(K_{ni} + \sigma'_n/v_m)$
+exactly. We do not use $p = 1$, and the exponent is the reason this form is adopted rather than the
+hyperbola: the tangent normal stiffness scales as ${\sigma'_n}^{\,(p+1)}$ for
+$\sigma'_n \gg \sigma_0$, so $p$ in the range 2–4 reproduces the three- to fourfold unloading
+stiffening that Table 2's normal-displacement recovery requires and that the hyperbola cannot
+produce at any $K_{ni}$. The calibrated values are $p = 4$ for SW-T1, SW-T2 and SW-S3, and $p = 2$
+for SW-S4 (Table 4).
+
+Two bounds keep the tangent finite. For $p > 1$ the exact tangent behaves as $v^{1/p-1}$ and is
+singular as $v \to 0$, so below a linearisation closure of $\min(10^{-9}\ \mathrm{m},\,0.01\,v_m)$
+the law is replaced by its secant; and the closure is capped at a fixed fraction of $v_m$, beyond
+which the joint is treated as fully closed.
+
 Pre-seating matters: without it, applying the 30 MPa confinement at the start of the simulation
 would drive a large closure transient that the compliant loading frame would convert into a
 spurious axial stress excursion.
@@ -636,6 +657,11 @@ An unloading hysteresis is available, in which a fraction $f$ of recovered closu
 representing the fact that a joint which has slipped does not recover its original closure state
 when re-clamped. Section 5.3 shows this is the controlling parameter for the post-slip stress
 recovery.
+
+The same power-law closure is available a second time inside the hydraulic-aperture model, as the
+stress-aperture term of §3.6. It is enabled there for SW-T2, SW-S3 and SW-S4; SW-T1 instead runs a
+linear stress-aperture compliance, so its hydraulic closure is linear while its mechanical closure
+is not.
 
 ### 3.5 Interface elastoplasticity
 
@@ -736,52 +762,34 @@ carry $c$ explicitly and let it decay on the *same* curve $W(s)$ as friction, si
 that carry it are the ones slip destroys, with a residual $c_{\text{res}}$ for the interlock that
 survives a single slip event. Setting $c = c_{\text{res}} = 0$ recovers Barton exactly.
 
-This envelope has one property that the purely frictional form does not, and it is the property
-this experiment is sensitive to: $\mathrm{d}Y/\mathrm{d}\sigma'_n$ is reduced by the cohesion's
-absence from that derivative. Two parameterisations that agree at a single calibration point can
-therefore disagree by 40 % in slope, which is what §5.5 measures.
+This envelope has one property that the purely frictional form does not: because cohesion does not
+scale with confinement, it does not appear in $\mathrm{d}Y/\mathrm{d}\sigma'_n$, so two
+parameterisations that agree on strength at a calibration point need not agree on how fast strength
+is shed as injection proceeds.
 
-The distinction matters for this experiment specifically. The two envelopes can be made tangent at
-one effective normal stress and will then diverge at every other. Injection sweeps $\sigma'_n$
-downward — from 66 to 30 MPa on the rough specimens and from 31 to 15 MPa on the smooth ones — so
-the stress path travels along precisely the direction in which they separate, and the four
-specimens sample two disjoint stress ranges. This is what makes the dataset able to discriminate,
-and it is the basis of §5.5.
+**How far that distinction can be pushed against this dataset is limited, and we state the limit
+here rather than in the discussion.** The two envelopes are tangent at one effective normal stress
+by construction and diverge away from it, and injection does sweep $\sigma'_n$ in the direction of
+divergence — from 66 to 30 MPa on the rough specimens and 31 to 15 MPa on the smooth ones. But over
+that range the separation is small: matched parameterisations differ by roughly 3 % in
+$\mathrm{d}\tau/\mathrm{d}\sigma'_n$. Cohesion and JRC are consequently not separately identifiable
+on this loading path — a trade between them can be absorbed almost exactly, and the reported JRC,
+JCS and $c$ should be read as one calibrated combination rather than three independently
+constrained properties. §5.5 therefore compares the two forms on their ability to reproduce
+Table 2 under a matched calibration procedure, which the data can settle, rather than on envelope
+shape, which they cannot.
 
 #### 3.5.3 Flow rule and the dissipation bound on dilation
 
-`[SCOPE — resolved 2026-08-16 by taking option (a): keep the material, state the scope`
-`explicitly. Rewrite the prose of this subsection along the lines of the paragraph`
-`below before submission; the facts are settled, only the wording is outstanding.`
-
-`The facts. dissipation_margin is declared in exactly one material,`
-`ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile, and nowhere else.`
-`The production decks all run OrcaBartonBandisContactTractionFastADHardening, which`
-`has no dissipation inequality: it bounds ψ with min_dilation_angle_degrees /`
-`max_dilation_angle_degrees, neither of which is set in any deck, and evolves ψ`
-`through the mobilisation/decay law below. The only decks that set dissipation_margin`
-`are the Mohr–Coulomb baselines 67_11 and 83_11. So the bound is enforced in the`
-`baseline and not in the validated law — the reverse of what the earlier draft`
-`implied. "We show this bound is frequently the active constraint" cannot stand for`
-`the Barton–Bandis runs, because it is never evaluated in them.`
-
-`Why option (a) rather than dropping it. The bound is a real and correctly implemented`
-`piece of the model, and — this is the part worth putting in §1 — it is informative`
-`precisely where it is NOT enforced. Applied as a diagnostic to Table 2 itself, the`
-`dilation angle arctan(|d_n|/d_s) exceeds the mobilised friction angle arctan(μ) for`
-`BOTH saw cuts (SW-S3: 31.8° against 31.3°; SW-S4: 28.7° against 24.6°), while the`
-`tensile pair sits comfortably inside it (16.4° against 49.4°; 14.0° against 51.7°).`
-`A dilation angle above the friction angle is inadmissible as pure shear dilation.`
-`The resolution is this paper's own §2.3.1 decomposition: on a low-μ saw cut the`
-`LVDT-measured d_n contains elastic joint decompression, not just geometric override.`
-`That is a result about the published data, obtained from the bound, and it explains`
-`why the saw-cut decks carry ψ below their Table-2 value and under-predict dilation.`
-
-`So: §1 contribution 1 keeps the bound but states it as (i) enforced in the`
-`Mohr–Coulomb formulation and (ii) used as an admissibility diagnostic on the`
-`published data. §3.5.2–§3.5.3 say plainly that they describe the baseline law and`
-`that Barton–Bandis carries the clamped mobilisation law instead. Figure F2b and the`
-`§3.8 passage follow the same scoping. See doc/paper_vs_model_audit_2026-08-16.md §4.]`
+**A note on scope, made here because it governs how the rest of this subsection should be read.**
+The dissipation inequality derived below is *enforced* in the Mohr–Coulomb formulation used as this
+paper's constitutive baseline (§5.5). It is not enforced in the Barton–Bandis law that produced the
+results of §5: that law bounds the dilation angle with explicit minimum and maximum angles instead,
+neither of which is set in any of the four calibrations, and evolves $\psi$ through the decay law
+given below. We therefore do not claim that the bound constrains the reported runs. What we do claim
+is narrower and, we think, more interesting: applied as an admissibility *diagnostic* to the
+published data rather than as a constraint inside a solver, the inequality identifies a property of
+Table 2 that is otherwise easy to miss. That argument is made at the end of this subsection.
 
 The flow rule is **non-associative**. The tangential direction follows the shear traction,
 
@@ -819,14 +827,21 @@ p_c\,\Delta g_n^{p} \;\leq\; (1 - \epsilon_D)\, Y \, \Delta\gamma
 \tan\psi \;\leq\; (1 - \epsilon_D)\,\mu \;}
 $$
 
-**This bound is frequently the active constraint, and that has a consequence for how calibrated
-dilation angles should be reported.** For a smooth saw cut with $\mu \approx 0.4$ and
-$\epsilon_D = 10^{-8}$, any $\psi$ above $\approx 22°$ is inadmissible; a deck specifying
-$\psi_p = 50°$ therefore does not produce $\tan 50° = 1.19$ but the limiter value
-$\mathrm{d}g_n^{p}/\mathrm{d}\gamma \approx \mu$. In that regime the nominal dilation angle is
-decorative and the realised dilation is set by the friction coefficient. Any calibration that
-quotes $\psi$ without also reporting the realised ratio $\Delta g_n^{p}/\Delta\gamma$ is quoting a
-number the model may never have used. We report both.
+**Where it is enforced, this bound binds often enough to change how calibrated dilation angles
+should be reported.** For a smooth saw cut with $\mu \approx 0.4$ and $\epsilon_D = 10^{-8}$, any
+$\psi$ above $\approx 22°$ is inadmissible; a deck specifying $\psi_p = 50°$ therefore does not
+produce $\tan 50° = 1.19$ but the limiter value $\mathrm{d}g_n^{p}/\mathrm{d}\gamma \approx \mu$. In
+that regime the nominal dilation angle is decorative and the realised dilation is set by the
+friction coefficient. Any calibration that quotes $\psi$ without also reporting the realised ratio
+$\Delta g_n^{p}/\Delta\gamma$ is quoting a number the model may never have used, and we recommend
+reporting both as a general practice — it costs one column and it distinguishes a fit from a
+saturated limiter.
+
+For the runs of §5 the point is a conditional rather than an observation: the Barton–Bandis law does
+not evaluate this inequality, so we cannot report how often it would have bound. What we can say is
+that the calibrated dilation angles for the two saw cuts, 26.0° and 24.0°, sit close to the bound
+their friction coefficients would impose, so a reader should not assume those two numbers are
+freely fitted.
 
 A subtlety in the work budget is worth stating because it silently couples a numerical parameter to
 a physical one. The right-hand side must be the *Coulomb* strength $Y\Delta\gamma$. If instead the
@@ -872,10 +887,11 @@ must physically separate to relieve it, and the displacement field opens. This i
 statement — riding up an asperity separates the walls — and it is the only form that produces a
 normal displacement jump comparable with an LVDT measurement, which is what Table 2 reports.
 
-Kinematic routing also fixes the aperture bookkeeping. Because $g_n$ already contains the dilation,
-adding a separate cumulative-dilation term to the hydraulic aperture would count the same mechanism
-twice. §3.6 states the resulting single-source-of-truth aperture, and this is the reason it
-contains no dilation term of its own.
+Kinematic routing also determines the aperture bookkeeping. Because $g_n$ already contains the
+dilation, adding a separate cumulative-dilation term to the hydraulic aperture counts the same
+mechanism twice, so the consistent choice is to omit it. §3.6 gives the resulting aperture model,
+together with the two specimens whose calibration does not follow this rule and what that costs
+them.
 
 #### 3.5.5 Softening, and when the quasi-static problem ceases to have a solution
 
@@ -931,42 +947,84 @@ separation of an equivalent pair of smooth parallel plates transmitting the same
 real fracture has contact patches, tortuosity and roughness, $a_h < a_m$ always, and the ratio is
 not constant.
 
-The hydraulic aperture is modelled as
+The hydraulic aperture is modelled as a bounded additive construction,
 
 $$
-a_h = a_{h0} + \chi \left\langle g_n \right\rangle_+ - a_{\rm gouge}(s),
+a_h = \mathrm{clamp}\Big[\;
+a_{h0}
+\;+\; a_\sigma(\sigma'_n)
+\;+\; \chi\,a_m
+\;+\; \lambda\,\Delta_{\rm cum}\,r(R)
+\;+\; a_{\rm prop}(R)
+\;-\; a_{\rm gouge}(s)
+\;;\; a_{\min},\, a_{\max}\Big],
 $$
 
-where $a_{h0}$ is the reference hydraulic aperture at the initial stress state — back-calculated
-from the measured initial flow rate, and therefore absorbing the roughness reduction at that
-condition — $\chi$ is a dilation-propping coefficient relating mechanical opening to hydraulic
-opening, and
+term by term:
 
-$$
-a_{\rm gouge}(s) = a_g\left[1 - \exp\!\left(-\frac{\langle s - s^{*}\rangle_+}{s_c}\right)\right]
-$$
+* $a_{h0}$ is the reference hydraulic aperture at the initial stress state — back-calculated from
+  the measured initial flow rate, and therefore absorbing the roughness and tortuosity reduction at
+  that condition;
+* $a_\sigma(\sigma'_n)$ is a stress-aperture term, zero at the reference effective normal stress. It
+  runs the *same* power-law closure as §3.4 for SW-T2, SW-S3 and SW-S4, and a linear compliance for
+  SW-T1;
+* $\chi\,a_m$ couples the solved mechanical aperture to the hydraulic one, with $\chi$ a propping
+  coefficient much smaller than unity — the hydraulic aperture responds to only a small fraction of
+  the geometric opening, which is the standard $a_h < a_m$ statement made quantitative;
+* $\lambda\,\Delta_{\rm cum}\,r(R)$ is an *optional* separate feed from the cumulative shear
+  dilation $\Delta_{\rm cum}$, modulated by a retention factor $r(R) = r_{\rm res} + (1-r_{\rm res})R$
+  in the roughness state $R$ — discussed below, because it is the one term that is not active on all
+  four specimens;
+* $a_{\rm prop}(R) = a_{\rm prop,0}R^{\,n}$ is a self-propping aperture held open by residual
+  roughness. It is present in the implementation and set to zero in all four calibrations, so it
+  plays no part in the results reported here;
+* $a_{\rm gouge}(s) = a_g\left[1 - \exp\!\left(-\langle s - s^{*}\rangle_+/s_c\right)\right]$
+  represents wear products progressively filling the void. This is what decouples the hydraulic from
+  the mechanical aperture on unloading: a fracture that has slipped does not recover its original
+  conductivity when re-clamped.
 
-represents wear products progressively filling the void. The gouge term is what decouples the
-hydraulic from the mechanical aperture on unloading: a fracture that has slipped does not recover
-its original conductivity when re-clamped.
+The clamps are not cosmetic. Because transmissivity goes as $a_h^3$, a transient mechanical
+excursion before contact is established — during the confinement ramp, for instance — would raise
+the permeability by orders of magnitude and wreck the coupled Newton solve; $a_{\max}$ bounds it,
+and $a_{\min}$ keeps $a_h > 0$ without forbidding hydraulic closure.
 
-We note explicitly what is *not* added on top of this: neither a separate cumulative-dilation
-term nor a second, independently fitted closure law inside the hydraulic model. Both are already
-contained in $\langle g_n \rangle_+$ under kinematic dilation routing, and including them would
-give the appearance of three independent mechanisms fitting the data when one mechanism is being
-fitted three times.
+**Which terms are active, and an asymmetry we state rather than hide.** Under the kinematic dilation
+routing of §3.5.4 the shear dilation already lives inside $a_m$, so feeding $\Delta_{\rm cum}$ in a
+second time through $\lambda$ counts the same mechanism twice. The correct configuration is
+therefore $\lambda = 0$. That is what the two tensile fractures run. The two saw cuts do not:
+
+| | $a_\sigma$ law | $\chi$ | $\lambda$ | $r_{\rm res}$ | gouge | dilation counted |
+|---|---|---:|---:|---:|---|---|
+| SW-T1 | linear | 0.0160 | 0 | 0.715 | off | once |
+| SW-T2 | power law | 0.0165 | 0 | 0.747 | off | once |
+| SW-S3 | power law | 0.0010 | 0.038 | 0.28 | on | **twice** |
+| SW-S4 | power law | 0.0010 | 0.0117 | 0.28 | on | **twice** |
+
+On SW-S3 and SW-S4 the hydraulic aperture therefore carries a fitted dilation feed on top of the
+kinematic one, and $\lambda$ was reduced during calibration — on SW-S4 by a factor of about 17 — to
+hold $a_h$ against the measured flow rate. The consequence is measurable and is reported in §5.4:
+the correlation between hydraulic aperture and mechanical normal opening is 1.000, 0.999 and 0.946
+on SW-T1, SW-T2 and SW-S3, but only 0.562 on SW-S4. On that specimen the flow channel is reporting
+a stress state rather than an opening, and its flow and dilation results must be read as two
+findings rather than one. We report this as a limitation of the present calibration
+(§6.8) rather than repairing it post hoc, because refitting $\lambda \to 0$ on the saw cuts would
+change the Table 2 scores that the rest of this paper reports.
 
 We also tested, and do not adopt, the closed form these terms are motivated by,
-$a_h \propto a_m^2/\mathrm{JRC}^{2.5}$ (Barton et al., 1985). Unlike $\langle g_n \rangle_+$, which
-saturates through the same bounded normal-closure law calibrated for the mechanical response
-(§3.4), the closed form has no intrinsic saturation as $a_m \to 0$: hydraulic aperture, and
-therefore transmissivity, scale as the *square* and *cube* of mechanical aperture with no bound
-of the kind $v_m$ imposes there. Under two-way coupling — aperture sets transmissivity,
-transmissivity sets the pressure that sets the aperture — this unbounded sensitivity is sharpest
-exactly where the aperture itself is changing fastest, at the slip/arrest transition, and in our
-implementation it destabilised the coupled Newton solve there, independent of specimen or mesh.
-We report this as the numerical reason for the bounded, additive form used above, not as a claim
-that the closed form is wrong at the joint scale it was fitted to.
+$a_h \propto a_m^2/\mathrm{JRC}^{2.5}$ (Barton et al., 1985). Substituting it destabilised the
+coupled Newton solve at the slip/arrest transition, reproducibly and in two independent
+implementations. The mechanism is worth stating precisely, because the obvious explanation is the
+wrong one. It is *not* that the power law is too stiff: with the offset that matches the two models'
+initial apertures, the measured logarithmic sensitivity $\mathrm{d}\ln T/\mathrm{d}\ln a_m$ reaches
+only 0.74 over the range these specimens actually visit, the aperture clamp never binds, and the
+ratio of Bakhtar to additive transmissivity stays between 1.00 and 1.45 everywhere. Two laws that
+close to each other cannot themselves be the instability. What the substitution really does is
+remove the additive form's entire negative-feedback stack in one step — the bounded power-law
+closure, the retention-modulated dilation term and the gouge reduction all disappear together — and
+it is the loss of those saturating terms, not the exponent, that leaves the aperture–pressure
+coupling without a restoring mechanism at the limit point. We report this as a statement about which
+feedbacks a two-way coupled solve requires, not as a claim that the closed form is wrong at the
+joint scale it was fitted to.
 
 Transmissivity follows the cubic law,
 
@@ -987,31 +1045,40 @@ the aperture change and the fluid compressibility exactly without splitting them
 The fluid pressure in the fracture also acts mechanically on the walls, contributing a normal
 traction $-\alpha_f\,p_f\boldsymbol{n}$.
 
-#### 3.6.1 A state-dependent, rather than unit, pressure–area coefficient
+#### 3.6.1 The pressure–area coefficient, and why it is a constant here
 
 The historical assumption is $\alpha_f = 1$ exactly, on the grounds that the fluid acts across the
 entire nominal fracture area. That assumption is already an approximation: at any finite effective
 normal stress the walls are in contact over some fraction of the nominal area, and fluid pressure
-cannot act where the walls are touching. We instead let the coefficient depend on the state of the
-joint,
+cannot act where the walls are touching.
+
+**What the reported runs use.** A single constant per specimen, calibrated once:
+
+| specimen | $\alpha_f$ |
+|---|---:|
+| SW-T1 | 1.00 |
+| SW-T2 | 1.00 |
+| SW-S3 | 0.87 |
+| SW-S4 | 0.86 |
+
+The two tensile fractures apply no attenuation at all; only the two saw cuts do, and by less than
+15 %. This is worth stating plainly because it bounds how much of this study's agreement with
+Table 2 can be attributed to the coefficient: on half the specimens, none of it.
+
+**A state-dependent alternative is implemented but not used.** The contact material can instead
+export
 
 $$
-\boxed{\;\alpha_f(\sigma'_n) = \frac{\sigma_0}{\sigma_0 + \sigma'_n}\;}
+\alpha_f(\sigma'_n) = \frac{\sigma_0}{\sigma_0 + \sigma'_n},
 $$
 
-a saturating hyperbola in the effective normal stress, with $\sigma_0$ a reference stress at which
-$\alpha_f = 1/2$. As $\sigma'_n \to 0$ (an open or barely loaded fracture) $\alpha_f \to 1$, recovering
-the historical assumption in its own limit of validity; as $\sigma'_n$ rises and the load-bearing
-contact fraction grows, $\alpha_f$ falls.
-
-This is not an independently fitted curve. $\sigma_0$ is set once per specimen so that $\alpha_f$
-reproduces the value this study previously used as a constant, 0.86, at the specimen's own stage-1
-effective normal stress (Table 2) — a single-point anchor, not a fit to the trajectory — and the
-functional form draws on the same normal-closure state already calibrated for the mechanical
-response (§3.5.6), rather than introducing a second closure law. Every stage after the first is
-therefore an unfitted consequence of that one anchor point, not a second point being matched. §6.2
-discusses what this coupling does to the injection-driven feedback, what it bought numerically, and
-what it does not yet establish.
+a saturating hyperbola with $\sigma_0$ the stress at which $\alpha_f = 1/2$, so that
+$\alpha_f \to 1$ for an open or barely loaded fracture and falls as the load-bearing contact
+fraction grows. It is disabled in every run reported here, and we flag it rather than describe it as
+adopted, because the distinction matters for what §6 may claim: a coupling that steepens as the
+joint approaches failure is a different physical model from a constant, and this paper does not test
+it. Enabling it and repeating the calibration is the obvious next experiment, and §6.8 records it as
+an open question rather than a result.
 
 This fracture-scale coefficient is conceptually distinct from the matrix Biot coefficient
 $\alpha \approx 0.6$: $\alpha$ answers what fraction of the matrix's porosity is hydraulically
@@ -1187,13 +1254,30 @@ width, which is enough for Newton to converge.
 | R1 | smooth positive part | `contact_gap_regularization` | $\epsilon_g$ | contact/open active set; irreversible-dilation target | $10^{-14}$ m |
 | R2 | smooth positive part | `cohesive_gap_regularization` | $\epsilon_c$ | cohesive effective separation | $10^{-14}$ m |
 | R3 | smooth maximum | `stress_regularization` | $\sigma_{\rm reg}$ | strength memory, retained shear support, dissipation-limit denominator | $10^{-8}$ Pa |
-| R4 | viscous (Perzyna) overstress | `tangential_viscosity` | $\eta_t$ | yield residual | $4\times10^{11}$–$5\times10^{12}$ Pa·s/m |
+| R4 | viscous (Perzyna) overstress | `tangential_viscosity` | $\eta_t$ | yield residual | $4\times10^{11}$ (SW-T1/T2/S3), $3.5\times10^{12}$ (SW-S4) |
 | R5 | event-aware substepping | `max_local_substeps`, `event_fraction_tolerance` | — | integration of the jump path | 32, $10^{-10}$ |
 | R6 | residual strength floor | `min_tau_limit` | $\tau_{\min}$ | Barton–Bandis strength (SW-S decks only) | $10^{5}$ Pa |
 
 R1–R3 regularise *geometry and branch structure*; R4 regularises *time*; R5 regularises
 *integration*; R6 regularises a *degenerate limit*. They are independent and are reported
 separately.
+
+**R4 is not purely numerical at the values used, and calling it a regularisation understates it.**
+The Perzyna term adds $\eta_t V$ to the mobilised strength at slip rate $V$, so it is negligible
+only while $\eta_t V \ll Y$. On SW-T1, SW-T2 and SW-S3 that condition holds. On SW-S4 it does not:
+$\eta_t$ is 8.75 times larger there, and the resulting overstress averages 0.31 MPa and peaks at
+0.87 MPa on the loading ramps, against a shear strength of order 10 MPa. A parameter worth several
+per cent of the strength is a constitutive choice, and we report it as one rather than burying it in
+a numerics table.
+
+Two things keep this from contaminating the comparison of §5. The overstress is proportional to slip
+rate, so it relaxes to zero during the hold stages at which Table 2 is tabulated and at which every
+score in §5.2 is taken; and it is reported per specimen above rather than as a single range, so a
+reader can see which specimen carries it. What it does affect is the transient between stages — the
+ramp on which SW-S4's stage-4 slip deficit occurs (§5.3) — which is a caution about interpreting
+that residual, not about the scores. A separate experiment replacing the viscous term with an
+explicit rate-and-state formulation confirmed that it is doing rate-law work: the rate-and-state
+runs reproduced the same strength inflation, and did not improve the hold-stage fit.
 
 ##### 3.9.5.2 Smooth positive part and smooth maximum (R1–R3)
 
@@ -1515,7 +1599,7 @@ pressure is 5 MPa throughout.
 | Young's modulus | $E$ | 67 GPa, all four | measured | Ye & Ghassemi §2.1 |
 | Poisson's ratio | $\nu$ | 0.32 | measured | Ye & Ghassemi §2.1 |
 | Biot coefficient (matrix) | $\alpha$ | 0.6 | literature | not reported by Ye & Ghassemi |
-| Fracture pressure–area reference stress | $\sigma_0$ (in $\alpha_f$, §3.6.1) | 1.90–4.10 ×10⁸ Pa | calibrated | single-point match to legacy $\alpha_f=0.86$ at stage-1 $\sigma'_n$ |
+| Fracture pressure–area coefficient | $\alpha_f$ (§3.6.1) | 1.00, 1.00, 0.87, 0.86 | calibrated | constant per specimen; not identifiable separately from $\alpha$ (§6.2) |
 | Porosity | $\phi$ | 0.001 | **assumed** | not reported; below the 0.005–0.01 typical of granite |
 | Matrix permeability | $k_m$ | $5\times10^{-19}$ m² | measured | Ye & Ghassemi §2.1 (low end of $5\times10^{-19}$–$1\times10^{-18}$) |
 | Fluid density | $\rho_f$ | 1000 kg m⁻³ | literature | — |
@@ -1524,64 +1608,97 @@ pressure is 5 MPa throughout.
 | Confining pressure | $\sigma_3$ | 30 MPa | measured | Ye & Ghassemi §2.4 |
 | Production pressure | $P_o$ | 5 MPa | measured | Ye & Ghassemi §2.4 |
 | Joint roughness coefficient, SW-T1/T2 | JRC | 15.32, 14.63 | measured | Ye & Ghassemi §2.2 |
-| Joint roughness coefficient, SW-S3/S4 | JRC | 1.96, 1.19 | measured | Ye & Ghassemi §2.2; **was 23.35 and 17.50 in the pre-audit decks** |
+| Joint roughness coefficient, SW-S3 | JRC | 1.96 | measured | Ye & Ghassemi §2.2; **was 23.35 in the pre-audit decks** |
+| Joint roughness coefficient, SW-S4 | JRC | 5.0 | calibrated | measured value is 1.19; see note (a) |
 | Joint wall strength, all four | JCS | 150 MPa | substituted | UCS, Ye & Ghassemi §2.1; **was 300 MPa for the saw cuts** |
-| Joint cohesion, SW-T1/T2 | $c$, $c_{\text{res}}$ | 24.65/11.18, 31.65/10.70 MPa | derived | Appendix A.4; asperity interlock of a mated Mode-I surface |
 | **Fracture angle** | $\theta$ | 29.03–32.00° | **derived** | **Appendix A.1**; all four meshes now honour it |
 | **Series compliance** | $\Omega$ | $1.61$–$4.42\times10^{-12}$ m Pa⁻¹ | **derived** | **Appendix A.2** |
 | **Flow geometry factor** | $W/L$ | 0.813–0.817 | **derived** | **Appendix A.3** |
 | Reference hydraulic aperture | $a_{h0}$ | 0.745–2.10 µm | derived | cubic-law inversion of stage-1 $Q$ |
 | Reversible normal compliance | $C_n$ | $3.1$–$47\times10^{-13}$ m Pa⁻¹ | derived | $\Delta d_n / \Delta \sigma'_n$, stages 6–11 |
 | Axial preload | $\bar{u}_z$ | per specimen | **gated** | matched to stage-1 $\tau$, §5.1 |
-| Peak friction / cohesion | $\mu_r$, $c_r$ | per specimen | calibrated | slip onset |
-| Barton–Bandis residual angle | $\phi_r$ | per specimen | calibrated | slip onset |
+| Normal-closure exponent | $p$ | 4, 4, 4, 2 | calibrated | unload stiffening, §3.4 |
+| Barton–Bandis residual angle | $\phi_r$ | 29.756° (×3), 22.72° | calibrated | slip onset; note (b) |
+| Joint cohesion | $c$, $c_{\text{res}}$ | see below | calibrated | last stick stage; note (b) |
 | Dilation angles | $\psi_p$, $\psi_r$ | per specimen | calibrated | permanent $d_n$ |
-| Dilation-propping coefficient | $\chi$ | per specimen | calibrated | $a_h$ at peak |
+| Dilation-propping coefficient | $\chi$ | 0.0160, 0.0165, 0.0010, 0.0010 | calibrated | $a_h$ at peak |
+| Cumulative-dilation feed | $\lambda$ | 0, 0, 0.038, 0.0117 | calibrated | saw cuts only; §3.6 |
 | Unload retention fraction | $f$ | per specimen | calibrated | $d_n$ recovery |
+| Viscous regularisation | $\eta_t$ | $4\times10^{11}$ (×3), $3.5\times10^{12}$ | calibrated | §3.9; not purely numerical, see §6.8 item 11 |
 
-`[RESOLVED — 2026-08-16, branch orca_v5. The three rows that were bold here are now measured or`
-`derived rather than calibrated. Full working: doc/paper_vs_model_audit_2026-08-16.md §2,`
-`scripts/refit_joint_constants_from_paper.py. What follows is the argument, and it belongs in the`
-`text — it is the strongest parameter-provenance claim this paper has.]`
+Values are listed in the order SW-T1, SW-T2, SW-S3, SW-S4 wherever four are given. The calibrated
+strength parameters, per specimen:
 
-`(a) JRC and JCS on the saw cuts. Ye and Ghassemi measure JRC = 1.96 (SW-S3) and 1.19 (SW-S4) by`
-`3-D laser scan and the Yu & Vayssade correlation, and report a UCS of 150 MPa. The pre-audit decks`
-`ran JRC = 23.35 and 17.50 — 11.9× and 14.7× the measured values, and in SW-S3's case outside`
-`Barton's 0–20 scale — with JCS at 300 MPa, compensated by residual friction angles of 8.45° and`
-`7.50°, below any measured granite. The three errors cancel at the calibration point, so both`
-`specimens still reproduced their measured peak τ; what did not survive is dτ/dσ'_n, 28 % too flat`
-`on both — and that derivative is the quantity this experiment exists to measure, because injection`
-`sweeps σ'_n downward by a factor of two. Refitting with the paper's own JRC and JCS = UCS, holding`
-`the envelope through each specimen's last stick stage, gives φ_r = 29.76° (SW-S3) and 23.71°`
-`(SW-S4). Two independent checks that this is the right parameterisation and not just a different`
-`one: (i) both land in or just below the measured granite basic-friction range, whereas 8.45° and`
-`7.50° land nowhere; (ii) the refitted envelope is nearly FLAT in μ across the injection sweep`
-`(SW-S4: 0.456 → 0.464) where the old one rose steeply (0.462 → 0.580). That rise is the "LOCK" the`
-`deck lineage spent four tuning generations fighting, and the paper's own SW-S4 data are fitted`
-`almost exactly by a single straight Coulomb line. The pathology was an artefact of the invented`
-`JRC. It also moves SW-S4's slip-weakening slope from just above the measured system stiffness`
-`(1.326e11 vs k_sys = 1.25e11 Pa/m) to just below it (1.224e11), i.e. off the strength cliff.`
+| | JRC | JCS (MPa) | $\phi_r$ (°) | $c$ (MPa) | $c_{\rm res}$ (MPa) |
+|---|---:|---:|---:|---:|---:|
+| SW-T1 | 15.32 | 150 | 29.756 | 26.88 | 9.19 |
+| SW-T2 | 14.63 | 150 | 29.756 | 33.20 | 9.71 |
+| SW-S3 | 1.96 | 150 | 29.756 | 1.67 | 1.40 |
+| SW-S4 | 5.0 | 150 | 22.72 | 0 | 0 |
 
-`(b) The tensile pair. SW-T1 and SW-T2 already used the measured JRC and JCS yet required`
-`φ_r = 44.1° and 46.3°, because both sustain μ = τ/σ'_n of 1.17–1.27 while still stuck. The cause is`
-`structural: Barton's roughness term is mobilisation-limited — it decays to zero as σ'_n approaches`
-`JCS — and these specimens sit at σ'_n/JCS ≈ 0.38, where the measured JRC buys only 6.4° of`
-`roughness angle. A μ of 1.17 then has nowhere to live except φ_r, because the law had no cohesion`
-`(computeCohesionEffective() returned a hard-coded zero). But shearing THROUGH asperities is a`
-`cohesion, not a friction: its strength does not scale with σ'_n. The law now carries`
-`cohesion and residual_cohesion (§3.5.2, regression test test/tests/materials/bb_cohesion).`
-`Refitting with φ_r fixed at the basic friction angle measured on this campaign's own saw cut`
-`(29.756°) gives c = 24.65 MPa (SW-T1) and 31.65 MPa (SW-T2) — 81 % and 104 % of the 30.30 MPa`
-`intact-rock cohesion implied by the paper's own UCS = 150 MPa and intact φ = 46°. The two straddle`
-`the intact value, and nothing in the derivation knows about it. That is the expected signature of a`
-`fully mated Mode-I fracture whose asperities ARE intact rock, and it is the physical statement the`
-`old φ_r = 44–46° was standing in for. NB these two decks change dτ/dσ'_n by ~40 %, so they are`
-`candidates pending scoring, not corrections.`
+Three features of this table are worth pointing out rather than leaving to be noticed. The residual
+friction angle is the *same* on three of the four specimens, and it is not a fitted value but the
+basic friction angle measured on this campaign's own saw cut — so those three envelopes are pinned
+by cohesion alone. SW-S4 is the exception on two counts: its cohesion is identically zero, which is
+correct for a lapped saw cut with no interlock but leaves $\phi_r$ and $D_c$ carrying the entire
+response (§6.4), and its JRC is calibrated rather than measured. And by the identifiability argument
+of §3.5.2, JRC, JCS and $c$ are not three independent constraints but one combination; they should
+be read as a set.
 
-`(c) Fluid bulk modulus, corrected to 2.2 GPa. An earlier version of this note said the 4.78 GPa`
-`value "is handed to the fracture fluid, where storage is not negligible during the burst". That was`
-`wrong: it is read in exactly one place, the matrix OrcaTHMaterial, and the fracture flow uses`
-`fracture_transmissivity. The real effect is ~6 % on matrix storage and nothing else.]`
+Three of these rows were calibrated in earlier versions of this model and are now measured,
+substituted or derived. How that happened is worth recording, because in each case the earlier
+calibration reproduced the *peak* strength correctly and failed on a quantity the peak does not
+constrain.
+
+**(a) The saw cuts: JRC, JCS and residual friction were compensating one another.** Ye and Ghassemi
+measure JRC = 1.96 (SW-S3) and 1.19 (SW-S4) by 3-D laser scan and the Yu and Vayssade correlation,
+and report a UCS of 150 MPa. Earlier versions of these decks ran JRC = 23.35 and 17.50 — 11.9 and
+14.7 times the measured values, and in SW-S3's case outside Barton's 0–20 scale — together with
+JCS = 300 MPa, and compensated both with residual friction angles of 8.45° and 7.50°, below any
+measured granite. The three errors cancel at the calibration point, so both specimens still
+reproduced their measured peak $\tau$. What did not survive was
+$\mathrm{d}\tau/\mathrm{d}\sigma'_n$, 28 % too flat on both — and that derivative is what this
+experiment exists to measure, because injection sweeps $\sigma'_n$ down by a factor of two.
+
+Refitting with the paper's own JRC and JCS = UCS, holding each envelope through its specimen's last
+stick stage, gives $\phi_r = 29.76°$ for SW-S3. Two independent checks say this is the right
+parameterisation rather than merely a different one. It lands in the measured granite
+basic-friction range, where 8.45° lands nowhere. And the refitted envelope is nearly flat in $\mu$
+across the injection sweep — on SW-S4, 0.456 rising to 0.464 — where the old one rose steeply,
+0.462 to 0.580. That steep rise is the strength "lock" the deck lineage spent four tuning
+generations fighting, and it was an artefact of the invented JRC: the paper's own SW-S4 data are
+fitted almost exactly by a single straight Coulomb line. Flattening it also moves SW-S4's
+slip-weakening slope from just above the measured system stiffness ($1.326\times10^{11}$ against
+$k_{\rm sys} = 1.25\times10^{11}$ Pa/m) to just below it ($1.224\times10^{11}$) — off the strength
+cliff of §3.5.5, which is why the specimen became tractable.
+
+SW-S4 retains a calibrated JRC of 5.0 rather than its measured 1.19. At the measured value the
+onset stage was missed; the fitted value recovers it, and brackets either side score worse. We flag
+it as calibrated in Table 4 rather than presenting the specimen as fully measured-parameter driven.
+
+**(b) The tensile pair: a cohesion was being carried as a friction angle.** SW-T1 and SW-T2 already
+used their measured JRC and JCS, yet required $\phi_r = 44.1°$ and $46.3°$, because both sustain
+$\mu = \tau/\sigma'_n$ of 1.17–1.27 while still stuck. The cause is structural. Barton's roughness
+term is mobilisation-limited — it decays to zero as $\sigma'_n$ approaches JCS — and these specimens
+sit at $\sigma'_n/\mathrm{JCS} \approx 0.38$, where the measured JRC buys only 6.4° of roughness
+angle. A $\mu$ of 1.17 then has nowhere to live except $\phi_r$, because the law as originally
+implemented had no cohesion term at all.
+
+But shearing *through* asperities is a cohesion, not a friction: its strength does not scale with
+confinement. The law now carries a cohesion and a residual cohesion, decaying on the same
+slip-weakening curve as friction (§3.5.2). Refitting with $\phi_r$ fixed at the basic friction angle
+measured on this campaign's own saw cut, 29.756°, gives $c = 26.88$ MPa for SW-T1 and 33.20 MPa for
+SW-T2. Those are 89 % and 110 % of the 30.30 MPa intact-rock cohesion implied by the paper's own
+UCS = 150 MPa and intact $\phi = 46°$. The two straddle the intact value, and nothing in the
+derivation knows about it — which is the expected signature of a fully mated Mode-I fracture whose
+asperities *are* intact rock, and the physical statement the old $\phi_r = 44$–$46°$ was standing in
+for.
+
+**(c) Fluid bulk modulus.** Earlier decks used 4.78 GPa, 2.17 times too stiff for water at 20 °C.
+It is read in exactly one place, the matrix constitutive model, and the fracture flow uses the
+transmissivity instead, so the correction to 2.2 GPa changes matrix storage by about 6 % and nothing
+else. We record it because an earlier version of this note asserted that the stiff value was being
+handed to the fracture fluid, where it would have mattered during the burst. It was not.
 
 Three quantities usually treated as free — the fracture angle, the load-train compliance and the
 flow geometry factor — are here *derived* from the published table without adjustment. Their
@@ -1620,35 +1737,129 @@ comparison. `[Verified 2026-08-07.]`
 **Injection point.** All injection and production coordinates lie exactly on fracture nodes, with
 zero snap distance. `[Verified 2026-08-06.]`
 
-**Preload gate.** Pre-slip shear traction at the first hold stage, against Table 2:
+**Preload gate.** Pre-slip shear traction at the first hold stage, against Table 2, for the four
+reported runs:
 
 | Specimen | simulated $\tau$ (MPa) | Table 2 (MPa) | error |
-|---|---|---|---|
-| SW-T1 | 67.405 | 67.16 | +0.36 % |
-| SW-T2 | 74.954 | 74.87 | +0.11 % |
-| SW-S3 | 14.748 | 14.70 | +0.32 % |
-| SW-S4 | `[PENDING]` | 12.56 | `[PENDING]` |
+|---|---:|---:|---:|
+| SW-T1 | 67.58 | 67.16 | +0.63 % |
+| SW-T2 | 73.86 | 74.87 | −1.35 % |
+| SW-S3 | 13.73 | 14.70 | −6.59 % |
+| SW-S4 | 12.35 | 12.56 | −1.70 % |
+
+Three of the four gate to better than 2 %. SW-S3 does not, and the reason is procedural rather than
+physical: its axial preload was gated on an earlier mesh, and the specimen was subsequently remeshed
+to the corrected 123.40 mm fracture length (§4.1) without the gate being re-applied. The residual is
+a constant offset present from stage 1, not an accumulating error, and it propagates into that
+specimen's shear-stress score (8.01 % nRMSE, the second worst of the four). Re-gating SW-S3 is
+outstanding and would be expected to improve it; we report the ungated number rather than an
+estimate of the improvement.
 
 **Mass balance.** Injected and produced mass fluxes, recovered from the tagged residual vector,
 balance to 4.3 % at steady state during the first hold stage. `[Measured on SW-T1.]`
 
-**Mesh convergence.** `[PENDING — coarse/medium/fine comparison of pre-slip state, onset time and
-peak slip.]`
+**Mesh convergence.** The four reported runs use the medium mesh. Coarser-mesh siblings were run
+for all four; at the time of writing they are incomplete, so convergence is demonstrated over the
+pre-slip branch only, on the stages both meshes reached:
+
+| Specimen | stages compared | medium-mesh mean nRMSE | coarse-mesh mean nRMSE |
+|---|---:|---:|---:|
+| SW-T2 | 5 | 1.73 % | 1.72 % |
+| SW-S3 | 4 | 2.08 % | 2.00 % |
+| SW-S4 | 10 | 6.34 % | 6.54 % |
+
+The pre-slip response is effectively mesh-insensitive on all three. SW-S4, which reaches ten of
+eleven stages and therefore spans its slip event, carries a mesh penalty of +0.20 points, with the
+largest systematic shift through unloading about 0.0018 mm in shear slip. Refinement slightly
+improves $Q$ and both stresses at the peak stage and slightly worsens both displacement channels.
+SW-T1 reached no Table 2 stage on the coarse mesh and supplies no evidence; separately, its two
+meshes differ by 3.1 % in injection–production separation, so that pair would not be a pure
+discretisation comparison even when complete. We therefore claim mesh-insensitivity of the pre-slip
+state, and note that SW-S4's stage-4 residual (§5.3) persists under refinement, which is what
+identifies it as constitutive rather than an artefact of discretisation.
 
 ### 5.2 Stress and displacement histories
 
-`[PENDING — requires the production runs. Figure F3, and Table 5 giving RMS and peak error per
-specimen per observable, over the five independent quantities identified in §2.2.]`
+Table 5 gives the five-observable comparison against Table 2 for all four specimens. Errors are
+normalised RMS: the root-mean-square residual over the eleven hold stages, divided by the range of
+the Table 2 values for that observable, so that quantities with different units and very different
+absolute magnitudes can be placed on one scale. The case score is the unweighted mean over the five
+independent quantities identified in §2.2. Because the model displacements are zeroed at stage 1 to
+match Table 2's convention, stage 1 is a constructed zero and is excluded from the two displacement
+statistics.
+
+**Table 5.** Normalised RMS error against Table 2, five independent observables.
+
+| Specimen | $Q$ | $\sigma'_n$ | $\tau$ | $d_n$ | $d_s$ | **mean** |
+|---|---:|---:|---:|---:|---:|---:|
+| SW-T1 | 7.38 % | 1.98 % | 2.73 % | 9.06 % | 1.02 % | **4.44 %** |
+| SW-T2 | 5.87 % | 1.26 % | 1.70 % | 2.06 % | 1.25 % | **2.43 %** |
+| SW-S3 | 3.00 % | 3.35 % | 8.01 % | 7.42 % | 1.11 % | **4.58 %** |
+| SW-S4 | 4.94 % | 3.74 % | 10.01 % | 4.53 % | 7.01 % | **6.05 %** |
+
+In absolute terms the stress residuals are 0.64 MPa mean absolute error on $\sigma'_n$ and 1.02 MPa
+on $\tau$ for SW-T1, against stresses of 30–67 MPa; 0.42 and 0.72 MPa for SW-T2; 0.47 and 0.82 MPa
+for SW-S3; and 0.44 and 0.73 MPa for SW-S4, against stresses of 12–31 MPa. Shear-slip residuals are
+4.3 µm (SW-T1), 6.2 µm (SW-T2), 0.6 µm (SW-S3) and 4.1 µm (SW-S4).
+
+Three points about the table are worth making before the specimen-by-specimen discussion.
+
+**The ranking is not a ranking of physics.** Each specimen's nRMSE is normalised by its own
+measured range, and the four ranges differ by a factor of five in stress. The numbers are comparable
+between calibrations of the same specimen and should not be read as a statement that SW-T2 is
+"better modelled" than SW-S4.
+
+**Differences below about 0.1 points are not meaningful.** Running an identical deck on a different
+machine reproduces $Q$, $\sigma'_n$ and $\tau$ to seven significant figures but moves the
+normal-displacement error metric by up to 10.8 %, giving a floor of roughly 0.08 points on the mean.
+No conclusion in this paper rests on a difference smaller than that.
+
+**One score is worse than it could be, deliberately.** SW-S3's $d_n$ error is 7.42 %. An earlier
+calibration reported 2.46 %, and a mean of 3.59 % rather than 4.58 %. The difference is not a model
+change: it is the removal of two output-only settings that rescaled and partially retained the
+reported normal opening without entering the residual, the Jacobian or the hydraulic aperture. With
+them removed, all four specimens report the raw kinematic jump on the same basis. The worse number
+is the defensible one, and we report it in preference to the better one because a fit applied in the
+reporting path rather than the model is not a fit to anything.
 
 ### 5.3 Slip onset and the post-slip stress path
 
-`[PENDING — Figure F4. The analysis to report: simulated onset time against the paper's
-last-stick/first-slip window for each specimen and each envelope; and the post-slip differential
-stress against Table 2, which tests the series compliance derived in Appendix A.2 together with
-the unload retention fraction of §3.4.]`
+The signed residuals identify where each specimen's error is concentrated, and the pattern differs
+between the burst specimens and the progressive one.
 
-One result already established from the preliminary batch should be carried forward. The
-assumption $P_p = \frac{1}{2}(P_i + P_o)$ used to reduce the published data does not survive slip.
+**The three burst specimens.** SW-T1, SW-T2 and SW-S3 each collapse within a single injection stage,
+and for all three the largest residuals sit at the 28 MPa peak stage and on the unloading branch
+that follows, not before. SW-T1 is systematically strong throughout, by +0.26 to +0.93 MPa in
+$\sigma'_n$ and +0.42 to +1.48 MPa in $\tau$ — a level offset rather than a shape error, since the
+sign never changes. SW-T2 crosses zero between stages 3 and 4, running weak early and strong late.
+SW-S3's residual is dominated by the peak stage (+1.18 MPa in $\sigma'_n$, +2.24 MPa in $\tau$),
+which is where the constant preload offset of §5.1 and the stress drop coincide.
+
+Because the drop occupies one stage on all three, the characteristic slip distance is
+unidentifiable for them: any $L_R$ shorter than the stage duration produces the same tabulated
+result. This is the constitutive counterpart of the load-frame identifiability argument of §6.1, and
+we report no fitted $L_R$ for these three.
+
+**SW-S4, the progressive specimen.** Its residual is concentrated at a single stage and its
+character is different. At stage 4 ($P_i = 20$ MPa) the model is +1.41 MPa strong in $\sigma'_n$,
++2.71 MPa strong in $\tau$, and 13.4 µm short in shear slip — the largest single-stage error in the
+whole campaign. Every subsequent stage is smaller and of one sign. The model misses a slip increment
+that the specimen produced during the *ramp* into stage 4, and then tracks the remainder of the test
+with residuals a third that size.
+
+Two things follow. First, the error is quantised by the injection schedule: a missed burst appears
+as a single stage that is too strong, not as a drift, so "a few hundred seconds early or late" and
+"one stage too weak" are the same statement. Second, this is the specimen where the slip-weakening
+distance $D_c$ *is* identifiable, and it is over-determined in the unhelpful sense — stage 4 is
+fitted by $D_c \approx 58\ \mu$m and stage 11 by 74 µm, and no single value satisfies both. Brackets
+either side of the chosen value were run and both scored worse (16.9 % and 18.9 % mean nRMSE against
+6.05 %), so the split is not resolvable by moving $D_c$. §6.4 gives the mechanism: this specimen's
+cohesion channel is identically zero, so $D_c$ carries the post-peak response with nothing to trade
+against.
+
+**The pore-pressure basis does not survive slip.** The
+assumption $P_p = \frac{1}{2}(P_i + P_o)$ used to reduce the published data holds before slip and
+fails after it.
 Before slip, the simulated mean fracture pressure sits at 0.55–0.67 of $(P_i - P_o)$ above $P_o$,
 close to the assumed 0.50. After slip it rises to 0.85, because the dilated fracture equilibrates
 toward the injection pressure. The reported and simulated $\sigma'_n$ therefore stop being
@@ -1658,9 +1869,25 @@ is being used.
 ### 5.4 Aperture and flow rate
 
 Simulated hydraulic aperture at the first hold stage agrees with Table 2 to 1.3 % for SW-T1
-(1.610 µm against 1.63 µm). `[Other specimens PENDING.]`
+(1.610 µm against 1.63 µm). Flow rate over the full cycle is scored in Table 5, at 3.00 % to 7.38 %
+nRMSE across the four specimens — the best-fitted of the five observables on SW-S3 and among the
+worst on SW-T1. Hydraulic aperture and permeability are not scored, because Table 2 obtains them
+from $Q$ through the cubic law rather than measuring them (§2.2), so comparing them adds no
+independent information.
 
-The flow rate does not agree as well, and the disagreement is systematic rather than random. At
+**The flow channel does not report the same thing on every specimen.** Under the aperture model of
+§3.6 the hydraulic aperture is sourced from the mechanical opening for the two tensile fractures,
+and carries an additional fitted dilation feed on the two saw cuts. The consequence is visible in
+the correlation between hydraulic aperture and normal opening over the injection cycle: 1.000 on
+SW-T1, 0.999 on SW-T2, 0.946 on SW-S3, and 0.562 on SW-S4. On the first three, $Q$ is effectively a
+readout of the fracture's opening and can be discussed as such. On SW-S4 it is not; it tracks the
+effective normal stress instead, because the dilation feed was reduced roughly seventeen-fold to
+hold the aperture against the measured flow. SW-S4's flow result and its dilation result are
+therefore two findings, and the natural inference — that a good $Q$ score there confirms a good
+aperture prediction — does not hold.
+
+The flow rate does not agree as well as the aperture, and the disagreement is systematic rather
+than random. At
 the first hold stage of SW-T1, with the pressure drop at exactly 3.000 MPa:
 
 | quantity | value (mL min⁻¹) |
@@ -1690,10 +1917,36 @@ paper does not report $W$ or $L$.
 
 ### 5.5 Comparing the two strength envelopes
 
-`[PENDING — Figure F2 and Figure F4. The comparison to report: which envelope places slip onset
-inside the paper's window for which specimens, and specifically whether the linear envelope can
-be made to work simultaneously on SW-T1 (JRC 15.32, $\sigma'_n$ sweeping 65 to 32 MPa) and SW-S4
-(JRC 1.19, $\sigma'_n$ sweeping 31 to 15 MPa) with a single calibration philosophy.]`
+The Barton–Bandis envelope of §3.5.2 is compared against a linear Mohr–Coulomb baseline built for
+this purpose. The baseline is not a fresh calibration: each specimen's linear envelope is a
+tangent-match transfer of its own already-fitted Barton–Bandis envelope at the onset effective
+normal stress, so a pair differs in constitutive *form* rather than in fitted strength, and the
+comparison is not confounded by one law having been tuned harder than the other. Everything the
+two decks share — mesh, boundary conditions, injection schedule, flow constants, solver — is
+byte-identical.
+
+One thing the pair deliberately does **not** test is normal closure. The Mohr–Coulomb decks carry
+the same power-law closure law of §3.4, with the same $K_{ni}$, $v_m$ and exponent, as their
+Barton–Bandis siblings. The comparison therefore isolates the shear response: a log-curved envelope
+against a straight line through the onset tangent, an exponential weakening path against one linear
+in the roughness state, and one characteristic distance instead of two. Any claim about nonlinear
+*closure* would require a different pair of decks, and we make none.
+
+`[PENDING — Table 6 and Figure F2: the five-observable scores for the four Mohr–Coulomb runs
+alongside Table 5, and the per-stage comparison. The decks are built and validated; the runs are
+queued. Three build checks must pass before the numbers are believed: slip onset must land on the
+same injection stage as the Barton–Bandis sibling, since the peak envelopes agree to 0.09 MPa;
+$Q$ must agree to better than 1 % at stages 1–5, before anything has yielded; and $\sigma'_n$ and
+$\tau$ must agree at stage 1.]`
+
+A caveat that will shape how the result can be read, whichever way it falls. The two envelopes are
+tangent by construction at the onset stress, and they separate only as $\sigma'_n$ moves away from
+it. Over the range this experiment actually sweeps, that separation is small: the two
+parameterisations differ by about 3 % in $\mathrm{d}\tau/\mathrm{d}\sigma'_n$, not by the large
+factor a wider stress sweep would produce. This dataset therefore cannot be expected to
+discriminate the two *forms* on envelope slope alone, and §6.3 treats the comparison as a
+performance question — which law reproduces Table 2 better, under a matched calibration procedure —
+rather than as a test of which envelope shape is correct.
 
 ---
 
@@ -1717,54 +1970,71 @@ column alone. Attempting to fit a machine stiffness to the smooth specimens prod
 not an identifiable one. Reporting four per-specimen machine stiffnesses spanning a factor of 32
 would misrepresent this as physical variability.
 
-### 6.2 What a state-dependent fault-pressure coefficient adds
+### 6.2 What the pressure–area coefficient cannot be constrained to
 
-§3.6.1 replaced the historically assumed unit (or, in this study's own earlier decks, empirically
-fit constant, 0.86) fluid-pressure coupling with a state-dependent coefficient
-$\alpha_f(\sigma'_n) = \sigma_0/(\sigma_0+\sigma'_n)$, anchored to that constant at one point per
-specimen and otherwise unfitted. Two things follow from this that would not follow from a constant
-coefficient, and one thing does not yet follow that a reader should not assume.
+The fracture pressure–area coefficient $\alpha_f$ is the parameter this dataset constrains least,
+and saying so precisely is more useful than reporting a fitted value.
 
-**It is a positive feedback, and its sign is a prediction, not a modelling choice.** Injection
-lowers $\sigma'_n$; a falling $\sigma'_n$ raises $\alpha_f$, because less of the nominal fracture
-area remains load-bearing once contact shrinks; a rising $\alpha_f$ means the same pore-pressure
-increment converts into a larger reduction of the normal traction the walls actually feel. The
-three quantities that jointly set slip onset — effective stress, coupling coefficient and strength
-— therefore do not move independently as the injection schedule advances: the coupling itself
-steepens as the joint approaches failure. A constant-$\alpha_f$ model cannot produce this; the
-sharpness of onset it predicts is bounded above by what the strength envelope alone supplies.
-Whether the data actually require the steeper approach is a checkable question once §5.3's onset
-comparison is complete against both a constant- and a state-dependent-$\alpha_f$ run — this is a
-claim to test, not a result being asserted here.
+**It is nearly inert on half the specimens.** SW-T1 and SW-T2 run $\alpha_f = 1$ — the historical
+assumption, unattenuated — and reproduce Table 2 at 4.44 % and 2.43 % mean nRMSE. Whatever
+mechanism $\alpha_f$ would represent, the two tensile fractures do not need it. The two saw cuts
+carry 0.87 and 0.86, an attenuation of under 15 %, and they are also the two specimens whose
+scores are worst. There is no evidence here that a fitted $\alpha_f$ is buying agreement.
 
-**It resolved a genuine convergence failure without adding a fitted degree of freedom.** The
-constant-coefficient formulation failed to converge through the slip/arrest transient on SW-S4
-under Mohr–Coulomb (task #14). Replacing the constant with $\alpha_f(\sigma'_n)$ — using $\sigma_0$
-values derived from the single-point anchor described in §3.6.1, not fit to the failing trajectory
-— removed the failure with zero new fitted constants. This distinction matters for how the result
-should be reported: a convergence fix obtained by loosening a numerical tolerance and a convergence
-fix obtained by replacing a physically implausible constant with a state-dependent quantity can
-look identical in a log file, but only the second is a claim about the fracture rather than about
-the solver.
+**It is not separately identifiable from the matrix Biot coefficient.** Both enter slip onset
+through the same channel — how much of a pore-pressure increment is converted into a reduction of
+the normal traction the walls feel. With $\alpha = 0.6$ assumed for the matrix rather than measured
+(§4.3), a change in $\alpha_f$ can be absorbed almost exactly by a compensating change in $\alpha$
+over the range these specimens sweep. Reporting both as independently calibrated quantities would
+misrepresent that. This is the same identifiability argument §6.1 makes for the load-frame
+stiffness, applied to a coupling coefficient rather than a compliance, and it has the same remedy:
+report the combination the data constrain, and state which individual parameter was held.
 
-**What this does not yet establish.** No independent measurement of real contact-area fraction
-exists for these specimens, so $\alpha_f$'s trajectory cannot be checked against data the way
-$\sigma'_n$ or $\tau$ can — it is constrained only to reproduce the legacy constant at a single
-stage and otherwise follows from the closure law already calibrated for the mechanical response.
-That is a materially weaker form of validation than the rest of this paper's parameters carry, and
-§6.6 lists it as a limitation for exactly that reason: treat it as a mechanistically motivated
-modelling choice that removed a numerical pathology, not as a directly validated measurement.
+**No measurement exists to check it against.** Real contact-area fraction was not measured on these
+specimens, so unlike $\sigma'_n$ or $\tau$ there is no observable to compare a trajectory to. This
+is a materially weaker form of constraint than the rest of this paper's parameters carry, and §6.8
+lists it as a limitation for that reason.
+
+**A state-dependent form is implemented and untested.** §3.6.1 gives
+$\alpha_f(\sigma'_n) = \sigma_0/(\sigma_0+\sigma'_n)$, which would make the coupling steepen as the
+joint approaches failure — injection lowers $\sigma'_n$, a falling $\sigma'_n$ raises $\alpha_f$,
+and a rising $\alpha_f$ converts the same pore-pressure increment into a larger traction reduction.
+That is a positive feedback a constant coefficient cannot produce, and it would sharpen predicted
+onset beyond what the strength envelope alone supplies. It is disabled in every run reported here.
+We flag it as the next experiment rather than a finding: the test is whether a state-dependent run,
+recalibrated by the same procedure, places onset inside the observed window on specimens where the
+constant form does not — and §5.3 identifies which those are.
 
 ### 6.3 Roughness and the choice of strength envelope
 
-`[PENDING — depends on §5.5.]`
+`[PENDING — the four Mohr–Coulomb runs, §5.5. The claim to make is a performance claim: which law
+reproduces Table 2 better across four specimens under a matched calibration procedure. Write it as
+a comparison of scores against Table 5, per observable, not only on the mean.]`
 
-The argument to develop: the linear and Barton–Bandis envelopes are indistinguishable over a
-narrow range of effective normal stress and diverge over a wide one. Because injection sweeps
-$\sigma'_n$ downward by a factor of two or more, and because the four specimens sit at very
-different absolute stress levels, this dataset should discriminate. The specific test is whether
-a single constitutive form, calibrated by the same procedure, places slip onset inside the
-observed window for both the roughest and the smoothest specimen.
+Two things about that comparison should be settled in advance of the numbers, because they
+determine what the result is allowed to mean.
+
+**It is not a test of envelope shape, and it is not a test of closure.** §5.5 establishes both
+limits: the two envelopes differ by about 3 % in slope over the range injection sweeps, and the
+Mohr–Coulomb decks carry the same nonlinear closure law as their Barton–Bandis siblings by
+construction. A result in either direction therefore says which *form* better organises the fit —
+a curved envelope with two characteristic distances against a straight one with a single roughness
+state — and says nothing about whether real joints close hyperbolically.
+
+**The interesting outcome is the one where the difference is small.** If the two laws score within
+the reproducibility floor of each other, the honest conclusion is that this experiment does not
+require the Barton–Bandis form, and the argument for using it has to rest on parameter provenance
+instead of fit quality — that JRC, JCS and the basic friction angle are quantities a laboratory can
+measure independently, whereas a fitted $\mu$ and $c$ are not. That is a weaker claim than "the
+nonlinear envelope is necessary," and it is the one the data would support. We prefer to state that
+conditional now rather than discover the temptation to overclaim after seeing the scores.
+
+**Where the two laws should genuinely diverge is on the specimen that slips progressively.** SW-S4
+sheds strength across three hold stages rather than in one, so it is the only specimen whose
+response resolves the *shape* of the weakening path rather than just its endpoints (§5.3). If the
+comparison produces a difference anywhere, that is where to look for it — and by the same argument,
+a difference confined to the three burst specimens would be evidence about onset timing, not about
+the weakening law.
 
 ### 6.4 Why SW-S4 is the informative specimen
 
@@ -1787,37 +2057,53 @@ illustration of the coupling: an error in the *normal* closure response appears 
 the *axial stress* history, because the loading frame connects them. That specific failure is fixed
 (task #12).
 
-**A second, currently open discrepancy on this same specimen is worth stating with the same
-directness, because it is the live version of the same lesson rather than a different one.** The
-current Barton–Bandis calibration overshoots Table 2's pre-slip shear stress approaching the 28 MPa
-stage by 9–31 %, and past the slip event the simulated shear stress goes *negative* while Table 2
-stays small and positive (2.2–2.8 MPa) — a sign reversal, not a magnitude error, and therefore not
-something a uniform rescaling of a single friction parameter can absorb. A sign reversal in
-post-slip shear, on the one specimen with no cohesion and no softening branch to blame it on, is
-informative in a way a magnitude miss would not be: it says the calibrated dilation and
-residual-friction parameters are being asked to do two jobs at once — match the pre-slip strength
-*and* produce the right post-slip sign — with the same handful of free parameters (JRC, JCS,
-$\phi_r$, dilation angle), on exactly the specimen where nothing else in the model is available to
-absorb the difference. Whether this is the dissipation bound (§3.5.3) saturating in a regime it
-was not tuned against, or a missing rate-dependence in the residual friction angle at low
-confinement, is not yet distinguished. `[PENDING — resolution or an explicit, quantified bound
-before submission; task #15. If unresolved by submission, this paragraph becomes the honest
-statement of what BBFast does not yet reproduce on its most-scrutinised specimen, rather than a
-footnote.]`
+**A second episode on this same specimen is worth reporting, because it was a reporting error
+masquerading as a constitutive one and the distinction is the whole lesson.** For most of this
+calibration the simulated post-slip shear stress on SW-S4 appeared to go *negative* while Table 2
+stayed small and positive. A sign reversal is not a magnitude error, so it could not be absorbed by
+rescaling a friction parameter, and it was pursued for several deck generations as a genuine defect
+of the dilation and residual-friction calibration. It was neither. The plotted differential stress
+was being taken in the skeleton frame while Table 2 reports it in the total-stress frame, so the
+model curve was low by $\alpha p$ throughout — an error that grows exactly as injection proceeds,
+which is why it looked like a post-slip failure. It was caught by requiring two sibling
+postprocessors that should agree to actually agree, and corrected in the reporting channel; no
+constitutive parameter changed. SW-S4's final score is 6.05 % mean nRMSE (§5.2).
+
+The general point is worth more than the specific bug. A postprocessor-only channel can fabricate a
+model error that survives repeated calibration attempts, because every attempt is scored through
+the same faulty channel and therefore fails consistently — which reads as a robust physical finding.
+Before attributing a persistent residual to the constitutive law, check who computes the compared
+quantity and in which frame, and prefer diagnostics that two independent operators can be made to
+agree on.
+
+What remains genuinely open on SW-S4 is narrower and is stated in §6.8: its cohesion channel is
+identically zero, so the slip-weakening distance $D_c$ has no second parameter to trade against, and
+its bracket splits — the stage-4 response wants $D_c \approx 58\ \mu$m while stage 11 wants 74 µm.
+No single value satisfies both, which is why the specimen retains the largest shear-stress residual
+of the four (10.01 % nRMSE on $\tau$).
 
 ### 6.5 What the plasticity formulation adds, and where it constrains the calibration
 
 Three features of §3.5 change what can be claimed from a fit, independently of how well the fit
 turns out.
 
-**The dilation bound removes a parameter that looks free but is not.** Non-associative interface
-plasticity is standard, and the dilation angle is normally reported as a calibrated property. The
-dissipation inequality $\tan\psi \leq (1-\epsilon_D)\mu$ makes that reporting conditional: above
-the bound, the realised dilation is $\mu$ and the nominal $\psi$ has no effect. For the two
-saw-cut specimens, with $\mu \approx 0.4$–$0.5$, the bound sits near $22$–$27°$, so any calibrated
-$\psi$ above that is not a property of the joint but an artefact of the reporting convention. We
-therefore report the realised ratio $\Delta g_n^{p}/\Delta\gamma$ alongside $\psi$, and recommend
-the practice generally: it costs one column and it distinguishes a fit from a saturated limiter.
+**The dilation bound is a constraint on what a calibrated dilation angle can mean, whether or not a
+solver enforces it.** Non-associative interface plasticity is standard, and the dilation angle is
+normally reported as a calibrated property. The dissipation inequality
+$\tan\psi \leq (1-\epsilon_D)\mu$ makes that reporting conditional: where the bound is enforced,
+any $\psi$ above it produces the limiter value rather than $\tan\psi$, so the nominal angle is
+decorative. For the two saw-cut specimens, with $\mu \approx 0.4$–$0.5$, it sits near $22$–$27°$ —
+and their calibrated angles, 26.0° and 24.0°, sit just inside it. Those two numbers are therefore
+close to a hard limit rather than freely fitted, which a reader cannot tell from the value alone.
+We recommend reporting the realised ratio $\Delta g_n^{p}/\Delta\gamma$ alongside $\psi$ as general
+practice: it costs one column and it distinguishes a fit from a saturated limiter.
+
+The same inequality is more informative still when it is *not* used as a constraint but applied to
+the measurements. §3.5.3 shows that both saw cuts report a Table 2 dilation angle exceeding their
+own mobilised friction angle, which is inadmissible as shear dilation and identifies elastic joint
+decompression inside the LVDT record. A thermodynamic bound thereby becomes a data-reduction
+diagnostic, and it is the reason the saw-cut decks carry dilation angles below the value a naive
+reading of the published displacements would demand.
 
 **Kinematic routing determines the sign of a feedback, not merely its size.** Under compliant
 routing, dilation reduces the contact stress and therefore accelerates slip; under kinematic
@@ -1839,7 +2125,89 @@ with the calibration and a run that fails to converge cannot be diagnosed, becau
 and the parameter under test are the same object. With it measured, a failed run is an informative
 result — the calibration has been pushed past the physical stability limit.
 
-### 6.6 Limitations
+### 6.6 Cyclic injection: how much enhancement survives the first cycle
+
+Cyclic or "soft" stimulation is proposed on the grounds that repeated pressurisation produces
+permeability gain comparable to a monotonic injection at lower peak pressure and with smaller
+induced events. The mechanism usually invoked is progressive: each cycle damages asperities a
+little further, so gain accumulates. A model calibrated against a single monotonic cycle can be
+asked directly whether it contains that mechanism, and the answer is informative either way.
+
+**The numerical experiment.** Each validated deck is rerun with one change and no others: the
+injection function becomes three cycles to the specimen's own peak pressure, each followed by a
+bleed to the 8 MPa post-peak floor that the published schedules themselves return to, with 200 s
+holds at both the peak and the floor. Everything else — mesh, every constitutive parameter,
+boundary conditions, solver — is byte-identical to the run scored in §5, so the pair isolates
+loading history alone. The peaks are equal deliberately: a rising staircase would confound gain
+from cycling with gain from reaching a pressure never previously visited. The holds exist so that
+the permeability is read at the *same* effective stress in every cycle, and so that the viscous
+overstress of §3.9, which is first order on the ramps, has relaxed before the reading is taken.
+
+The quantity of interest is the **floor-to-floor ratio** — hydraulic aperture and flow rate at the
+8 MPa hold, cycle 1 against cycle 3. Enhancement retained at the same low pressure, with the
+fracture re-clamped, is irreversible enhancement; anything measured at the peak conflates it with
+the elastic part of the closure law.
+
+**What the constitutive law can and cannot produce, stated before the runs.** Every history
+variable in §3.5 is monotone in cumulative plastic slip, and their signs do not all agree. Slip
+weakening $W(s)$ falls and saturates; the dilation angle $\psi(s)$ *decays*, so later slip dilates
+less per unit slip than earlier slip; the plastic normal opening $g_n^p$ accumulates, which is the
+source of retained aperture; and the gouge term $a_{\rm gouge}(s)$ accumulates with the opposite
+sign, closing the void. The first cycle takes the joint from peak to residual strength and produces
+most of the slip; by the second, the strength drop has already been spent and the dilation angle has
+already decayed, while gouge continues to accrue.
+
+The prediction is therefore **saturation, not accumulation** — a large first-cycle gain followed by
+rapidly diminishing increments, and on the two saw cuts, which are the specimens carrying an active
+gouge term, a third cycle that may be net negative. If the runs show that, the conclusion is not
+that cyclic stimulation does not work. It is that this constitutive law reproduces first-cycle
+enhancement but contains no fatigue mechanism, so whatever produces multi-cycle gain in field trials
+— asperity fatigue, subcritical crack growth, progressive roughness degradation — is physics outside
+it, and the model would under-predict the benefit of cycling for exactly that reason. Naming the
+missing mechanism is more useful than reporting a gain factor.
+
+`[PENDING — the four cyclic runs. Report: floor-to-floor $a_h$ and $Q$ ratios per cycle; whether
+the increment saturates; retained $d_n$ at each floor, to separate dilation-driven from
+roughness-damage-driven enhancement; and the roughness state and dilation angle per cycle to
+attribute it. SW-S4 must be reported separately for the reason given in §5.4 — its flow channel does
+not track its opening.]`
+
+Two caveats will travel with the result. SW-S4's parent deck carries fitted, time-anchored
+loading-frame terms — a piston relaxation and a confinement bleed — which saturate and then hold, so
+they do not diverge on a longer run but do sit at their saturated values for most of it. And cycles
+2 and 3 start from the 8 MPa floor rather than from ambient, so cycle 1's excursion is longer in
+pressure range even though all three share a peak; this is why the comparison is floor-to-floor.
+
+### 6.7 Shut-in: whether slip continues once injection stops
+
+The shut-in runs ask a narrower question with a clean yes/no answer: after the injection pressure
+has fallen back toward ambient, does slip keep growing? Each deck ramps to its own peak, holds past
+onset, then relaxes exponentially toward ambient with a 150 s time constant as a proxy for wellbore
+fall-off, and is then observed for a further 3000 s.
+
+The reason this is not a trivial question is that the fracture and the matrix do not depressurise
+together. The fracture bleeds through its own transmissivity, which the slip event has just
+increased; the matrix bleeds by diffusion at $k_m = 5\times10^{-19}$ m². A pressure perturbation
+that has diffused into the wall rock during injection therefore continues to feed the fracture after
+the well is shut, and the effective normal stress on the joint can keep falling for some time after
+the injection pressure has stopped. Whether that is enough to sustain slip depends on the balance
+between the two drainage timescales and the residual strength — which is a model output, not an
+input.
+
+`[PENDING — the four shut-in runs. Report: whether shear slip continues to rise after injection
+pressure has returned near ambient (the headline yes/no); the lag between the shut-in instant and
+the peak slip rate; and residual hydraulic aperture at the end of observation against its
+pre-injection value.]`
+
+The field relevance is direct and is worth stating even if the answer is negative. Post-shut-in
+seismicity is routinely observed and is the operationally awkward case, because it occurs when the
+obvious control — stop injecting — has already been applied. A hydromechanical model that reproduces
+delayed reactivation from diffusion alone, with no rate-and-state or poroelastic-stress-transfer
+machinery added for the purpose, would locate part of that phenomenon in ordinary coupled
+poroelasticity. A model that arrests promptly would say the opposite: that the observed delays
+require a mechanism this formulation lacks, and would point at which one.
+
+### 6.8 Limitations
 
 1. Parameters were determined with knowledge of the experimental outcome. This is a validation
    study, not a blind prediction.
@@ -1856,23 +2224,48 @@ result — the calibration has been pushed past the physical stability limit.
    an unstable slip event; it represents the quasi-static states before and after.
 6. The published $a_h$ carries a ~7 % systematic from the ambiguity in the flow path length
    (Appendix A.3), so aperture agreement should not be quoted tighter than that.
-7. The state-dependent fracture pressure–area coefficient $\alpha_f$ (§3.6.1, §6.2) is anchored to
-   a single historical reference point per specimen, not independently validated against a measured
-   contact-area fraction. Its trajectory between stages should be read as a mechanistically
-   motivated modelling choice consistent with the specimen's own closure law, not as a directly
-   measured quantity.
-8. On SW-S4 — the specimen used in §6.4/§6.5 to argue for kinematic dilation routing and the
-   dissipation bound — the Barton–Bandis calibration also overshoots the pre-slip shear-stress
-   approach to the 28 MPa stage by up to ~31 % and reverses sign post-slip (§6.4). `[PENDING —
-   resolve or quantify a bound before submission; if this item is still present at submission, say
-   so plainly rather than omit it.]`
-9. The reported hydraulic-aperture model (§3.6) is the bounded, additive construction, not the
-   closed-form Barton–Bandis–Bakhtar power law it is motivated by. The closed form was implemented
-   and tested but destabilised the coupled solve at the slip/arrest transition (§3.6); it was not
-   carried to a completed run, so this study offers no accuracy comparison against it, only the
-   numerical reason it was not adopted.
+7. The fracture pressure–area coefficient $\alpha_f$ is a fitted constant per specimen (1.00, 1.00,
+   0.87, 0.86), not independently validated against a measured contact-area fraction, and not
+   separately identifiable from the assumed matrix Biot coefficient $\alpha = 0.6$ (§6.2). The
+   state-dependent form the material implements is disabled in every run reported here.
+8. On SW-S3 and SW-S4 the hydraulic aperture carries a fitted cumulative-dilation feed in addition
+   to the kinematic one (§3.6), so on those two specimens flow and mechanical opening are not a
+   single mechanism. The effect is quantified on SW-S4, where the correlation between hydraulic
+   aperture and normal opening is 0.562 against 0.946–1.000 on the other three: its flow channel
+   reports a stress state rather than an opening, and §5.4's flow result and §5.2's dilation result
+   must be read separately there. Refitting the saw cuts with the dilation feed removed is the
+   clean fix and would change their Table 2 scores.
+9. SW-S4's cohesion channel is identically zero, so the slip-weakening distance $D_c$ carries the
+   post-peak response alone. Its bracket splits between stages (§6.4) and no single value fits
+   both ends of the test. This is the specimen's largest remaining residual.
+10. The characteristic slip distance $L_R$ is identifiable only on SW-S4, whose slip is progressive
+    across three hold stages. On the three burst specimens any $L_R$ below the stage duration gives
+    the same tabulated result, so a fitted value for those would suggest a constraint the data do
+    not supply (§3.7).
+11. The viscous regularisation $\eta_t$ is not purely numerical at the calibrated values (§3.9).
+    SW-S4 runs $3.5\times10^{12}$ Pa·s/m, 8.75 times the other three, and the resulting overstress
+    reaches 0.87 MPa on the loading ramps. It relaxes to zero during the hold stages against which
+    Table 2 is scored, so the reported comparison is not contaminated, but transient shear stresses
+    between stages carry it.
+12. The reported hydraulic-aperture model (§3.6) is the bounded, additive construction, not the
+    closed-form Barton–Bandis–Bakhtar power law it is motivated by. The closed form was implemented
+    and tested but destabilised the coupled solve at the slip/arrest transition (§3.6); it was not
+    carried to a completed run, so this study offers no accuracy comparison against it, only the
+    numerical reason it was not adopted.
+13. Cohesion and JRC are not separately identifiable on this loading path (§6.3): the two
+    parameterisations' envelopes differ by about 3 % in slope over the range injection sweeps.
+    Reported JRC, JCS and $c$ values should be read as one calibrated combination, not three
+    independently constrained properties.
+14. Mesh convergence is demonstrated over the pre-slip response only (§5.1). The finer mesh-3 runs
+    are still in progress at the time of writing, so the post-slip branch is not yet covered, and
+    SW-T1's mesh-5/mesh-3 pair differs by 3.1 % in source-node separation, which is a geometry
+    difference rather than a discretisation one.
+15. Repeat runs of an identical deck on different machines agree to seven digits in $Q$,
+    $\sigma'_n$ and $\tau$ but differ by up to 10.8 % in the normal-displacement error metric, giving
+    a floor of about 0.08 percentage points on mean nRMSE. Differences below roughly 0.1 points
+    between calibrations are therefore not meaningful and no ranking in §5 rests on one.
 
-### 6.7 Implications
+### 6.9 Implications
 
 The load frame is not a laboratory inconvenience to be calibrated away; it performs physical work
 that a field analogue must also perform. Because the axial boundary condition is a penalised
@@ -1892,16 +2285,31 @@ most easily triggered. Ignoring host-rock compliance is therefore not a neutral 
 biases a hazard assessment toward under-predicting how much slip a given pressure perturbation can
 accommodate aseismically before an unstable transient becomes necessary.
 
-The calibrated dilation and retention parameters carry a second implication, for permeability
-rather than stress. Because transmissivity scales with $a_h^3$ (§3.6) and $a_h$ here is
-kinematically sourced from the same normal eigen-opening that produces the LVDT-comparable
-displacement (§3.5.4), the permeability enhancement this model predicts is not a separately fitted
-curve — it is the mechanical dilation, cubed, less whatever the gouge term removes. `[PENDING —
-once §5.2–5.4 are complete: state the enhancement factor implied by each specimen's calibrated
-dilation angle and retention fraction, and compare the roughness range's spread in that factor
-against its spread in JRC, to say whether joint roughness alone is a useful predictor of
-field-scale permeability gain or whether the retention fraction — which forms no part of the
-published JRC characterisation — dominates it instead.]`
+The calibrated dilation and retention parameters carry a second implication, for permeability rather
+than stress. Because transmissivity scales with $a_h^3$ (§3.6), and because on the two tensile
+fractures $a_h$ is sourced from the same normal eigen-opening that produces the LVDT-comparable
+displacement (§3.5.4), the permeability enhancement predicted for those two is not a separately
+fitted curve: it is the mechanical dilation, cubed. On the two saw cuts it is partly fitted, and
+§5.4 quantifies how much — which is itself the useful warning, because a model that reports
+permeability through a channel calibrated against the flow it is meant to predict will always look
+successful.
+
+`[PENDING — once §6.6's cyclic runs are complete: state the enhancement factor implied by each
+specimen's calibrated dilation angle and retention fraction, and compare the roughness range's
+spread in that factor against its spread in JRC, to say whether joint roughness alone is a useful
+predictor of field-scale permeability gain or whether the retention fraction — which forms no part
+of the published JRC characterisation — dominates it instead.]`
+
+A caution about extrapolating any of this to field scale. The Barton–Bandis formulation carries
+explicit scale corrections, $\mathrm{JRC}_n = \mathrm{JRC}_0 (L_n/L_0)^{-0.02\,\mathrm{JRC}_0}$ and
+$\mathrm{JCS}_n = \mathrm{JCS}_0 (L_n/L_0)^{-0.03\,\mathrm{JRC}_0}$, which reduce both quantities as
+the joint length grows. They are disabled in all four calibrations here, because the specimens are
+at laboratory scale and the correction's reference length is the laboratory sample itself. Applying
+these parameters to a field-scale fault therefore requires enabling a correction that nothing in
+this dataset validates, and the rough specimens — where the exponent is largest — would be reduced
+the most. The implications drawn above are mechanistic, transferred through $k_{\rm sys}$ and the
+stability criterion, and should not be read as licensing numerical transfer of the calibrated JRC
+and JCS to a larger joint.
 
 ---
 
@@ -1909,32 +2317,50 @@ published JRC characterisation — dominates it instead.]`
 
 1. A three-dimensional cohesive-zone hydromechanical formulation, in which the fracture is a
    zero-thickness interface carrying its own Reynolds-equation flow within a Biot poroelastic
-   matrix, reproduces `[PENDING]` the injection-induced slip and permeability enhancement measured
-   in four granite fractures spanning JRC 1.19 to 15.32.
+   matrix, reproduces the injection-induced slip and permeability enhancement measured in four
+   granite fractures spanning JRC 1.96 to 15.32 to a mean normalised RMS error of 2.43 % to 6.05 %
+   across five independent observables, with stress residuals of 0.4 to 1.0 MPa against stresses of
+   12 to 67 MPa.
 2. The published laboratory table over-determines the fracture orientation and the series
    compliance of the loading column. Both are recoverable without adjustment — the orientation to
    0.03° and the compliance from two independent regressions agreeing to four significant figures —
    which removes them from the calibration.
 3. The same analysis shows the load-frame stiffness is not separately identifiable from the smooth
-   specimens, because it forms less than a fifth of their total series compliance.
+   specimens, because it forms less than a fifth of their total series compliance. The same is true
+   of three constitutive quantities: cohesion and JRC trade against one another to within 3 % in
+   envelope slope over the stress range injection sweeps, and the fracture pressure–area coefficient
+   trades against the matrix Biot coefficient. Each should be reported as a constrained combination
+   rather than as independently determined properties.
 4. Simulated flow rates fall to about half the reported values at matching hydraulic aperture.
    This is a flow-geometry difference between the one-dimensional slab used to reduce the
    measurements and the three-dimensional field the model solves, not a constitutive error.
 5. Of the eight quantities tabulated per stage, only five are independent; hydraulic aperture and
    permeability are algebraic consequences of the measured flow rate.
-6. Imposing the dissipation inequality on the non-associative flow rule shows that the dilation
-   bound $\tan\psi \leq (1-\epsilon_D)\mu$ is frequently the active constraint for smooth
-   fractures. A calibrated dilation angle above the bound is never realised, so the realised ratio
-   $\Delta g_n^{p}/\Delta\gamma$ should be reported alongside it.
+6. The dissipation inequality $\tan\psi \leq (1-\epsilon_D)\mu$ is informative as an admissibility
+   *diagnostic* applied to the published measurements, independently of whether a solver enforces
+   it. Both saw-cut specimens report a dilation angle exceeding their own mobilised friction angle
+   — 31.8° against 31.3°, and 28.7° against 24.6° — which no amount of shear dilation can produce.
+   The measured normal displacement on a low-friction joint therefore contains elastic joint
+   decompression, not geometric override alone, and calibrating a dilation angle against the raw
+   value over-predicts it. Where the bound *is* enforced, a calibrated dilation angle above it is
+   never realised, so the realised ratio $\Delta g_n^{p}/\Delta\gamma$ should be reported alongside
+   the nominal angle.
 7. Routing dilation kinematically, as a normal eigen-opening rather than as a contact-stress
    reduction, reverses the sign of its feedback on strength and is the only form that yields a
-   normal displacement jump comparable with the reported LVDT record. It also makes the mechanical
-   gap the single source of the hydraulic aperture, removing the most common double-counting error
-   in this class of model.
+   normal displacement jump comparable with the reported LVDT record. Where it is used consistently
+   — as it is on the two tensile fractures — the mechanical gap becomes the single source of the
+   hydraulic aperture, and flow tracks opening with a correlation of 0.999 or better. Where a
+   separate dilation feed is retained alongside it, as on the two saw cuts, that correlation falls
+   to 0.562 and the flow channel ceases to report an opening at all.
 8. Per-step increment caps on slip and dilation are not admissible limiters. In one calibration a
    slip cap bound on 14 time steps and supplied about 30 % of the accumulated slip, making a
    numerical parameter the author of a physical result. Time-step control, event-aware substepping
    and reported viscosity are the substitutes that converge under refinement.
+9. A persistent residual attributed to a constitutive law should be checked against the channel that
+   reports it before it is believed. On the most-scrutinised specimen here, an apparent post-slip
+   sign reversal in shear stress survived several calibration generations and was a stress-frame
+   mismatch in a postprocessor, not a model failure. Because every attempt is scored through the
+   same channel, a reporting error fails consistently and therefore reads as a robust finding.
 
 ---
 

@@ -1,10 +1,10 @@
-# HPC 90/91/92 cases versus Ye & Ghassemi (2018) Table 2
+# HPC 90/91/92/93 cases versus Ye & Ghassemi (2018) Table 2
 
-Date: 2026-08-17
+Initial audit: 2026-08-17. Latest update: 2026-08-18.
 
-## Result
+## Original 90/91/92 result
 
-This audit covers all **20** CSV files whose names begin with `90_`, `91_`, or `92_` under the four `results_csv_hpc_rorqual` directories. Every run reaches all **11/11** Table 2 hold stages.
+The original audit covers all **20** CSV files then present whose names begin with `90_`, `91_`, or `92_` under the four `results_csv_hpc_rorqual` directories. Every one of those original runs reaches all **11/11** Table 2 hold stages. The 2026-08-18 extension, including incomplete mesh-3 snapshots, is appended at the end.
 
 | Sample | Best case | Mean nRMSE | Runner-up | Mean nRMSE | Finding |
 |---|---:|---:|---:|---:|---|
@@ -553,3 +553,136 @@ Two consequences for this document:
 
 `93_01` names the node it was always using, so the deck is reproducible; no number changes and
 `91_02` remains a valid run.
+
+---
+
+# Update — new 92/93 results and preliminary mesh convergence
+
+*2026-08-18. This section extends the original twenty-case audit without changing its error definition or stage-1 displacement convention.*
+
+## Updated outcome
+
+The four odd-numbered 93-series mesh-5 runs are complete. The 93-series is primarily a **postprocessor and reporting audit**, not a new constitutive calibration.
+
+| Sample | Completed 93 case | Parent | Stages | Q nRMSE | sigma′_n | tau | d_n | d_s | Mean nRMSE | Assessment |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
+| SW-T1 | [`93_01`](SWT1/results_csv_hpc_rorqual/93_01_swt1_final_c26p9_resc9p19_ppfix_hpc.csv) | `91_02` | 11/11 | 7.38% | 1.98% | 2.73% | 9.06% | 1.02% | **4.44%** | Numerically identical to the parent; source-node/reporting cleanup is safe. |
+| SW-T2 | [`93_03`](SWT2/results_csv_hpc_rorqual/93_03_swt2_final_theta30_resc9p71_ppfix_hpc.csv) | `91_04` | 11/11 | 5.87% | 1.26% | 1.70% | 2.06% | 1.25% | **2.43%** | Numerically identical to the physically selected parent. |
+| SW-S3 | [`93_05`](SWS3/results_csv_hpc_rorqual/93_05_sw3_final_resc1p40_ppfix_hpc.csv) | `92_03` | 11/11 | 3.00% | 3.35% | 8.01% | 7.42% | 1.11% | **4.58%** | Only d_n changes; raw/default reporting exposes the honest mismatch. |
+| SW-S4 | [`93_07`](SWS4/results_csv_hpc_rorqual/93_07_sw4_final_theta30_jrc5_ppfix_hpc.csv) | `90_08` | 11/11 | 4.94% | 3.74% | 10.01% | 4.53% | 7.01% | **6.05%** | Numerically identical to the parent; reporting cleanup is safe. |
+
+At the eleven sampled stages, SW-T1, SW-T2, and SW-S4 differ from their parents only at floating-point roundoff (no scored model value changes materially). SW-S3 has identical Q, stress, slip, aperture, and permeability results; only the normal-displacement reporting channel changes.
+
+## SW-S3 reporting correction
+
+Removing `reported_reversible_normal_opening_scale = 0.758` and `reported_reversible_normal_opening_retention_fraction = 0.552` changes the SW-S3 normal-displacement nRMSE from **2.46% to 7.42%**, and the five-observable mean from **3.59% to 4.58%**. These were output-only settings, so the worse score is the scientifically preferable result: it reports the raw/default kinematic jump consistently across specimens.
+
+| Stage | Branch | P_i (MPa) | Table 2 d_n (mm) | 92_03 adjusted d_n | 93_05 raw/default d_n | 93_05 error |
+|---:|---|---:|---:|---:|---:|---:|
+| 1 | loading | 8 | 0.00000 | 0.00000 | 0.00000 | +0.00000 |
+| 2 | loading | 12 | 0.00000 | -0.00022 | -0.00028 | -0.00028 |
+| 3 | loading | 16 | 0.00000 | -0.00052 | -0.00069 | -0.00069 |
+| 4 | loading | 20 | 0.00000 | -0.00095 | -0.00125 | -0.00125 |
+| 5 | loading | 24 | 0.00000 | -0.00208 | -0.00264 | -0.00264 |
+| 6 | loading | 28 | -0.04400 | -0.04495 | -0.04780 | -0.00380 |
+| 7 | unloading | 24 | -0.04400 | -0.04337 | -0.04314 | +0.00086 |
+| 8 | unloading | 20 | -0.04400 | -0.04235 | -0.04014 | +0.00386 |
+| 9 | unloading | 16 | -0.04300 | -0.04170 | -0.03822 | +0.00478 |
+| 10 | unloading | 12 | -0.04200 | -0.04133 | -0.03714 | +0.00486 |
+| 11 | unloading | 8 | -0.04100 | -0.04108 | -0.03642 | +0.00458 |
+
+The main newly exposed residual is unloading recovery: at stage 11, the raw/default model returns to −0.03642 mm while Table 2 remains at −0.04100 mm, an error of +0.00458 mm.
+
+## Mesh-3 completeness
+
+The even-numbered mesh-3 CSVs are snapshots rather than complete validation runs. Their partial scores must not be ranked against full-cycle results.
+
+| Sample | Case | Current end / required end (s) | Progress by simulation time | Table 2 stages reached | Status |
+|---|---|---:|---:|---:|---|
+| SW-T1 | [`93_02`](SWT1/results_csv_hpc_rorqual/93_02_swt1_final_c26p9_resc9p19_ppfix_mesh3_hpc.csv) | 70.5 / 3500 | 2.0% | **0/11** | Incomplete; no full score. |
+| SW-T2 | [`93_04`](SWT2/results_csv_hpc_rorqual/93_04_swt2_final_theta30_resc9p71_ppfix_mesh3_hpc.csv) | 1773.75 / 2852.53 | 62.2% | **4/11** | Incomplete; no full score. |
+| SW-T2 | [`92_05`](SWT2/results_csv_hpc_rorqual/92_05_swt2_final_theta30_resc9p71_mesh3_hpc.csv) | 2217 / 2852.53 | 77.7% | **5/11** | Incomplete; no full score. |
+| SW-S3 | [`93_06`](SWS3/results_csv_hpc_rorqual/93_06_sw3_final_resc1p40_ppfix_mesh3_hpc.csv) | 1969.5 / 4803 | 41.0% | **4/11** | Incomplete; no full score. |
+| SW-S4 | [`93_08`](SWS4/results_csv_hpc_rorqual/93_08_sw4_final_theta30_jrc5_ppfix_mesh3_hpc.csv) | 2020.5 / 3500 | 57.7% | **6/11** | Incomplete; no full score. |
+| SW-S4 | [`92_06`](SWS4/results_csv_hpc_rorqual/92_06_sw4_final_theta30_jrc5_mesh3_hpc.csv) | 3124.5 / 3500 | 89.3% | **10/11** | Incomplete; no full score. |
+
+The decks `92_07` (SW-T1 mesh 3) and `92_08` (SW-S3 mesh 3) exist, but no corresponding result CSV is present in the results directories.
+
+All mesh-3 submission scripts disable checkpoints. If these CSVs are from jobs that stopped rather than jobs still running, they cannot be resumed from the current submissions and must be rerun.
+
+## Preliminary common-stage mesh comparison
+
+For a fair preliminary comparison, each mesh pair is evaluated only over stages reached by both meshes. These numbers diagnose early mesh sensitivity; they are not final convergence scores.
+
+| Sample | Mesh-3 file | Common stages | Mesh-5 common-stage mean | Mesh-3 common-stage mean | Reading |
+|---|---|---:|---:|---:|---|
+| SW-T1 | `93_02` | 0 | — | — | No Table 2 stage reached; no evidence yet. |
+| SW-T2 | `92_05` | 5 | 1.73% | 1.72% | Pre-event response is effectively mesh-insensitive; failure is not reached. |
+| SW-S3 | `93_06` | 4 | 2.08% | 2.00% | Pre-event differences are very small; failure is not reached. |
+| SW-S4 | `92_06` | 10 | 6.34% | 6.54% | Small +0.20-point mesh penalty; convergence is encouraging but stage 11 is missing. |
+
+For SW-S4, the largest systematic mesh shift through unloading is about +0.0018 mm in shear slip. At the peak stage, mesh refinement slightly improves Q and both stresses but slightly worsens the two displacement channels. The dominant stage-4 missed-slip-burst error remains, supporting the conclusion that it is constitutive rather than a mesh artifact.
+
+## Updated decision
+
+1. Use `93_01`, `93_03`, `93_05`, and `93_07` as the clean mesh-5 reporting series.
+2. Use **4.58%**, not 3.59%, as the defensible SW-S3 five-observable score when the output-only displacement fit is removed.
+3. Do not recalibrate any constitutive parameter from the current mesh-3 snapshots.
+4. Complete or rerun all four 93-series mesh-3 cases before declaring mesh convergence. SW-S4 is already encouraging, but the final unloading stage is still required.
+5. Retain the SW-T1 caveat from the independent-verification addendum: its mesh-5/mesh-3 source separation differs by 3.1%, so that pair is not a pure discretization comparison.
+
+## Signed Table 2 residuals for completed 93-series cases
+
+All entries are model − Table 2. Units are Q in mL/min, stresses in MPa, and displacements in mm.
+
+<details>
+<summary><strong>Completed 93-series stage errors</strong></summary>
+
+| Sample | Case | Stage | Branch | P_i | ΔQ | Δsigma′_n | Δtau | Δd_n | Δd_s |
+|---|---|---:|---|---:|---:|---:|---:|---:|---:|
+| SW-T1 | 93_01 | 1 | loading | 8 | -2.06e-04 | +0.260 | +0.422 | +0.00000 | +0.00000 |
+| SW-T1 | 93_01 | 2 | loading | 12 | +0.0092 | +0.413 | +0.676 | -0.00001 | +0.00001 |
+| SW-T1 | 93_01 | 3 | loading | 16 | +0.0036 | +0.547 | +0.902 | -0.00003 | -0.00099 |
+| SW-T1 | 93_01 | 4 | loading | 20 | -0.0160 | +0.741 | +1.194 | +0.00094 | -0.00194 |
+| SW-T1 | 93_01 | 5 | loading | 24 | -0.0541 | +0.927 | +1.481 | +0.00248 | -0.00647 |
+| SW-T1 | 93_01 | 6 | loading | 28 | +0.4508 | +0.873 | +1.316 | -0.00163 | -0.00485 |
+| SW-T1 | 93_01 | 7 | unloading | 24 | +0.7587 | +0.876 | +1.408 | -0.01248 | -0.01191 |
+| SW-T1 | 93_01 | 8 | unloading | 20 | +0.8526 | +0.733 | +1.169 | -0.01664 | -0.00696 |
+| SW-T1 | 93_01 | 9 | unloading | 16 | +0.7042 | +0.609 | +0.965 | -0.02021 | -0.00200 |
+| SW-T1 | 93_01 | 10 | unloading | 12 | +0.4788 | +0.534 | +0.852 | -0.02266 | +0.00197 |
+| SW-T1 | 93_01 | 11 | unloading | 8 | +0.2041 | +0.495 | +0.792 | -0.02569 | +0.00595 |
+| SW-T2 | 93_03 | 1 | loading | 8 | -6.19e-04 | -0.596 | -1.009 | +0.00000 | +0.00000 |
+| SW-T2 | 93_03 | 2 | loading | 12 | -0.0090 | -0.337 | -0.594 | +0.00099 | -0.00099 |
+| SW-T2 | 93_03 | 3 | loading | 16 | -0.0301 | -0.124 | -0.211 | +0.00197 | -0.00298 |
+| SW-T2 | 93_03 | 4 | loading | 20 | -0.1769 | +0.116 | +0.202 | +0.00295 | -0.00695 |
+| SW-T2 | 93_03 | 5 | loading | 24 | -0.7756 | +0.350 | +0.610 | +0.00416 | -0.01188 |
+| SW-T2 | 93_03 | 6 | loading | 28 | -1.9637 | +0.829 | +1.427 | -0.00109 | -0.00830 |
+| SW-T2 | 93_03 | 7 | unloading | 24 | -0.2655 | +0.685 | +1.193 | +0.00356 | -0.00935 |
+| SW-T2 | 93_03 | 8 | unloading | 20 | +0.0163 | +0.538 | +0.937 | +0.00327 | -0.00338 |
+| SW-T2 | 93_03 | 9 | unloading | 16 | +0.0968 | +0.400 | +0.689 | +0.00489 | -0.00241 |
+| SW-T2 | 93_03 | 10 | unloading | 12 | +0.0864 | +0.339 | +0.595 | -0.00012 | +0.00557 |
+| SW-T2 | 93_03 | 11 | unloading | 8 | +0.0315 | +0.285 | +0.492 | -0.00248 | +0.01056 |
+| SW-S3 | 93_05 | 1 | loading | 8 | -1.97e-04 | -0.514 | -0.969 | +0.00000 | +0.00000 |
+| SW-S3 | 93_05 | 2 | loading | 12 | +0.0035 | -0.362 | -0.629 | -0.00028 | +0.00002 |
+| SW-S3 | 93_05 | 3 | loading | 16 | +0.0113 | -0.250 | -0.301 | -0.00069 | +0.00005 |
+| SW-S3 | 93_05 | 4 | loading | 20 | +0.0079 | +0.007 | +0.058 | -0.00125 | -0.00093 |
+| SW-S3 | 93_05 | 5 | loading | 24 | +0.0400 | +0.244 | +0.462 | -0.00264 | -0.00024 |
+| SW-S3 | 93_05 | 6 | loading | 28 | -0.0325 | +1.178 | +2.242 | -0.00380 | +0.00201 |
+| SW-S3 | 93_05 | 7 | unloading | 24 | +0.0581 | +0.757 | +1.324 | +0.00086 | +0.00088 |
+| SW-S3 | 93_05 | 8 | unloading | 20 | +0.0219 | +0.546 | +0.983 | +0.00386 | +0.00081 |
+| SW-S3 | 93_05 | 9 | unloading | 16 | -0.0057 | +0.491 | +0.796 | +0.00478 | -0.00023 |
+| SW-S3 | 93_05 | 10 | unloading | 12 | -0.0121 | +0.412 | +0.705 | +0.00486 | -0.00027 |
+| SW-S3 | 93_05 | 11 | unloading | 8 | -0.0084 | +0.357 | +0.556 | +0.00458 | -0.00030 |
+| SW-S4 | 93_07 | 1 | loading | 8 | +6.09e-05 | -0.155 | -0.214 | +0.00000 | +0.00000 |
+| SW-S4 | 93_07 | 2 | loading | 12 | +7.69e-04 | -0.231 | -0.178 | -0.00035 | +0.00000 |
+| SW-S4 | 93_07 | 3 | loading | 16 | -1.12e-05 | -0.027 | +0.242 | +0.00015 | +0.00001 |
+| SW-S4 | 93_07 | 4 | loading | 20 | +8.70e-04 | +1.412 | +2.710 | +0.00469 | -0.01342 |
+| SW-S4 | 93_07 | 5 | loading | 24 | -0.0033 | +0.554 | +1.060 | -0.00300 | +0.00633 |
+| SW-S4 | 93_07 | 6 | loading | 28 | -0.0171 | +0.738 | +1.263 | -0.00166 | +0.00574 |
+| SW-S4 | 93_07 | 7 | unloading | 24 | -8.94e-04 | +0.549 | +0.885 | -0.00073 | +0.00463 |
+| SW-S4 | 93_07 | 8 | unloading | 20 | +0.0028 | +0.510 | +0.634 | +0.00029 | +0.00359 |
+| SW-S4 | 93_07 | 9 | unloading | 16 | +8.11e-04 | +0.367 | +0.454 | +0.00011 | +0.00256 |
+| SW-S4 | 93_07 | 10 | unloading | 12 | +8.62e-04 | +0.209 | +0.291 | +0.00030 | +0.00254 |
+| SW-S4 | 93_07 | 11 | unloading | 8 | +3.17e-04 | +0.045 | +0.051 | +0.00010 | +0.00252 |
+
+</details>

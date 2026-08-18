@@ -1334,16 +1334,52 @@ non-monotone and the global Newton can limit-cycle across it during re-sticking.
 An optional clamp at zero removes this at the cost of the small $V<V_0$
 weakening.
 
-## Part V: The four constitutive laws
+## Part V: The constitutive laws
 
 ### Overview and rationale
 
+Four laws are documented in detail below and are labelled A--D throughout this
+manual. They are a *selection*, not the full inventory: the registered set is larger
+and is listed at the end of this section. A and B are the two that matter for most
+users — A is the transparent baseline, B is the production law.
+
 | Class | Strength law | Why it exists |
 | --- | --- | --- |
-| `...CompressionTensile` (Model A) | linear Mohr--Coulomb with roughness-interpolated $\mu,c$ | The baseline. Simple, transparent, few parameters. Its *failure* mode --- a straight envelope cannot fit a curved one across a wide $\sigma'_n$ sweep --- is the scientific point being made. |
-| `...BartonBandisContactTractionFastAD(Hardening)` (Model B) | Barton--Bandis curved envelope $+$ exponential slip weakening | The physically-motivated alternative: nonlinear closure *and* nonlinear strength from the same JRC/JCS pair. |
+| `...CompressionTensile` (Model A) | linear Mohr--Coulomb with roughness-interpolated $\mu,c$ | The baseline. Simple, transparent, few parameters. It is also the only law that **enforces the dissipation inequality** of Section [`sec:dissipation`](#eq-dissipation); the others bound $\psi$ by clamping instead. |
+| `...BartonBandisContactTractionFastAD(Hardening)` (Model B) | Barton--Bandis curved envelope $+$ exponential slip weakening | The physically-motivated alternative, and the production law: nonlinear closure *and* nonlinear strength from the same JRC/JCS pair. |
 | `...BartonBandisFlowRSFContactTraction` (Model C) | BB with mobilised JRC, staircase shelves, rate-and-state | Adds slip-history mobilisation and RSF for burst timing. |
 | `...PeakShelfTailFlowRSFContactTraction` (Model D) | three-stage $\mu$: peak $\to$ shelf $\to$ tail, plus RSF | A phenomenological law that decouples the three observed stages of the strength history so each can be fitted independently. |
+
+#### Full registered inventory
+
+**Contact/traction laws.** Beyond A--D: `ADOrcaBartonBandisRateStateHardening`, a
+rate-and-state extension of Model B's hardening subclass that adds a state variable
+with its own evolution law on top of the Barton--Bandis envelope, built to test
+whether an explicit $a\ln(V/V_0) + b\ln(V_0\theta/D_c)$ term reproduces behaviour that
+the Perzyna viscosity was otherwise supplying implicitly (see the remark on
+regularisation in Part VI);
+`ADOrcaCohesionlessDamageMohrCoulombContactTraction`, a damage-based Coulomb law
+without cohesion; `ADOrcaCohesionlessDamageRSFBBContactTraction`, its Barton--Bandis
+rate-and-state counterpart; and
+`ADOrcaDecoupledDilationRoughnessContactTraction`, Model A without the
+compression/tensile split.
+
+**Permeability laws.** `ADOrcaRoughnessDamageFracturePermeability` is the production
+model and is documented in Part VII;
+`ADOrcaBartonBandisBakhtarFracturePermeability` implements the literal 1985 power law
+and is discussed there too; `ADOrcaHystereticFracturePermeability` carries an explicit
+loading/unloading hysteresis instead of a gouge term.
+
+**Simple/utility interface materials.** `OrcaCZMMohrCoulombFriction`,
+`OrcaCZMCubicLawAperture`, `OrcaCZMStressDependentAperture`,
+`ADOrcaCZMComputeMechanicalAperture`, `OrcaCZMInterfacePressure`.
+
+> **Remark: a large inventory is a liability unless the selection rule is written
+> down.** Several of these laws exist because a specific calibration needed one
+> mechanism the others lacked, and they were kept. If you are starting fresh, use
+> Model B; reach for C or D only when the burst *timing* is the quantity being fitted
+> and Model B has demonstrably failed on it, and record why in the deck header. An
+> undocumented switch between laws is indistinguishable from a fitted parameter.
 
 ### Model A: cohesive–contact–friction with decoupled dilation
 <a id="ch-modelA"></a>
@@ -1823,15 +1859,22 @@ increase in aperture nearly triples the flow.
 
 #### The aperture model, and why it is written that way
 
-The physically consistent statement, given that the mechanics already solves both
-the elastic closure (Chapter [`ch:closure`](#ch-closure)) and the shear dilation
-(Section [`sec:kinematicdilation`](#sec-kinematicdilation)), is
+`ADOrcaRoughnessDamageFracturePermeability` assembles the hydraulic aperture as a
+**bounded sum of six terms**, several of which are optional and are switched off in
+most calibrations:
 
 <a id="eq-aperture"></a>
 
 $$
 \boxed{\;
-a_h = a_{h0} \;+\; \left\langle g_n \right\rangle_{+} \;-\; a_{\text{gouge}}(s) \;}
+a_h = \operatorname{clamp}\Big[\,
+a_{h0}
++ a_\sigma(\sigma'_n)
++ \chi\,a_m
++ \lambda\,\Delta_{\rm cum}\,r(R)
++ a_{\rm prop}(R)
+- a_{\text{gouge}}(s)
+\;;\; a_{\min},\,a_{\max}\Big] \;}
 $$
 
 with
@@ -1839,40 +1882,120 @@ with
 <a id="eq-gouge"></a>
 
 $$
-a_{\text{gouge}}(s) = a_g\left[1-\exp\!\left(-\frac{\left\langle s-s^* \right\rangle_{+}}{s_c}\right)\right].
+a_{\text{gouge}}(s) = a_g\left[1-\exp\!\left(-\frac{\left\langle s-s^* \right\rangle_{+}}{s_c}\right)\right],
+\qquad
+r(R) = r_{\rm res} + (1-r_{\rm res})R,
+\qquad
+a_{\rm prop}(R) = a_{\rm prop,0}\,R^{\,n}.
 $$
 
-**Term by term.** 
+**Term by term.**
 
-- **$a_{h0}$.** The reference hydraulic aperture at the initial stress state.
-    This is *not* a geometric quantity: it is back-calculated from the
-    measured initial flow rate through [`eq:cubiclaw`](#eq-cubiclaw). It absorbs all the
-    roughness/tortuosity reduction at the reference condition.
-- **$\left\langle g_n \right\rangle_{+}$.** The *change* in mechanical aperture relative to the
-    pre-seated reference state (see Section [`ch:closure`](#ch-closure)). Under kinematic dilation
-    this already contains both the stress-driven elastic opening and the
-    shear-driven dilation. Clamped at zero: further closure below the reference is
-    handled by the mechanics, not by driving $a_h$ negative.
-- **$a_{\text{gouge}}$.** Wear products progressively fill the void as the joint
-    shears. This is what decouples the hydraulic aperture from the mechanical one
-    on the unloading branch: a fracture that has slipped does not recover its
-    original conductivity when re-clamped. The onset $s^*$ delays the effect so
-    that early slip does not immediately block flow.
+- **$a_{h0}$** (`initial_hydraulic_aperture`). The reference hydraulic aperture at
+    the initial stress state. This is *not* a geometric quantity: it is
+    back-calculated from the measured initial flow rate through
+    [`eq:cubiclaw`](#eq-cubiclaw). It absorbs all the roughness/tortuosity
+    reduction at the reference condition.
+- **$a_\sigma(\sigma'_n)$** (`normal_stress_aperture_compliance`,
+    `use_nonlinear_normal_closure`). A stress-driven aperture change, zero by
+    construction at `reference_effective_normal_stress`. With
+    `use_nonlinear_normal_closure = true` this is the *same* power law
+    [`eq:powerlawclosure`](#eq-powerlawclosure) the mechanics uses, with its own
+    $K_{ni}$, $V_m$ and $p$; otherwise it is a linear compliance. Those are separate
+    parameters from the contact material's, and nothing forces them to agree — a deck
+    that sets them inconsistently gets a hydraulic closure that does not match its
+    mechanical one.
+- **$\chi\,a_m$** (`aperture_scale`). The mechanical aperture, scaled. $\chi$ is
+    typically far below unity: the hydraulic aperture responds to only a fraction of
+    the geometric opening, which is the quantitative form of $a_h < a_m$. Under
+    kinematic dilation $a_m$ already contains both the stress-driven elastic opening
+    and the shear-driven dilation.
+- **$\lambda\,\Delta_{\rm cum}\,r(R)$** (`dilation_scale`, `retention_residual`). An
+    *optional, and in kinematic mode redundant*, second feed from the cumulative shear
+    dilation, modulated by a retention factor in the roughness state $R$. Setting
+    `use_kinematic_aperture = true` forces this term to zero. See the remark below.
+- **$a_{\rm prop}(R)$** (`self_propping_scale`, `self_propping_exponent`). A
+    self-propping aperture held open by residual roughness, decaying as the roughness
+    state degrades.
+- **$a_{\text{gouge}}$** (`use_slip_damage`, `slip_damage_*`). Wear products
+    progressively fill the void as the joint shears. This is what decouples the
+    hydraulic aperture from the mechanical one on the unloading branch: a fracture
+    that has slipped does not recover its original conductivity when re-clamped. The
+    onset $s^*$ delays the effect so that early slip does not immediately block flow.
+    Read explicitly from the slip history, so it contributes no Jacobian term.
 
-> **Remark: What *not* to do.**
+> **Remark: the double-counting trap, and how two flags in two different materials
+> interact.**
 >
-> It is tempting to add, on top of [`eq:aperture`](#eq-aperture), (i) a separate
-> “cumulative dilation” term, and (ii) a second, independently fitted
-> Barton--Bandis closure law inside the hydraulic model. Both are already in
-> $\left\langle g_n \right\rangle_{+}$. Doing so double-counts the physics and, worse, gives the appearance
-> of three independent mechanisms fitting the data when in fact one mechanism is
-> being fitted three times.
+> `dilation_opens_joint`, in the *contact* law, decides whether plastic dilation is
+> routed kinematically into $g_n$ and therefore into $a_m$.
+> `use_kinematic_aperture`, in the *permeability* material, decides whether the
+> separate $\lambda\,\Delta_{\rm cum}$ feed is dropped.
+>
+> The consistent pairings are `(true, true)` — dilation lives in $a_m$ alone, with
+> $\lambda$ forced to zero — and the legacy `(false, false)`, where $a_m$ carries no
+> dilation and $\lambda$ supplies it. The combination **`dilation_opens_joint = true`
+> with `use_kinematic_aperture = false` counts dilation twice**, once through $a_m$
+> and again through $\lambda$, and nothing in the code warns about it: the deck runs,
+> and $\lambda$ is simply fitted smaller to compensate.
+>
+> The symptom is diagnostic rather than fatal. The hydraulic aperture stops tracking
+> the mechanical opening, so a scatter of $a_h$ against $g_n$ over a loading cycle
+> degrades from a near-perfect line to a cloud — in one calibration, a correlation of
+> 0.562 where consistently-paired specimens gave 0.999 or better. At that point the
+> flow channel is reporting the effective normal stress rather than an opening, which
+> silently invalidates any argument that runs from a good flow fit to a good aperture
+> prediction. **Check the pairing before believing a permeability result**, and if
+> $\lambda$ had to be cut by a large factor during calibration, suspect this first.
+>
+> The same warning applies to $a_\sigma$: giving the hydraulic model its own
+> Barton--Bandis closure with independently fitted constants makes it a second,
+> unconstrained closure law fitting the same data. Keep its constants tied to the
+> mechanical ones unless there is a stated reason not to.
 
 **Bounds.** A lower bound `min_hydraulic_aperture` prevents
 $a_h\le 0$; it must be a small numerical floor, *not* equal to $a_{h0}$,
 which would forbid the fracture from ever closing hydraulically. An upper bound
-prevents a transient mechanical excursion from blowing up $a_h^3$ and wrecking
-the coupled Newton solve.
+`max_hydraulic_aperture` prevents a transient mechanical excursion from blowing up
+$a_h^3$ and wrecking the coupled Newton solve — during a confinement ramp, for
+instance, before contact is established.
+
+#### The literal Barton--Bandis--Bakhtar law, and why the additive form is preferred
+
+`ADOrcaBartonBandisBakhtarFracturePermeability` implements the closed form
+$e_h = E_m^{2}/\mathrm{JRC}^{2.5}$ (Barton et al., 1985) as an alternative, with
+$e_h$ and $E_m$ in micrometres, since the correlation is dimensionally inhomogeneous
+and was fitted in those units. A `mechanical_aperture_offset` floors $E_m$ so that a
+fully closed joint does not force $e_h\equiv0$ and make the flow coupling singular;
+that offset is an addition, not part of the 1985 formula.
+
+Substituting it for [`eq:aperture`](#eq-aperture) destabilises the coupled Newton
+solve at a slip/arrest limit point, reproducibly and in more than one deck. The
+tempting explanation — that $e_h\propto E_m^{2}$ makes $T\propto E_m^{6}$, so the law
+is too stiff — is **wrong**, and it is worth recording why, because it sent one
+investigation down a blind alley. With the offset sized to match the two models'
+initial apertures it dominates every mechanical aperture the test actually reaches,
+so the square is near-linear there: measured $\mathrm{d}\ln T/\mathrm{d}\ln E_m$ tops
+out around $0.74$ rather than 6, the aperture clamp never binds, the mobilised JRC
+never moves, and the ratio of the two laws' transmissivities stays within
+$1.00$–$1.45$ across the whole operating range. Two laws that close together cannot
+be the instability.
+
+What the substitution actually does is remove the additive form's entire
+**negative-feedback stack** in one step: the bounded power-law $a_\sigma$, the
+retention-modulated dilation term and the gouge reduction all disappear together,
+because the Bakhtar material has no equivalent of any of them. Those saturating terms
+are what keep the aperture $\to$ transmissivity $\to$ pressure $\to$ aperture loop
+stable near a limit point. Diagnose trouble here by asking which feedback went
+missing, not by regularising an exponent.
+
+> **Latent hazard.** The offset is computed once from the *constant* JRC, while the
+> formula divides by the *mobilised* JRC. The calibration therefore holds only while
+> JRC$_{\rm mob}$ stays at its initial value. It never moves in current decks, so this
+> has never fired — but if JRC mobilisation is ever enabled, a modest drop in
+> JRC$_{\rm mob}$ drives $e_h$ straight into the clamp: an order of magnitude in
+> aperture, three in transmissivity. Fix by computing the offset from the same JRC the
+> formula divides by.
 
 #### The Reynolds equation on the interface
 
@@ -1987,7 +2110,43 @@ and the aperture must be capped.
     experiment. Errors reflect model adequacy and calibration.
 
 A code paper needs both, and must not present the second as the first. Every
-test below is verification.
+test in this Part is verification.
+
+#### What is implemented, and what is specified but not yet written
+
+This distinction is load-bearing and was previously left implicit, which
+overstated the suite. The tests under **Implemented** exist in `test/tests/` and run
+under `run_tests`. Those under **Specified** are designs — they say what should be
+asserted and what each would catch, and they are worth keeping in that form because
+writing a verification test without deciding those two things first produces a test
+that passes for the wrong reason. But they do not exist, and no claim of verified
+behaviour may rest on them.
+
+| | test | status |
+|---|---|---|
+| bulk | Terzaghi 1D consolidation (`verification/terzaghi`) | **implemented** |
+| bulk | Mandel (`verification/mandel`) | **implemented** |
+| bulk | pressure diffusion against the erfc half-space solution (`verification/pressure_diffusion`) | **implemented** |
+| kernels | mass-balance storage term (`kernels/mass_storage`) | **implemented** |
+| kernels | thermal storage, the $-\alpha_T\,\mathrm{d}T/\mathrm{d}t$ term (`kernels/thermal_storage`) | **implemented** |
+| kernels | plain diffusion smoke test (`kernels/simple_diffusion`) | **implemented** |
+| materials | Barton--Bandis cohesion and residual cohesion (`materials/bb_cohesion`) | **implemented** |
+| materials | Biot modulus (`materials/biot_modulus`) | **implemented** |
+| interface | normal-closure single element | *specified* |
+| interface | Coulomb return mapping | *specified* |
+| interface | Barton--Bandis envelope | *specified* |
+| flow | cubic law and stateful aperture initialisation | *specified* |
+| cross-model | Sneddon pressurised crack | *specified* |
+| cross-model | inclined fracture under far-field compression | *specified* |
+
+The gap is concentrated in exactly the place a reader of Parts IV and V would care
+about most: **no interface constitutive law currently has a single-element
+verification test against a closed form.** The `bb_cohesion` test covers one term of
+one law. Anyone extending this framework should treat the four *specified* interface
+and flow tests as the first work to do, ahead of new physics — they are cheap, they
+are algebraic (so they should hold to machine precision, making failure unambiguous),
+and without them a return-map regression can only be caught by a full validation run,
+where it is confounded with everything else.
 
 #### Bulk poroelasticity
 
@@ -2021,7 +2180,7 @@ because the stiffer drained edges shed load onto the still-undrained core.
 coefficient is correct**, which makes Mandel a far sharper test of the coupling
 than Terzaghi.
 
-#### Interface constitutive laws (single element)
+#### Interface constitutive laws (single element) — *specified, not implemented*
 
 - **Normal closure.** Load/unload a pre-seated joint. Assert
     $\sigma_n$ equals [`eq:powerlawclosure`](#eq-powerlawclosure) evaluated on the *solved*
@@ -2042,7 +2201,7 @@ than Terzaghi.
 > appropriate when testing the closure law. Choosing the wrong one makes the
 > closed form inapplicable and the “error” meaningless.
 
-#### Fracture flow
+#### Fracture flow — *specified, not implemented*
 
 Cubic-law test: assert $a_h(t=0)=a_{h0}$ exactly (this pins the stateful
 initialisation --- an uninitialised $a_h^{\text{old}}$ injects the entire
@@ -2050,11 +2209,13 @@ reference aperture as a spurious source on the first step), assert
 $k_f=a_h^2/12$ and $T=a_h^3/12\mu_f$, and assert the steady pressure profile
 along the fracture is linear in the absence of leak-off.
 
-#### Cross-model benchmarks
+#### Cross-model benchmarks — *specified, not implemented*
 
-Two classical problems, each run with *all four* laws reduced to the same
-idealised interface. The point is that four independent implementations must
-land on the same closed-form answer.
+Two classical problems, each to be run with *every* contact law reduced to the same
+idealised interface. The point is that independent implementations of the same
+idealisation must land on the same closed-form answer, so a disagreement localises a
+bug to one law without needing a reference implementation. No harness for this
+currently exists.
 
 **Sneddon: pressurised crack in an infinite medium.** 
 
