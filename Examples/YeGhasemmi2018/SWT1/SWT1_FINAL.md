@@ -1,9 +1,11 @@
 # SW-T1 — final calibration and paper notes
 
-**Final deck:** `91_02_swt1_bbfast_c26p9_resc9p19_kernel_SV_biot0p6.i`
-**Mesh:** `mesh/ye2018_sw_T1_mesh_size_5.e` (convergence check at size 3: `92_07_swt1_final_c26p9_resc9p19_mesh3.i`)
+**Final deck:** `93_01_swt1_final_c26p9_resc9p19_ppfix.i` — constitutively identical to
+`91_02_swt1_bbfast_c26p9_resc9p19_kernel_SV_biot0p6.i`, which is the run scored below; see §8.
+**Mesh:** `mesh/ye2018_sw_T1_mesh_size_5.e` (convergence check at size 3: `93_02_swt1_final_c26p9_resc9p19_ppfix_mesh3.i`)
+**MC baseline:** `94_01_swt1_mc_final.i` / `94_02_swt1_mc_final_mesh3.i`
 **Status:** FINAL. The last open bracket (`92_01`/`92_02`) was run and **failed**; see §4.
-**Score against Ye & Ghassemi (2018) Table 2:** mean nRMSE **4.34 %** over eleven stages.
+**Score against Ye & Ghassemi (2018) Table 2:** mean nRMSE **4.44 %** over eleven stages.
 
 ---
 
@@ -82,14 +84,20 @@ Displacements are referred to the stage-1 datum, as the paper's are.
 nRMSE is the RMS error normalised by the **measured range** of that column, so the five
 observables — which span four orders of magnitude in absolute units — can share one table.
 
-| observable | RMSE (abs) | mean abs err | max abs err | **nRMSE %** |
-|---|---|---|---|---|
-| `Q` (mL/min) | 0.455 | 0.321 | 0.853 | **7.38** |
-| `σ'ₙ` (MPa) | 0.668 | 0.637 | 0.927 | **1.98** |
-| `τ` (MPa) | 1.063 | 1.016 | 1.481 | **2.73** |
-| `d_n` (mm) | 0.0142 | 0.0103 | 0.0257 | **8.64** |
-| `d_s` (mm) | 0.0055 | 0.0043 | 0.0119 | **0.97** |
-| | | | **mean** | **4.34** |
+Table 2 reports `d_n = d_s = 0.000` at stage 1 for every specimen and the gate zeroes the model
+there, so stage 1 is **zero by construction** and is not an independent test of either
+displacement. It is excluded from the `d_n`/`d_s` statistics below (n = 10 against n = 11 for the
+other three). An earlier revision of this file included it, which diluted both displacement RMSEs
+by exactly `sqrt(10/11)` and put the headline at 4.34 %.
+
+| observable | RMSE (abs) | mean abs err | max abs err | n | **nRMSE %** |
+|---|---|---|---|---|---|
+| `Q` (mL/min) | 0.455 | 0.321 | 0.853 | 11 | **7.38** |
+| `σ'ₙ` (MPa) | 0.668 | 0.637 | 0.927 | 11 | **1.98** |
+| `τ` (MPa) | 1.063 | 1.016 | 1.481 | 11 | **2.73** |
+| `d_n` (mm) | 0.0142 | 0.0103 | 0.0257 | 10 | **9.06** |
+| `d_s` (mm) | 0.0055 | 0.0043 | 0.0119 | 10 | **1.02** |
+| | | | | **mean** | **4.44** |
 
 The stress state is reproduced to about 2 %, the shear displacement to 1 %, and the whole
 pre-burst loading branch (stages 1–5) is essentially exact. The residual is concentrated in the
@@ -118,12 +126,12 @@ and `92_02` bracketed it at 0.60 and 0.30.
 
 | deck | retention | Q | σ'ₙ | τ | d_n | d_s | mean |
 |---|---|---|---|---|---|---|---|
-| **91_02** | **0.94** | **7.38** | **1.98** | **2.73** | **8.64** | **0.97** | **4.34** |
-| 92_01 | 0.60 | 11.45 | 2.64 | 3.65 | 13.87 | 0.97 | 6.52 |
-| 92_02 | 0.30 | 11.89 | 2.72 | 3.75 | 14.40 | 0.97 | 6.75 |
+| **91_02** | **0.94** | **7.38** | **1.98** | **2.73** | **9.06** | **1.02** | **4.44** |
+| 92_01 | 0.60 | 11.45 | 2.64 | 3.65 | 14.55 | 1.02 | 6.66 |
+| 92_02 | 0.30 | 11.89 | 2.72 | 3.75 | 15.10 | 1.02 | 6.90 |
 
 Lowering the retention made **every** observable worse except `d_s`, which does not respond at all
-(0.97 in all three runs — the retention branch touches only the normal closure, so this is exactly
+(1.02 in all three runs — the retention branch touches only the normal closure, so this is exactly
 right, and it means `d_s`'s interpolated estimate is a division by zero and must be discarded).
 Reading the sign off the source settles why. In
 [`ADOrcaBartonBandisContactTractionFastAD.C:1091`](../../../src/InterfaceMaterial/ADOrcaBartonBandisContactTractionFastAD.C)
@@ -239,7 +247,7 @@ Verify after any mesh rebuild:
 python3 scripts/check_source_nodes.py Examples/YeGhasemmi2018/SWT1/mesh/ye2018_sw_T1_mesh_size_3.e -0.018945000 0.0 0.034081662 0.018945000 0.0 0.094718338
 ```
 
-**Acceptance:** Table-2 mean nRMSE within ±0.5 points of 4.34 %, no single observable moving more
+**Acceptance:** Table-2 mean nRMSE within ±0.5 points of 4.44 %, no single observable moving more
 than 1.5 points. `flow_rate_validation_ml_min_pp` is the mesh-independent flow channel and is the
 one quoted here. `flow_rate_pp` and `flow_rate_mesh_geometry_ml_min_pp` are **not** mesh-independent
 by construction (open task #13) and are expected to shift; that is a known property of those two
@@ -262,3 +270,81 @@ python3 scripts/table2_gate.py --tag hpc --sample SWT1 Examples/YeGhasemmi2018/S
 Related: [`SWT2_FINAL.md`](../SWT2/SWT2_FINAL.md), [`SWS3_FINAL.md`](../SWS3/SWS3_FINAL.md),
 [`SWS4_FINAL.md`](../SWS4/SWS4_FINAL.md), and the reasoning procedure in
 [`doc/back_analysis_method.md`](../../../doc/back_analysis_method.md).
+
+
+---
+
+## 8. The 93/94 series — audit fixes and the Mohr-Coulomb baseline
+
+Everything above was scored on the deck named in the "Final deck" line's parenthetical. A
+mesh-and-postprocessor audit of all eight BBFast decks (four specimens x two mesh sizes) then
+found the items below. **No constitutive parameter moved.** The corrected decks are the
+**93-series**; each has a **94-series** Mohr-Coulomb sibling that differs from it in one block.
+
+### What the audit confirmed
+
+All eight meshes are correct and current: L and D match Table 1, the fracture angle is exact to
+four decimals (SW-T1 32.0000, SW-T2 30.0000, SW-S3 29.0000, SW-S4 30.0000 deg), the fracture plane
+is centred to 0.0000 mm on every one, and the mesh-3 meshes are about 2.2x finer in edge length and
+10x in element count. Critically, **each deck's paper-frame trig constants match its own mesh's
+angle**, checked by an SVD plane fit on the `fracture_interface` nodeset — there is no frame/mesh
+mismatch anywhere in the BBFast set.
+
+### What the audit fixed
+
+**1. The source coordinate was 1.678 mm off-node — the only such case in the eight.** The mesh-5
+deck asked for `+-0.019260000 / z 0.033577557 & 0.095222443`, which is not a
+`fracture_interface` node. `ExtraNodesetGenerator` with `use_closest_node = true` never errors, so
+it silently snapped to `+-0.018370909 / z 0.035000400 & 0.093799600` and the run used that. The
+93-series deck names the node it was always using; **no number changes**, and `91_02` remains a
+valid run.
+
+What does not go away is the consequence. The intended injection-production separation is
+72.690 mm; the pair actually used is **69.335 mm, 4.62 % short**. The mesh-5 node pitch along the
+fracture is 4.333 mm, so the two reachable symmetric separations are 69.335 and 78.002 mm — the
+snapped one is the closer, and mesh 5 cannot do better without remeshing. The mesh-3 deck reaches
+71.501 mm exactly.
+
+**This is a caveat on the mesh-convergence test (§6), not only on the deck.** The two runs differ
+by 3.1 % in source separation, which is not discretisation. `Q` is computed as
+`(W/L)/(12*mu) * a_h^3 * Delta p` with `W/L` a fixed constant inverted from Table 2, so the path
+length enters through `pp_drop_pp` and a first-order `Q` shift of that size is expected between
+the two meshes independently of mesh refinement.
+
+**2. Twenty diagnostic postprocessors added.** SW-S4 carried 87 channels and this deck 70; the
+eight `bb_*` envelope channels, the five loading-frame channels and the seven `bulk_*` kinematic
+channels existed only there (open task #82). All eight 93-series decks now emit the same 91.
+`bulk_sin_theta` / `bulk_cos_theta` are set from this specimen's own 32 deg, and the bulk probes
+sit on one rule across all four specimens: cylinder surface, `z = L/2 +- 50 mm`. None of these
+feeds the Table-2 gate.
+
+### The 94-series MC baseline
+
+`94_01_swt1_mc_final.i` / `94_02_swt1_mc_final_mesh3.i` are the 93-series decks with **one block replaced**: `[czm_contact]` becomes
+`ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile`. Mesh, source nodesets and
+their coordinates, boundary conditions, injection schedule, paper-frame constants, flow constants,
+solver, and 84 of the 91 postprocessors are byte-identical to the BBFast sibling. The seven `bb_*`
+envelope channels become seven `mc_*` analogues because the Barton-Bandis properties they read do
+not exist under the other law.
+
+The MC parameters are a **transfer of this specimen's already-calibrated Barton-Bandis envelope**,
+not a fresh fit, so the pair differs in constitutive form rather than in fitted strength:
+
+* `mu_smooth` / `c_smooth` are an **exact** transfer — the BB slip-weakened envelope
+  `tau = c_res + sigma'_n*tan(phi_r,sw)` is already a Coulomb line.
+* `mu_rough` / `c_rough` **tangent-match** the BB peak envelope at the onset normal stress, then
+  are divided by `Rbar_0` so MC's strength at zero slip equals the BB peak on a deck that starts
+  at `R_0 < 1`.
+* `initial_roughness`, `residual_roughness` and `roughness_decay_distance` are copied verbatim,
+  because `roughness_state` drives the aperture material and therefore the scored `Q`.
+
+Agreement between the two envelopes is within 0.09 MPa at every stick stage and the MC strength
+margin over the measured `tau` is identical to BB's, so **slip onset is inherited, not refitted**.
+Rate-and-state is off: the baseline is a plain Coulomb model.
+
+None of the four pre-existing MC decks was reusable. SW-S3's `83_11` sits on the superseded
+124.40 mm mesh at `biot = 1e-12`; SW-S4's `67_11` sits on the buggy 28.9904 deg / 2.85 mm
+off-centre mesh and emits no paper-frame stress channel at all; and the SW-T1 and SW-T2 MC decks
+**carry each other's fracture angle** in their paper-frame constants (32 deg mesh with 31 deg
+constants and vice versa) — about 2.3 MPa on `sigma'_n` at this campaign's differential stress,
+roughly 3x SW-T1's entire `sigma'_n` RMSE, which invalidates the cohesions fitted in them.

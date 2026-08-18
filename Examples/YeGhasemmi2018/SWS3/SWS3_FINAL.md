@@ -1,10 +1,14 @@
 # SW-S3 — final calibration and paper notes
 
-**Final deck:** `92_03_sw3_final_paperjrc_resc1p40.i`
-**Mesh:** `mesh/sw3_mesh_L123p4_size5.e` (convergence check at size 3: `92_08_sw3_final_resc1p40_mesh3.i`)
+**Final deck:** `93_05_sw3_final_resc1p40_ppfix.i` — constitutively identical to
+`92_03_sw3_final_paperjrc_resc1p40.i`, which is the run scored below, **except that the two
+output-only `d_n` reporting knobs are back at their library defaults**; see §9.
+**Mesh:** `mesh/sw3_mesh_L123p4_size5.e` (convergence check at size 3: `93_06_sw3_final_resc1p40_ppfix_mesh3.i`)
+**MC baseline:** `94_05_sw3_mc_final.i` / `94_06_sw3_mc_final_mesh3.i`
 **Status:** FINAL. The `92_03`/`92_04` bracket **succeeded** and closed the parameter; see §4.
-**Score against Ye & Ghassemi (2018) Table 2:** mean nRMSE **3.55 %** over eleven stages
-(down from 4.95 % at `91_05`).
+**Score against Ye & Ghassemi (2018) Table 2:** mean nRMSE **3.59 %** over eleven stages
+(down from 4.95 % at `91_05`). **On the honest `d_n` channel the headline is 4.58 % — read §9
+before quoting either number.**
 
 ---
 
@@ -78,14 +82,23 @@ Displacements are referred to the stage-1 datum, as the paper's are.
 
 nRMSE is the RMS error normalised by the **measured range** of that column.
 
-| observable | RMSE (abs) | mean abs err | max abs err | **nRMSE %** |
-|---|---|---|---|---|
-| `Q` (mL/min) | 0.0252 | 0.0183 | 0.0581 | **3.00** |
-| `σ'ₙ` (MPa) | 0.549 | 0.465 | 1.178 | **3.35** |
-| `τ` (MPa) | 0.992 | 0.820 | 2.242 | **8.01** |
-| `d_n` (mm) | 0.00108 | 0.00091 | 0.00208 | **2.35** |
-| `d_s` (mm) | 0.00081 | 0.00057 | 0.00201 | **1.06** |
-| | | | **mean** | **3.55** |
+Table 2 reports `d_n = d_s = 0.000` at stage 1 and the gate zeroes the model there, so stage 1 is
+**zero by construction** and is excluded from the two displacement statistics (n = 10 against
+n = 11 for the other three). An earlier revision of this file included it, diluting both
+displacement RMSEs by `sqrt(10/11)` and putting the headline at 3.55 %.
+
+| observable | RMSE (abs) | mean abs err | max abs err | n | **nRMSE %** |
+|---|---|---|---|---|---|
+| `Q` (mL/min) | 0.0252 | 0.0183 | 0.0581 | 11 | **3.00** |
+| `σ'ₙ` (MPa) | 0.549 | 0.465 | 1.178 | 11 | **3.35** |
+| `τ` (MPa) | 0.992 | 0.820 | 2.242 | 11 | **8.01** |
+| `d_n` (mm) | 0.00108 | 0.00091 | 0.00208 | 10 | **2.46** |
+| `d_s` (mm) | 0.00081 | 0.00057 | 0.00201 | 10 | **1.11** |
+| | | | | **mean** | **3.59** |
+
+**The `d_n` row above is not comparable with the other three specimens' — see §9.** It is read
+through two output-only reporting knobs that only this deck sets. On the raw kinematic jump the
+same run scores `d_n` **7.42 %** and the mean **4.58 %**.
 
 Displacements are inside the ±3 µm acceptance gate at **10 of 10** stages for `d_n` and 9 of 10
 for `d_s`. The final unloading state is hit almost exactly: `d_n` −0.0411 against a measured
@@ -114,12 +127,12 @@ Scores across the bracket:
 
 | deck | `c_res` | Q | σ'ₙ | τ | d_n | d_s | mean |
 |---|---|---|---|---|---|---|---|
-| 91_05 | 1.65 | 3.10 | 4.24 | 10.11 | 4.44 | 2.87 | 4.95 |
-| **92_03** | **1.40** | **3.00** | **3.35** | **8.01** | **2.35** | **1.06** | **3.55** |
-| 92_04 | 1.20 | 3.27 | 2.72 | 6.56 | 2.59 | 3.11 | 3.65 |
+| 91_05 | 1.65 | 3.10 | 4.24 | 10.11 | 4.65 | 3.01 | 5.02 |
+| **92_03** | **1.40** | **3.00** | **3.35** | **8.01** | **2.46** | **1.11** | **3.59** |
+| 92_04 | 1.20 | 3.27 | 2.72 | 6.56 | 2.72 | 3.26 | 3.71 |
 
-A quadratic through the three means puts the aggregate optimum at `c_res` = **1.31 MPa**, worth
-3.61 % — **0.06 points better than the run we already have.** That is far inside stage-detection
+A quadratic through the three means puts the aggregate optimum at `c_res` = **1.32 MPa**, worth
+3.50 % — **0.09 points better than the run we already have.** That is far inside stage-detection
 and run-to-run noise, and chasing it would cost an HPC job for nothing. `c_res` = 1.40 MPa also
 sits directly on the displacement cluster (1.32/1.44/1.47, mean 1.41). **No further sweep.**
 
@@ -234,7 +247,7 @@ resulting "model error" is a plotting artefact.
 python3 scripts/check_source_nodes.py Examples/YeGhasemmi2018/SWS3/mesh/sw3_mesh_L123p4_size3.e -0.023243800 0.0 0.019767074 0.023243800 0.0 0.103632926
 ```
 
-**Acceptance:** mean nRMSE within ±0.5 points of 3.55 %, no single observable moving more than 1.5
+**Acceptance:** mean nRMSE within ±0.5 points of 3.59 %, no single observable moving more than 1.5
 points, and stage 11 landing without the grace window. `τ` is the one to watch: it carries the
 whole residual and it is what the 19 % stiffness deficit acts on. **If `τ` improves markedly at
 mesh 3, part of what §4 attributes to the loading frame was discretisation compliance instead, and
@@ -259,3 +272,89 @@ python3 scripts/table2_gate.py --tag hpc --sample SWS3 Examples/YeGhasemmi2018/S
 Related: [`SWT1_FINAL.md`](../SWT1/SWT1_FINAL.md), [`SWT2_FINAL.md`](../SWT2/SWT2_FINAL.md),
 [`SWS4_FINAL.md`](../SWS4/SWS4_FINAL.md), and the reasoning procedure in
 [`doc/back_analysis_method.md`](../../../doc/back_analysis_method.md).
+
+
+---
+
+## 9. The 93/94 series — audit fixes and the Mohr-Coulomb baseline
+
+Everything above was scored on the deck named in the "Final deck" line's parenthetical. A
+mesh-and-postprocessor audit of all eight BBFast decks (four specimens x two mesh sizes) then
+found the items below. **No constitutive parameter moved.** The corrected decks are the
+**93-series**; each has a **94-series** Mohr-Coulomb sibling that differs from it in one block.
+
+### What the audit confirmed
+
+All eight meshes are correct and current: L and D match Table 1, the fracture angle is exact to
+four decimals (SW-T1 32.0000, SW-T2 30.0000, SW-S3 29.0000, SW-S4 30.0000 deg), the fracture plane
+is centred to 0.0000 mm on every one, and the mesh-3 meshes are about 2.2x finer in edge length and
+10x in element count. Critically, **each deck's paper-frame trig constants match its own mesh's
+angle**, checked by an SVD plane fit on the `fracture_interface` nodeset — there is no frame/mesh
+mismatch anywhere in the BBFast set.
+
+### What the audit fixed
+
+**1. The two output-only `d_n` reporting knobs were removed. This one changes a headline number.**
+SW-S3 was the only specimen of the four setting
+
+```
+reported_reversible_normal_opening_scale              = 0.758   # library default 1.0
+reported_reversible_normal_opening_retention_fraction = 0.552   # library default 0.0
+```
+
+The source labels both **OUTPUT ONLY**: they touch neither contact, nor aperture, nor
+permeability, nor flow. They reshape only the reconstruction of `normal_opening_total` — which is
+precisely the channel the Table-2 gate scores for `d_n`.
+
+| specimen | `d_n` via `normal_opening_total` | `d_n` via the raw kinematic jump | delta |
+|---|---|---|---|
+| SW-T1 `91_02` | 9.06 | 9.06 | 0.00 |
+| SW-T2 `91_04` | 2.06 | 2.06 | 0.00 |
+| **SW-S3 `92_03`** | **2.46** | **7.42** | **+4.96** |
+
+SW-T1 and SW-T2 agree exactly *because* their knobs are at defaults, which is how we know the
+knobs and not the channel choice are the effect. **SW-S3's headline mean moves 3.59 % -> 4.58 %.**
+
+This is a disclosure and consistency problem, not a physics bug: a two-parameter fit sitting on
+the reporting path is invisible in the scorecard and makes one specimen look better than its
+mechanics. `93_05` and `93_06` run at the library defaults. Either quote 4.58 % from the 93-series
+run, or quote 3.55/3.59 % from `92_03` **with the knobs stated**; do not quote 3.59 % beside the
+other three specimens' numbers as though they were computed the same way.
+
+**2. Twenty diagnostic postprocessors added** (task #82), as on SW-T1 and SW-T2, with
+`bulk_sin_theta` / `bulk_cos_theta` from this specimen's own 29 deg and the bulk probes at
+`z = L/2 +- 50 mm`. None feeds the gate.
+
+**3. Nothing else.** Both SW-S3 source coordinates are exact interface nodes on both meshes, the
+mesh is the corrected `L123p4` (123.40 mm), and the paper-frame constants match its 29.0000 deg.
+
+### The 94-series MC baseline
+
+`94_05_sw3_mc_final.i` / `94_06_sw3_mc_final_mesh3.i` are the 93-series decks with **one block replaced**: `[czm_contact]` becomes
+`ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile`. Mesh, source nodesets and
+their coordinates, boundary conditions, injection schedule, paper-frame constants, flow constants,
+solver, and 84 of the 91 postprocessors are byte-identical to the BBFast sibling. The seven `bb_*`
+envelope channels become seven `mc_*` analogues because the Barton-Bandis properties they read do
+not exist under the other law.
+
+The MC parameters are a **transfer of this specimen's already-calibrated Barton-Bandis envelope**,
+not a fresh fit, so the pair differs in constitutive form rather than in fitted strength:
+
+* `mu_smooth` / `c_smooth` are an **exact** transfer — the BB slip-weakened envelope
+  `tau = c_res + sigma'_n*tan(phi_r,sw)` is already a Coulomb line.
+* `mu_rough` / `c_rough` **tangent-match** the BB peak envelope at the onset normal stress, then
+  are divided by `Rbar_0` so MC's strength at zero slip equals the BB peak on a deck that starts
+  at `R_0 < 1`.
+* `initial_roughness`, `residual_roughness` and `roughness_decay_distance` are copied verbatim,
+  because `roughness_state` drives the aperture material and therefore the scored `Q`.
+
+Agreement between the two envelopes is within 0.03 MPa at every stick stage and the MC strength
+margin over the measured `tau` is identical to BB's, so **slip onset is inherited, not refitted**.
+Rate-and-state is off: the baseline is a plain Coulomb model.
+
+None of the four pre-existing MC decks was reusable. SW-S3's `83_11` sits on the superseded
+124.40 mm mesh at `biot = 1e-12`; SW-S4's `67_11` sits on the buggy 28.9904 deg / 2.85 mm
+off-centre mesh and emits no paper-frame stress channel at all; and the SW-T1 and SW-T2 MC decks
+**carry each other's fracture angle** in their paper-frame constants (32 deg mesh with 31 deg
+constants and vice versa) — about 2.3 MPa on `sigma'_n` at this campaign's differential stress,
+roughly 3x SW-T1's entire `sigma'_n` RMSE, which invalidates the cohesions fitted in them.

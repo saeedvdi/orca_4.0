@@ -2,8 +2,10 @@
 
 **Status: FINAL. No further sweep — the remaining error is model-form, and it has been bracketed
 in both directions.**
-Deck of record (mesh 5): `90_08_sw4_bbfast_theta30_jrc5_kernel_SV_biot0p6.i`
-Mesh-convergence run: `92_06_sw4_final_theta30_jrc5_mesh3.i`
+Deck of record (mesh 5): `93_07_sw4_final_theta30_jrc5_ppfix.i` — constitutively identical to
+`90_08_sw4_bbfast_theta30_jrc5_kernel_SV_biot0p6.i`, which is the run scored below; see §8.
+Mesh-convergence run: `93_08_sw4_final_theta30_jrc5_ppfix_mesh3.i`
+MC baseline: `94_07_sw4_mc_final.i` / `94_08_sw4_mc_final_mesh3.i`
 Date: 2026-08-17. Branch `orca_v5`, repo `orca_4.0`.
 
 ---
@@ -180,3 +182,75 @@ python3 scripts/table2_gate.py --tag hpc \
   SWS4/results_csv_hpc_rorqual/90_08_sw4_bbfast_theta30_jrc5_kernel_SV_biot0p6_hpc.csv \
   SWS4/results_csv_hpc_rorqual/92_06_sw4_final_theta30_jrc5_mesh3_hpc.csv
 ```
+
+
+---
+
+## 8. The 93/94 series — audit fixes and the Mohr-Coulomb baseline
+
+Everything above was scored on the deck named in the "Final deck" line's parenthetical. A
+mesh-and-postprocessor audit of all eight BBFast decks (four specimens x two mesh sizes) then
+found the items below. **No constitutive parameter moved.** The corrected decks are the
+**93-series**; each has a **94-series** Mohr-Coulomb sibling that differs from it in one block.
+
+### What the audit confirmed
+
+All eight meshes are correct and current: L and D match Table 1, the fracture angle is exact to
+four decimals (SW-T1 32.0000, SW-T2 30.0000, SW-S3 29.0000, SW-S4 30.0000 deg), the fracture plane
+is centred to 0.0000 mm on every one, and the mesh-3 meshes are about 2.2x finer in edge length and
+10x in element count. Critically, **each deck's paper-frame trig constants match its own mesh's
+angle**, checked by an SVD plane fit on the `fracture_interface` nodeset — there is no frame/mesh
+mismatch anywhere in the BBFast set.
+
+### What the audit fixed
+
+**1. `d_n` is now read from the same channel as the other three specimens.**
+`czm_normal_dilation_paper_mm_pp` was built on `czm_dn_pp` (the raw kinematic jump) here and on
+`czm_dn_total_pp` (`normal_opening_total`) on SW-T1, SW-T2 and SW-S3. With the reporting knobs at
+their defaults — which is the case on this deck — the two channels are numerically identical, so
+**this changes no number**; it removes a cross-specimen inconsistency that would otherwise have to
+be explained in the paper. (On SW-S3, where the knobs were *not* at defaults, the same difference
+is worth 4.96 nRMSE points — see `SWS3_FINAL.md` §9.)
+
+**2. Three missing channels added**: `czm_dn_total_pp`, `flow_rate_mesh_geometry_ml_min_pp` and
+`reported_czm_shear_slip_mm_pp`, which the other three specimens carried and this one did not.
+SW-S4 also had no `mesh_flow_width_over_length` constant at all; it is now set equal to the paper
+constant, as on SW-T1 and SW-T2.
+
+**3. The bulk probe points were put on the common rule**, `z = L/2 +- 50 mm` (a 100 mm gauge on
+every specimen) instead of the ad-hoc `z = 0.115 / 0.010`, which straddled this specimen's
+fracture asymmetrically (55.65 mm above against 49.35 below). Diagnostic channels only.
+
+**4. Nothing else.** Both source coordinates are exact interface nodes on both meshes, the
+theta30 / centred mesh is the one in use, and the paper-frame constants match its 30.0000 deg.
+
+### The 94-series MC baseline
+
+`94_07_sw4_mc_final.i` / `94_08_sw4_mc_final_mesh3.i` are the 93-series decks with **one block replaced**: `[czm_contact]` becomes
+`ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile`. Mesh, source nodesets and
+their coordinates, boundary conditions, injection schedule, paper-frame constants, flow constants,
+solver, and 84 of the 91 postprocessors are byte-identical to the BBFast sibling. The seven `bb_*`
+envelope channels become seven `mc_*` analogues because the Barton-Bandis properties they read do
+not exist under the other law.
+
+The MC parameters are a **transfer of this specimen's already-calibrated Barton-Bandis envelope**,
+not a fresh fit, so the pair differs in constitutive form rather than in fitted strength:
+
+* `mu_smooth` / `c_smooth` are an **exact** transfer — the BB slip-weakened envelope
+  `tau = c_res + sigma'_n*tan(phi_r,sw)` is already a Coulomb line.
+* `mu_rough` / `c_rough` **tangent-match** the BB peak envelope at the onset normal stress, then
+  are divided by `Rbar_0` so MC's strength at zero slip equals the BB peak on a deck that starts
+  at `R_0 < 1`.
+* `initial_roughness`, `residual_roughness` and `roughness_decay_distance` are copied verbatim,
+  because `roughness_state` drives the aperture material and therefore the scored `Q`.
+
+Agreement between the two envelopes is within 0.02 MPa at every stick stage and the MC strength
+margin over the measured `tau` is identical to BB's, so **slip onset is inherited, not refitted**.
+Rate-and-state is off: the baseline is a plain Coulomb model.
+
+None of the four pre-existing MC decks was reusable. SW-S3's `83_11` sits on the superseded
+124.40 mm mesh at `biot = 1e-12`; SW-S4's `67_11` sits on the buggy 28.9904 deg / 2.85 mm
+off-centre mesh and emits no paper-frame stress channel at all; and the SW-T1 and SW-T2 MC decks
+**carry each other's fracture angle** in their paper-frame constants (32 deg mesh with 31 deg
+constants and vice versa) — about 2.3 MPa on `sigma'_n` at this campaign's differential stress,
+roughly 3x SW-T1's entire `sigma'_n` RMSE, which invalidates the cohesions fitted in them.
