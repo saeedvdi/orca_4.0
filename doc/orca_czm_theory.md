@@ -1522,9 +1522,25 @@ strategy.
 
 **Strength.** $\phi_{\text{peak}} = \phi_r + \mathrm{JRC}_{\text{mob}}\log_{10}(\mathrm{JCS}/\sigma'_n)$,
 clamped to $[\phi_{\min},\phi_{\max}]$, with $\mu = \tan\phi_{\text{peak}}$ and
-$Y = \sigma'_n\mu$. Optionally the JRC is *mobilised*, ramping from $0$ to
-its full value over a peak shear displacement:
-$\mathrm{JRC}_{\text{mob}} = \mathrm{JRC}\,\bar s^{\,m}$, $\bar s = \min(s/\delta_p,1)$.
+
+$$
+Y = c(s) + \sigma'_n\,\mu,
+$$
+
+i.e. the yield surface has a **cohesive intercept as well as a frictional
+slope**. The two are separately parameterised and separately weakened, and the
+distinction matters — see the remark at the end of this subsection.
+
+**Cohesion.** $c(s)$ is a roughness-derived intercept that decays from a peak
+$c_0$ to a residual $c_{\text{res}}$ over the same slip scale as the friction.
+Physically it is the part of the peak strength that survives to
+$\sigma'_n\to 0$: for a *mated* joint at a normal stress of order
+$\sigma'_n/\mathrm{JCS}\approx 0.4$ this is Mode-I asperity interlock, and once
+the specimen is loaded past that the same term represents asperity
+*shear-through* — a real cohesion, not a bookkeeping device for a steeper
+$\phi$. In the calibrated decks it carries most of the tensile-specimen peak
+(SW-T1 $c_0 = 26.88$ MPa, SW-T2 $33.20$ MPa, i.e. 89% and 110% of the intact
+cohesion) and is set to **exactly zero** on SW-S4.
 
 **Slip weakening (the `Hardening` subclass).** On top of the BB
 peak, an exponential decay toward a residual:
@@ -1532,6 +1548,50 @@ peak, an exponential decay toward a residual:
 $$
 \mu_{\text{eff}} = \mu_r + (\mu_{\text{BB}} - \mu_r)\exp\!\left[-\left(\frac{s}{D_c}\right)^{m}\right].
 $$
+
+**Two optional corrections, both off by default.**
+
+1. `use_scale_correction` applies Barton's empirical block-size corrections to
+    both roughness parameters before they enter the strength law:
+
+    $$
+    \mathrm{JRC}_n = \mathrm{JRC}_0\left(\frac{L_n}{L_0}\right)^{-0.02\,\mathrm{JRC}_0},
+    \qquad
+    \mathrm{JCS}_n = \mathrm{JCS}_0\left(\frac{L_n}{L_0}\right)^{-0.03\,\mathrm{JRC}_0}.
+    $$
+
+    Both exponents are negative, so a joint longer than the laboratory
+    reference length $L_0$ is *weaker and smoother* than the value fitted at
+    core scale. Every production deck in the validation campaign runs with this
+    flag `false`, which is correct there — the modelled joint *is* the
+    laboratory joint, $L_n = L_0$ — but it means the campaign supplies no
+    evidence at all for the correction. Any extrapolation to field scale must
+    turn on exactly the term that was never exercised; the exponents themselves
+    then carry the extrapolation, and they are empirical.
+
+1. `use_mobilized_jrc` ramps the roughness from $0$ to its full value over a
+    peak shear displacement,
+    $\mathrm{JRC}_{\text{mob}} = \mathrm{JRC}\,\bar s^{\,m}$,
+    $\bar s = \min(s/\delta_p,1)$, so that the log-term contributes nothing at
+    first contact and reaches full strength only after the asperities have
+    engaged. Note that the Barton--Bandis--Bakhtar aperture law reads
+    $\mathrm{JRC}_{\text{mob}}$, not the nominal JRC, so switching this flag
+    changes the hydraulic response as well as the mechanical one.
+
+> **Remark: $D_c$ and $c$ are not independent.**
+>
+> Both the cohesion decay and the friction decay are driven by the same
+> accumulated slip, so a mis-fitted cohesion is observationally similar to a
+> mis-fitted $D_c$ — with one asymmetry that makes the confusion diagnosable.
+> If the cohesion channel is *live*, the two act over the same slip range and
+> a single $D_c$ can absorb a modest cohesion error. If cohesion is identically
+> zero, all of the weakening has to come from $\mu$, and a $D_c$ fitted to an
+> early stage will not fit a late one: the bracket **splits by stage** rather
+> than failing in one direction. That is exactly the SW-S4 symptom — stage 4
+> asks for $D_c \approx 58$ µm and stage 11 for $\approx 74$ µm, and the
+> reason is that SW-S4 alone runs $c_0 = c_{\text{res}} = 0$. Before
+> concluding that $D_c$ is mis-fitted, check whether `cohesion_effective` is
+> nonzero at all.
 
 **Numerics: the “FastAD” strategy.** Rather than solving the local
 problem in AD, this law:
