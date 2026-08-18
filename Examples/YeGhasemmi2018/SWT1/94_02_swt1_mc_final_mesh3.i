@@ -1697,11 +1697,15 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/91_02_swt1_bbfast_c26p9_re
     property = roughness_state
     boundary = fracture_interface
   []
-  [bb_dilation_angle_pp]
-    type = SideAverageMaterialProperty
-    property = bb_dilation_angle_degrees
-    boundary = fracture_interface
-  []
+  # 94-SERIES BUILD FIX 2026-08-18: [bb_dilation_angle_pp] REMOVED.  It read the
+  # non-AD property bb_dilation_angle_degrees, which only the Barton-Bandis law
+  # declares, so every MC deck aborted at initialSetup with "The non-AD material
+  # property 'bb_dilation_angle_degrees' does not exist" (observed on the SW-S3
+  # pair, SLURM 19188659/19188660).  It was meant to be replaced by
+  # mc_dilation_angle_effective_pp -- present below -- but was left behind.
+  # NOTE: orca-opt --check-input does NOT catch this; material-property
+  # resolution happens at initialSetup, after the parse.  Smoke-run 1 rank /
+  # 2 steps to validate a block swap, never --check-input alone.
   [dilation_jump_increment_pp]
     type = ADSideAverageMaterialProperty
     property = dilation_jump_increment

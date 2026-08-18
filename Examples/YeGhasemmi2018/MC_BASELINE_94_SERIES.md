@@ -69,6 +69,44 @@ unreferenced top-level assignment as an error.
 
 All sixteen decks pass `orca-opt --check-input`.
 
+> **CORRECTION, 2026-08-18 — `--check-input` was not sufficient, and the first
+> submission failed because of it.** The SW-S3 pair was submitted (SLURM
+> 19188659 / 19188660) and **both jobs aborted at `initialSetup`**:
+>
+> ```
+> The following occurred in the Postprocessor 'bb_dilation_angle_pp'
+> of type SideAverageMaterialProperty.
+> The non-AD material property 'bb_dilation_angle_degrees' does not exist
+> ```
+>
+> `[bb_dilation_angle_pp]` reads a Barton-Bandis-only property and should have
+> been dropped in favour of `mc_dilation_angle_effective_pp`, which *is* present.
+> It was left behind in **all eight** MC decks, so all eight were affected — not
+> only the pair that happened to be submitted. Removed 2026-08-18.
+>
+> **The process lesson, which is the durable part.** `--check-input` parses the
+> input and validates syntax; **material-property resolution happens later, at
+> `initialSetup`**, so a block swap that leaves a consumer pointing at a property
+> the new law does not declare passes `--check-input` and then dies on the
+> cluster. The postprocessor-count check in §2 ("both series emit 91") did not
+> catch it either: the stale `bb_*` block and its `mc_*` replacement were *both*
+> present, so the count was right for the wrong reason.
+>
+> **Validate a constitutive-block swap with a 2-step smoke run, not
+> `--check-input` alone:**
+>
+> ```bash
+> orca-opt -i 94_07_sw4_mc_final.i Executioner/num_steps=2 \
+>   Outputs/chk/enable=false csv_file_base=/tmp/smoke exodus_file_base=/tmp/smoke
+> ```
+>
+> ~37 s per mesh-5 deck on one rank. The two other surviving `bb_*`-named
+> postprocessors were checked at the same time and are **fine**:
+> `bb_effective_normal_stress_pp` is a `ParsedPostprocessor` over `czm_sigma_n_pp`
+> and touches no material property, and `bb_limit_tau_pp` reads `limit_tau`,
+> which the MC law does declare (as AD, matching the deck's
+> `ADSideAverageMaterialProperty`). Only the dilation-angle channel was broken.
+
 ---
 
 ## 3. The parameter transfer

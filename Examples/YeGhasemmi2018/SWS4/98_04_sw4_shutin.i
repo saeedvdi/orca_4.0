@@ -1,41 +1,6 @@
 # =============================================================================
-# 94-SERIES -- MOHR-COULOMB BASELINE.  SW-S4 mesh 3
-#
-# Built from 93_08_sw4_final_theta30_jrc5_ppfix_mesh3.i by replacing ONE block: [czm_contact].
-# Everything else -- mesh file, source nodesets and their coordinates, boundary
-# conditions, the digitized injection schedule, the paper-frame trig constants,
-# the flow constants, the solver, and 84 of the 91 postprocessors -- is
-# byte-identical to the BBFast sibling.  A 93/94 pair therefore isolates the
-# constitutive law and nothing else, which is what the paper's "BBFast primary,
-# MC baseline" comparison needs.
-#
-# The seven bb_* envelope postprocessors are replaced by seven mc_* analogues,
-# because the Barton-Bandis material properties they read are not declared by
-# this law.  Count stays at 91.
-#
-# WHY NOT THE OLD MC DECKS.  All four predate the 89-92 corrections and none is
-# usable as-is:
-#   SW-S3  83_11  sits on sw3_mesh_size5 (L = 124.40 mm, superseded by L123p4)
-#                 and biot_coefficient = 1e-12.
-#   SW-S4  67_11  sits on ye2018_sw_s4_size5_mesh (theta = 28.9904 deg, fracture
-#                 plane 2.85 mm off-centre) and emits no paper-frame sigma'_n or
-#                 tau channel at all, so the gate silently fell through to the
-#                 local BB frame.
-#   SW-T1/T2      biot 1e-12, the split mass kernel, T2 on the non-theta30 mesh,
-#                 and -- decisively -- THE PAPER-FRAME THETA CONSTANTS ARE
-#                 SWAPPED: SWT1_MC carries a 32 deg mesh with 31 deg constants
-#                 and SWT2_MC a 31 deg mesh with 32 deg constants.  At this
-#                 campaign's differential stress that is about 2.3 MPa on
-#                 sigma'_n, roughly 3x SW-T1's entire sigma'_n RMSE, so the
-#                 cohesions fitted in those decks (14.54 / 15.41 MPa) were fitted
-#                 against mis-resolved stresses and cannot be ported.
-# The one thing those decks had right -- the digitized injection schedule -- is
-# already what the BBFast sibling carries, so the Table-2 gate scores these
-# unchanged.
-# =============================================================================
-# =============================================================================
-# 93-SERIES -- MESH AND POSTPROCESSOR AUDIT FIXES.  SW-S4 mesh 3
-# Built from 92_06_sw4_final_theta30_jrc5_mesh3.i.  Constitutive parameters are UNCHANGED;
+# 93-SERIES -- MESH AND POSTPROCESSOR AUDIT FIXES.  SW-S4 mesh 5
+# Built from 90_08_sw4_bbfast_theta30_jrc5_kernel_SV_biot0p6.i.  Constitutive parameters are UNCHANGED;
 # this series changes only what is measured and reported, plus one source-node
 # coordinate on SW-T1 mesh-5.
 #
@@ -60,70 +25,32 @@
 #     to four decimals -- verified against the Exodus fracture_interface nodeset).
 # =============================================================================
 # =============================================================================================
-# 94_08_sw4_mc_final_mesh3
+# 98_04_sw4_shutin
 #
-# 92-SERIES, MESH CONVERGENCE.  SW-S4 is FINAL; this is the same physics on the size-3 mesh.
+# 90-SERIES: fix the ONSET, keep the RESIDUALS.  Back-analysis 2026-08-17.
+# Parent: 89_06_sw4_bbfast_theta30_kernel_SV_biot0p6.i -- 10.5% mean normalized RMSE -- the best SW-S4 case -- event 50-73 s late, residual shear 2.82 vs 2.25 validated
 #
-# Parent: 94_08_sw4_mc_final_mesh3.i  (size-5, the calibrated deck of record)
+# WHY (campaign-wide).  Every scored case fails at the injection step where its strength margin
+# m = (tau_lim - tau)/tau_lim crosses zero.  The experiment fails at the TOP of the staircase, so
+# a small strength deficit does not advance failure proportionally -- it advances it by a WHOLE
+# STEP (~290 s on SW-T1/T2, ~350 s on SW-S3).  That is the whole "several hundred seconds early"
+# signature.  Measured crossings: SW-S3 84_01-baseline 25-26 MPa (on time), 86_01 26-27 (on time),
+# 89_02 22-23 (360-390 s early);  SW-S4 89_06 17-18 (50-73 s late), 89_01 14-15 (early).
 #
-# WHY SW-S4 IS FINAL.  Scored against Ye & Ghassemi (2018) Table 2 with
-# scripts/table2_gate.py -- eleven injection hold stages, five independent measured quantities
-# per stage, each normalised by its own measured range:
+# SW-S4 SPECIFIC.  LOWER-JRC arm of the 90_07 bracket; see that deck's header for the design.
+# Together they span JRC 5 - 9 at fixed peak envelope, which brackets the JRC ~= 8.8 implied by
+# the residual-shear interpolation while also testing how much of 89_06's on-time onset
+# survives when the roughness feedback is cut.
 #
-#     case    Q      sigma'n  tau     d_n     d_s     MEAN nRMSE
-#     90_07   5.22   4.00    10.61    4.30    6.27     6.08
-#     90_08   4.94   3.74    10.01    4.53    7.01     6.05   <-- FINAL, mesh 5
-#     91_07   9.43  11.23    28.86   20.57   24.26    18.87   (D_c 74.5 -> 120 um)
-#     91_08   4.77   6.49    16.70   24.46   32.02    16.89   (D_c 74.5 -> 40 um)
+# THIS DECK: jrc 17.5 -> 5.0, jcs 3.0e8 -> 1.5e8, phi_r 7.5 -> 22.72 deg (solved from
+# phi_r + 5*log10(150/24) = 26.70, the same anchor 90_07 uses).
 #
-# The 91-series bracketed the slip-weakening length in BOTH directions and BOTH arms were three
-# times worse.  D_c = 74.5 um is at an optimum, and the residual error is not a regularisation
-# artefact.  Ten of the eleven stages are tight (Q to 0.0025 mL/min mean absolute error, d_n
-# inside the 3 um gate on 9 of 10 stages).  The whole remaining error is stage 4, the 20 MPa
-# loading hold: tau +2.71 MPa and d_s -0.0134 mm, because the model misses the experiment's
-# FIRST slip burst.
-#
-# WHY THAT CANNOT BE TUNED AWAY.  The measurement slips in three bursts, and every one of them
-# sits on a pressure RAMP, not on a hold: 1015-1120 s (16->20 MPa) delivers 15.8 um, 1310-1415 s
-# (20->24) delivers 21.2 um, 1600-1710 s (24->28) delivers 32.2 um, while the intervening holds
-# deliver 2.1 and 1.3 um.  The specimen slides only while sigma'_n is falling and arrests the
-# moment it stops falling.  A slip-weakening law has no dependence on dsigma'_n/dt, so once it
-# starts it keeps sliding through the hold: 90_08 puts 34.1 um into the 24 MPa hold where the
-# experiment puts 1.3.  Lowering D_c makes this strictly worse -- 91_08 dumps 66.9 um into the
-# 20 MPa hold, 73% of its total slip in one runaway, and overshoots to 0.100 mm against 0.079
-# measured.  Moving the peak envelope down by the ~0.2 MPa that would start the first burst on
-# time buys stage 4 and loses stage 5, because the total slip budget is already correct and only
-# its distribution in time is wrong.  Capturing the staircase needs a rate- or state-dependent
-# term that arrests slip when the driving rate vanishes; that is a constitutive addition, not a
-# parameter, and it is out of scope for this validation.
-#
-# NOT ONE CONSTITUTIVE PARAMETER CHANGES IN THIS DECK.  The only differences from the parent are
-# the mesh file, the injection/production node coordinates (which are mesh-resolution
-# dependent), and the output file_base names.  Any difference in the results is therefore
-# discretisation error and nothing else -- which is the entire point of running it.
-#
-# SOURCE NODES ON MESH 3.  Checked with scripts/check_source_nodes.py: the parent's coordinates
-# snap to a genuine INTERFACE node on the size-3 mesh (367.3 um away), so unlike SW-T2 there is
-# no bulk-node trap here.  They are nevertheless replaced with the exact size-3 interface-node
-# coordinates so the deck states where the borehole actually is rather than where it was asked
-# to be:
-#
-#     source_in    -0.018367273 0 0.027536950   ->  -0.018183600 0 0.027855081
-#     source_out    0.018367273 0 0.091163050   ->   0.018183600 0 0.090844919
-#
-# injection_pressure_pp and pp_outlet_pp are AverageNodalVariableValue over the two nodesets
-# (the 2026-08-17 stale-PointValue fix), so they track the move without further edits.
-#
-# WHAT TO CHECK IN THE RESULT.  flow_rate_validation_ml_min_pp is the paper's Eq. 9 cubic-law
-# value and is built from boundary averages, so it should be mesh-insensitive.  flow_rate_pp
-# (a NodalSum of the injection flux over a one-node set) and flow_rate_mesh_geometry_ml_min_pp
-# are NOT mesh-independent by construction -- they are diagnostics, they are not what the paper
-# reports, and a change in them between mesh 3 and mesh 5 is expected rather than alarming.
-#
-# HPC: --chdir pinned absolutely, Outputs/chk disabled, file_base names distinct from the parent.
+# PREDICTION: crossing moves from 17-18 MPa to 15-17 MPa.  If BOTH arms hold the onset and only the residual moves, JRC is confirmed as the residual
+# knob and the onset is owned by phi_r -- which would decouple two things that have been fighting
+# each other for four deck generations.
 # =============================================================================================
 # ==============================================================================
-# 94_08_sw4_mc_final_mesh3
+# 98_04_sw4_shutin
 # GENERATED 2026-08-16 by scripts/build_paper_corrected_decks.py from
 #   SWS4/68_01_sw4_bbfast_tail6p50_eta3p50_m0_kernel_SV.i
 # -- do not hand-edit; regenerate instead. The parent is left untouched.
@@ -474,7 +401,7 @@
 ######################################################################################
 
 # --- mesh / geometry ---
-mesh_file = mesh/ye2018_sw_s4_theta30_size3_mesh.e   # 92_06: mesh-convergence run (theta=30.000deg, D=50.51mm, L=118.70mm). Was theta30_size5.
+mesh_file = mesh/ye2018_sw_s4_theta30_size5_mesh.e   # Orca_2.0 reference SW-S4 mesh (pre-tagged top/bottom/sides/pins)
 sample_radius = 0.025255             # m, SW-S4 radius (D = 50.51 mm); cylinder radius used by the confining BC
 sample_area = 2.00375499689e-3        # m^2, pi*sample_radius^2
 bulk_sin_theta = 0.5
@@ -523,9 +450,9 @@ bb_normal_closure_stress_exponent = 3.28      # p (NEW source param; 1.0 = stand
 bb_normal_closure_offset = 4.433e-5           # c0 [m] = closure(31 MPa): pre-seats the joint at the
                                               # isotropic preload so t=0 is in equilibrium and the
                                               # batch-4 compensated axial preload is PRESERVED.
-# 94-series: unused under the Mohr-Coulomb law (Barton-Bandis only).  normal_unload_retention_fraction = 0.04       # DECK54_48: retain a small part of recovered closure on unload.
-# 94-series: unused under the Mohr-Coulomb law (Barton-Bandis only).  normal_unload_retention_time = 0.0
-# 94-series: unused under the Mohr-Coulomb law (Barton-Bandis only).  normal_unload_activation_slip = 5.0e-5
+normal_unload_retention_fraction = 0.04       # DECK54_48: retain a small part of recovered closure on unload.
+normal_unload_retention_time = 0.0
+normal_unload_activation_slip = 5.0e-5
 penalty_tangent = 1e13                        # unchanged from deck 43 (tau-slip elastic stiffness,
                                               # part of the batch-4 k_sys arithmetic)
 #
@@ -536,7 +463,7 @@ penalty_tangent = 1e13                        # unchanged from deck 43 (tau-slip
 #     Curvature check vs Table 2 holds (Dc=60um): strength-tau = -0.5..+1.4 MPa (viscosity adds
 #     ~+0.5-1 MPa during active slip -> net within ~1 MPa everywhere). NB residual UNLOAD tau
 #     (2.27-2.82) is NOT strength-limited -- the fault re-sticks and holds it elastically.
-# 94-series: unused under the Mohr-Coulomb law (Barton-Bandis only).  bb_jrc = 5.0 # 90_08: see 90_07 header. Was 17.5.                        # DECK54_20: 17.0->17.5. Holds the PEAK envelope (onset 996 was a
+bb_jrc = 5.0 # 90_08: see 90_07 header. Was 17.5.                        # DECK54_20: 17.0->17.5. Holds the PEAK envelope (onset 996 was a
                                      # bullseye -- protect it) against the phi_r cut: d(mu_p)/dJRC ~ 0.022
                                      # at sigma'n 26.5 offsets tan-shift of -1 deg phi_r. 54_05 proved what
                                      # happens when phi_r is cut WITHOUT this compensation (onset 604 s).
@@ -551,8 +478,8 @@ penalty_tangent = 1e13                        # unchanged from deck 43 (tau-slip
                                      # = +0.92 MPa at 26.5 MPa ~ the added driving tau. Onset -> ~1000 s.
                                      # WAS:                       # back-analyzed effective JRC (polished saw-cut data demand it,
                                      # exactly as the decoupled law needed fcr=0.89)
-# 94-series: unused under the Mohr-Coulomb law (Barton-Bandis only).  bb_jcs = 1.5e8 # 90_08: paper Sec 2.1 UCS. Was 3.0e8.                       # Pa; intact-granite wall strength
-# 94-series: unused under the Mohr-Coulomb law (Barton-Bandis only).  bb_residual_friction_angle = 22.72 # 90_08: re-anchored. Was 7.5.     # DECK54_20 (LOCKTRIM): 8.5 -> 7.5 deg. 54_07 SCORECARD (2026-07-11):
+bb_jcs = 1.5e8 # 90_08: paper Sec 2.1 UCS. Was 3.0e8.                       # Pa; intact-granite wall strength
+bb_residual_friction_angle = 22.72 # 90_08: re-anchored. Was 7.5.     # DECK54_20 (LOCKTRIM): 8.5 -> 7.5 deg. 54_07 SCORECARD (2026-07-11):
                                      # onset 996 s BULLSEYE, sigma'n trough 15.33 (data 15.28) BULLSEYE, slip
                                      # 82.8 (79.1), dn -0.0425/-0.0318 in band -- the BB shape arithmetic
                                      # holds. Remaining miss = the LOCK, the documented BB structural bias
@@ -562,7 +489,7 @@ penalty_tangent = 1e13                        # unchanged from deck 43 (tau-slip
                                      # at the trough -> tau_end ~2.6. Stability: with Dc 80 below the slope
                                      # stays ~1.0e11 < k_sys 1.25e11 (49_03 proved phi 9.5/Dc 70 stable;
                                      # this sits on the same margin).
-# 94-series: unused under the Mohr-Coulomb law (Barton-Bandis only).  bb_slip_weakening_residual_friction_angle = 6.50 # 66_03: small late-shear correction.
+bb_slip_weakening_residual_friction_angle = 6.50 # 66_03: small late-shear correction.
                                      # the post-slip tail (tau_end 0.86 vs data 2.20 MPa; slip
                                      # end 95.4 vs 79.1 um). Raising the tail floor is the least
                                      # disruptive way to restore shear traction while preserving
@@ -570,10 +497,10 @@ penalty_tangent = 1e13                        # unchanged from deck 43 (tau-slip
                                      # DECK54_23: tail-only residual. Keeps the BB
                                      # peak-envelope baseline at phi=7.5/JRC=17.5 while testing the
                                      # lower post-slip floor that 54_22 tried to get by cutting phi.
-# 94-series: unused under the Mohr-Coulomb law (Barton-Bandis only).  bb_slip_weakening_exponent = 1.10    # DECK54_24: 1.14 -> 1.10. Keep a gently curved tail but reduce the
+bb_slip_weakening_exponent = 1.10    # DECK54_24: 1.14 -> 1.10. Keep a gently curved tail but reduce the
                                      # late acceleration that drove 54_23 below the traction data.
                                      # DECK54_23: delayed/curved weakening, W=exp(-(s/Dc)^m).
-# 94-series: unused under the Mohr-Coulomb law (Barton-Bandis only).  bb_characteristic_slip_distance = 7.45e-5 # 67_01: in-bracket midpoint; trims stress with only ~0.3um predicted slip cost.
+bb_characteristic_slip_distance = 7.45e-5 # 67_01: in-bracket midpoint; trims stress with only ~0.3um predicted slip cost.
                                      # tail weight between 54_21 and 54_23, targeting a middle
                                      # stress-drop/slip response rather than another full overcorrection.
                                      # DECK54_23: Table-2 loading-hold fit with tail=6.5 deg and
@@ -587,7 +514,7 @@ penalty_tangent = 1e13                        # unchanged from deck 43 (tau-slip
                                      # 1.02e11 (stable, progressive). (2) SLIP TRIM -- 49_01 over-slips (88.5 vs
                                      # data 79.1um, the +0.85 MPa tau converted at k_sys); longer Dc cuts ~5-7um.
                                      # Watch resid tau (unload re-stick level) -- may ride up ~0.2-0.3.
-# 94-series: unused under the Mohr-Coulomb law (Barton-Bandis only).  compressive_normal_stress_floor = 1e3
+compressive_normal_stress_floor = 1e3
 #
 # (c) DECOUPLED DILATION (Barton-1982 mobilization; NO dissipation limiter in this law, so the
 #     angles are set to the REALIZED deck-43 values, not the inert tan(50) ones):
@@ -617,7 +544,7 @@ tangential_viscosity = 3.5e12        # 66_03: lower the transient shear pedestal
                                      # DECK30 lesson: burst regularizer; ~0.5-1 MPa at loading-branch
                                      # creep (~1e-7 m/s), ~5 MPa at the burst -> spreads the onset,
                                      # negligible pedestal at residual creep.
-# 94-series: unused under the Mohr-Coulomb law (Barton-Bandis only).  min_tau_limit = 0.0                  # fault stays compressed (sigma'_n >= ~12 MPa) -> no floor needed
+min_tau_limit = 0.0                  # fault stays compressed (sigma'_n >= ~12 MPa) -> no floor needed
 
 # --- ADOrcaRoughnessDamageFracturePermeability (roughness-coupled) : DD02 reference ---
 initial_hydraulic_aperture = 0.74e-6 # DD02 base aperture (perm ~0.46e-13)
@@ -695,9 +622,9 @@ mesh_flow_width_over_length_sw_s4 = 0.814819511514   # 93-series: SW-S4 had no m
 ml_per_m3_per_min = 6.0e7
 
 # --- output ---
-exodus_file_base = results_exodus_hpc_rorqual/94_08_sw4_mc_final_mesh3_hpc
-csv_file_base    = results_csv_hpc_rorqual/94_08_sw4_mc_final_mesh3_hpc
-checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_hpc
+exodus_file_base = results_exodus_hpc_rorqual/98_04_sw4_shutin_hpc
+csv_file_base    = results_csv_hpc_rorqual/98_04_sw4_shutin_hpc
+checkpoint_file_base = results_checkpoint_hpc_rorqual/98_04_sw4_shutin_hpc
 
 ######################################################################################
 [GlobalParams]
@@ -744,14 +671,14 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
   [source_in]
     type = ExtraNodesetGenerator
     input = sidesets_from_nodesets
-    coord = '-0.018183600 0.0 0.027855081'   # 92_06: EXACT size-3 interface node.   # exact interface node, 6.89 mm in from the sidewall
+    coord = '-0.018367273 0.0 0.027536950'   # exact interface node, 6.89 mm in from the sidewall
     new_boundary = source_in
     use_closest_node = true
   []
   [source_out]
     type = ExtraNodesetGenerator
     input = source_in
-    coord = '0.018183600 0.0 0.090844919'   # 92_06: EXACT size-3 interface node.   # exact interface node, 6.89 mm in from the sidewall
+    coord = '0.018367273 0.0 0.091163050'   # exact interface node, 6.89 mm in from the sidewall
     new_boundary = source_out
     use_closest_node = true
   []
@@ -827,10 +754,23 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
   # caseF-derived schedule contained only the RISING limb (truncated at ~1900 s), so the run stopped
   # before the post-peak phase where the injection decline lets the fault re-stabilize and the
   # differential stress partially recovers. Restored from the Orca_2.0 reference deck.
+  # ------------------------------------------------------------------------
+  # DISCUSSION DECK (shutin).  Post-shut-in fault reactivation.
+  # This REPLACES the digitized Ye & Ghassemi schedule; do not score against
+  # Table 2.  The validated run is the 93-series parent.
+  #
+  # Ramp 5.00 -> 27.96 MPa over t = 2 .. 1720.7 s at this
+  # specimen's own rate, hold 200 s (past onset), then an ABRUPT
+  # shut-in: the injection node relaxes exponentially toward ambient with
+  # tau = 150 s, a standard proxy for wellbore pressure fall-off.
+  # end_time gives 3000 s of post-shut-in observation.
+  #
+  # The question: once the injection-point pressure is back near ambient, does
+  # slip keep growing on pressure already diffused into the fault, or arrest?
+  # ------------------------------------------------------------------------
   [injection_pressure]
-    type = PiecewiseLinear
-    x = '0 39.520164216741705 73.14687685794524 103.95057045328758 130.54475290608298 151.52976505320134 185.17293652746184 218.82795836152286 252.48298019558388 286.1380020296451 319.78644033048386 353.4203948582324 384.2289602681592 409.4212451565288 432.37223199458776 451.3912694507658 470.9733306681428 504.61913555569254 538.2741573897538 571.9291792238146 597.1704455993604 639.2221057055581 670.0375179900361 695.2341480103328 714.8234511142546 734.9672193861866 751.1849634561368 779.1919721385079 812.8469939725692 846.5020158066304 880.1570376406912 913.8120594747525 947.447989062468 978.2606362629926 1003.4541061873424 1028.6483661356788 1045.4320307214462 1059.4036049265023 1087.427730795252 1121.0827526293133 1154.737774463374 1188.3927962974353 1222.0458430715298 1255.6817726592453 1289.2953182340034 1317.8548170244176 1339.6833772833506 1359.2662943600467 1373.243596239006 1401.2647595178055 1434.9197813518667 1468.5748031859275 1502.2298250199888 1535.8802383807943 1569.506292668676 1600.3136730426227 1625.5110930869055 1650.7014029153083 1665.2410043668124 1687.0697621317422 1720.7188587859032 1754.3738806199644 1788.0289024540252 1821.695774647887 1852.5778122885781 1880.6710652561655 1905.966645780798 1925.6526609877606 1946.27663217295 1979.0093010025216 2012.6643228365829 2046.3193446706437 2079.974366504705 2113.637288578633 2147.3193028989067 2178.211479180761 2203.49659188757 2225.98067454948 2248.472657451258 2270.95739846649 2304.6176871271296 2338.272708961191 2371.927730795252 2405.5840693359573 2439.2575250630416 2470.14035272772 2498.23281567132 2523.5254336060025 2541.803626068639 2561.2048376283906 2576.93105510794 2607.7814917891624 2641.436513623224 2675.091535457285 2708.75050741128 2742.4200130184304 2776.1079525186046 2807.0057906390307 2832.2944584537795 2854.7805161756564 2874.467913924596 2894.127660833999 2927.780707608093 2961.4357294421548 2995.0907512762155 3028.753014996822 3062.4337126104515 3093.3199637124058 3118.603101359247 3141.086196491174 3163.5791669229343 3182.139200442831 3214.124901592964 3247.7799234270256 3281.4349452610863 3315.089967095147 3348.744988929209 3382.4000107632696 3404.836691985977'
-    y = '5000000 5254620.82538901 5668743.87518708 6352528.44578387 7074836.09078049 7797143.73577711 7970497.57057629 7970497.57057629 7970497.57057629 7970497.57057629 8066805.25657584 8374989.8517744 8987506.73473153 9704035.91856817 10385894.335445 11148651.2085614 11880589.622158 12015420.3825574 12015420.3825574 12015420.3825574 12015420.3825574 12265820.3661562 12778177.2556738 13431143.3667507 14057143.3257478 14777524.8170244 15492127.8471411 16060343.1945384 16060343.1945384 16060343.1945384 16060343.1945384 16060343.1945384 16339635.4839371 16892441.6015745 17591635.4019312 18279272.279968 18920681.468725 19671881.4195215 19989696.78332 19989696.78332 19989696.78332 19989696.78332 20018589.0891199 20297881.3785186 20904619.8003157 21596108.9857925 22286635.0944092 23006053.5088259 23673465.7728028 24034619.5953011 24034619.5953011 24034619.5953011 24034619.5953011 24102034.9755008 24525788.7938988 25155641.0603358 25797050.2490928 26542471.7387293 27189659.3886463 27877296.2666831 27963973.1840827 27963973.1840827 27963973.1840827 27790619.3492835 27328342.4564856 26634927.1172889 25840388.7077926 25051628.7594563 24217604.1987002 24034619.5953011 24034619.5953011 24034619.5953011 24034619.5953011 23919050.3721016 23524188.8595035 22913598.1302663 22272188.9415093 21578773.6023126 20769789.0399164 20066742.9321196 19989696.78332 19989696.78332 19989696.78332 19970435.2461201 19700773.7253214 19226939.9102036 18545081.4933268 17793881.5425303 17086020.0504336 16360823.174857 16060343.1945384 16060343.1945384 16060343.1945384 16060343.1945384 16002558.5829387 15790681.6737397 15309143.2437419 14615727.9045452 13922312.5653484 13200004.9203518 12391020.3579556 11986528.0767575 12015420.3825574 12015420.3825574 12015420.3825574 11909481.9279578 11533881.9525596 11009968.1407221 10397451.2577649 9718482.07146811 8895051.35617197 8166965.25001537 7970497.57057629 7970497.57057629 7970497.57057629 7970497.57057629 7970497.57057629 7970497.57057629 7970497.57057629'
+    type = ParsedFunction
+    expression = 'if(t<2.0, 5e+06, if(t<1720.7, 5e+06+(2.796e+07-5e+06)*(t-2.0)/1718.7, if(t<1920.7, 2.796e+07, 5e+06+(2.796e+07-5e+06)*exp(-(t-1920.7)/150))))'
   []
 
   [production_pressure_fn]
@@ -1458,7 +1398,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
     execute_on = TIMESTEP_END
   []
   [fracture_state_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = fracture_state
     variable = fracture_state
@@ -1474,7 +1414,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
     execute_on = TIMESTEP_END
   []
   [roughness_damage_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = roughness_damage
     variable = roughness_damage
@@ -1498,7 +1438,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
     execute_on = TIMESTEP_END
   []
   [limit_tau_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = limit_tau
     variable = limit_tau
@@ -1506,7 +1446,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
     execute_on = TIMESTEP_END
   []
   [plastic_slip_increment_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = plastic_slip_increment
     variable = plastic_slip_increment
@@ -1522,7 +1462,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
     execute_on = TIMESTEP_END
   []
   [cumulative_plastic_slip_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = cumulative_plastic_slip
     variable = cumulative_plastic_slip
@@ -1530,7 +1470,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
     execute_on = TIMESTEP_END
   []
   [friction_coefficient_effective_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = friction_coefficient_effective
     variable = friction_coefficient_effective
@@ -1538,7 +1478,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
     execute_on = TIMESTEP_END
   []
   [cohesion_effective_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = cohesion_effective
     variable = cohesion_effective
@@ -1619,107 +1559,64 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
     pore_pressure = pore_pressure
   []
   [czm_contact]
-    # =========================================================================
-    # MOHR-COULOMB BASELINE.  Roughness-dependent Coulomb return map with a
-    # decoupled dilation law.  This is the ONLY block that differs from the
-    # BBFast sibling 94_08_sw4_mc_final_mesh3.i.
-    #
-    #   tau_lim = c(R) + sigma'_n * mu(R),   Rbar = (R - R_res)/(1 - R_res)
-    #   mu(R)   = mu_smooth + (mu_rough - mu_smooth) * Rbar^n_f     (n_f = 1)
-    #   c(R)    = c_smooth  + (c_rough  - c_smooth ) * Rbar^n_c     (n_c = 1)
-    #   R       = R_res + (R_0 - R_res) * exp(-gamma / D_R)
-    #
-    # WHERE THESE NUMBERS COME FROM.  They are not a fresh calibration; they are
-    # a transfer of the Barton-Bandis envelope this specimen was already
-    # calibrated to, so that a 93/94 pair differs in constitutive FORM and not
-    # in fitted strength.
-    #
-    #   BB peak      tau = c + sigma'_n * tan(phi_r + JRC*log10(JCS/sigma'_n))
-    #   BB residual  tau = c_res + sigma'_n * tan(phi_r,sw)      <- already Coulomb
-    #
-    #   * mu_smooth / c_smooth are an EXACT transfer of the BB residual line.
-    #   * mu_rough / c_rough tangent-match the BB PEAK envelope at the onset
-    #     normal stress sigma'_n* = 26.51 MPa (Table 2, last stick stage of
-    #     stages 1-3), where the BB peak friction angle is 26.48 deg and the
-    #     BB peak strength is 13.21 MPa.
-    #   * the (mu_rough, c_rough) written here are pre-divided by
-    #     Rbar_0 = 0.3889 so that MC's strength AT ZERO SLIP equals the BB peak,
-    #     because this deck starts at R_0 = ${bb_roughness_state_initial}, not at R = 1.
-    #
-    # ACCURACY OF THE TRANSFER, checked against Table 2's own sigma'_n values:
-    #   max |MC - BB| over the stick stages 1-3: 0.015 MPa
-    #   max |MC - BB| over the full sigma'_n range:  0.13 MPa
-    #   the MC strength margin over the measured tau at every stick stage is
-    #   identical to BB's to 0.01 MPa, so slip onset is inherited, not refitted.
-    #
-    # WHAT THE TWO LAWS STILL DISAGREE ABOUT -- which is the point of the run:
-    #   1. envelope CURVATURE.  BB is log-curved in sigma'_n; MC is a straight
-    #      line through the onset tangent.  They separate by up to 0.13 MPa at
-    #      the far end of the unloading branch.
-    #   2. the WEAKENING PATH.  BB weakens on W = exp(-(s/Dc)^m); MC weakens
-    #      linearly in Rbar = exp(-gamma/D_R).  Same endpoints, different route.
-    #   3. MC has ONE characteristic distance where BB has two (a strength Dc and
-    #      a roughness D_R).  D_R is set from the BBFast roughness distance, not
-    #      its strength distance, so the aperture-permeability path -- which feeds
-    #      the scored Q -- stays identical; the MC strength then weakens over that
-    #      same distance.  On SW-T1/SW-T2 the two BB distances are equal so this
-    #      is exact; on SW-S3 BB used Dc = 6.0e-5 against D_R = 4.0e-5 (1.5x) and
-    #      on SW-S4 7.45e-5 against 8.0e-5 (1.07x).
-    #
-    # Rate-and-state is deliberately OFF.  The old MC decks (67_11, 83_11) ran it
-    # with constants fitted against the superseded meshes; a plain Coulomb
-    # baseline is what the paper's MC comparison is for.
-    # =========================================================================
-    type = ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile
+    # DECK 49: Barton-Bandis contact/traction law (FastAD + Hardening slip-weakening).
+    # Declares the SAME downstream hydraulic wiring as the decoupled law:
+    # dilation_jump_increment (AD), roughness_state (AD), cumulative_plastic_slip.
+    type = OrcaBartonBandisContactTractionFastADHardening
     boundary = fracture_interface
 
-    enable_tensile_cohesion = false   # pre-existing fault: start fully damaged / frictional
-
-    # --- normal closure: identical to the BBFast sibling ---------------------
+    # (a) power-law BB normal closure (in the residual; stress-dependent Kn)
     use_hyperbolic_normal_closure = true
     initial_normal_stiffness = ${bb_initial_normal_stiffness_mech}
     maximum_closure = ${bb_maximum_closure_mech}
     normal_closure_stress_exponent = ${bb_normal_closure_stress_exponent}
     normal_closure_offset = ${bb_normal_closure_offset}
-    penalty_normal = 2.0e13          # legacy linear fallback only; the power-law closure above
-                                     # carries the normal response. Same value the 67_11/83_11
-                                     # MC decks used. BBFast has no such parameter.
+    normal_unload_retention_fraction = ${normal_unload_retention_fraction}
+    normal_unload_retention_time = ${normal_unload_retention_time}
+    normal_unload_activation_slip = ${normal_unload_activation_slip}
     penalty_tangent = ${penalty_tangent}
     normal_traction_tolerance = ${normal_traction_tolerance}
     tangential_traction_tolerance = ${tangential_traction_tolerance}
 
-    # --- roughness state: copied verbatim from the BBFast sibling ------------
-    # roughness_state is consumed by [czm_aperture]
-    # (ADOrcaRoughnessDamageFracturePermeability), so these three MUST match or
-    # the hydraulic aperture -- and therefore Q -- would differ for a reason that
-    # has nothing to do with the shear law. Both laws use the same decay form,
-    # R = R_res + (R_0 - R_res)*exp(-s/D), so the transfer is exact.
-    initial_roughness = ${bb_roughness_state_initial}
-    residual_roughness = ${bb_roughness_state_residual}
-    roughness_decay_distance = ${bb_roughness_characteristic_slip}
+    # (b) BB strength envelope + slip weakening
+    jrc = ${bb_jrc}
+    jcs = ${bb_jcs}
+    residual_friction_angle_degrees = ${bb_residual_friction_angle}
+    use_scale_correction = false            # back-analysis: JRC/JCS used as-is
+    use_mobilized_jrc = false               # peak strength available at zero slip (Pi=16 onset)
+    compressive_normal_stress_floor = ${compressive_normal_stress_floor}
+    pore_pressure_strength_coefficient = 0.0  # pressure enters MECHANICALLY via the
+                                              # fault-pressure kernels (deck-43 route);
+                                              # a nonzero value here would double-count.
+    use_slip_weakening = true
+    characteristic_slip_distance = ${bb_characteristic_slip_distance}
+    slip_weakening_exponent = ${bb_slip_weakening_exponent}
+    slip_weakening_residual_friction_angle_degrees = ${bb_slip_weakening_residual_friction_angle}
 
-    # --- Coulomb envelope transferred from Barton-Bandis --------------------
-    friction_coefficient_rough = 0.9804
-    friction_coefficient_smooth = 0.1139
-    friction_roughness_exponent = 1.0     # linear in Rbar, matching BB's linear-in-W form
-    cohesion_rough = 3.225e6
-    cohesion_smooth = 0.0
-    cohesion_roughness_exponent = 1.0
-
-    # --- dilation: copied verbatim from the BBFast sibling ------------------
+    # (c) decoupled (mobilized) dilation, kinematic routing
     use_dilatancy = true
+    use_decoupled_dilation = true
     dilation_angle_peak_degrees = ${dilation_angle_peak_degrees}
     dilation_angle_residual_degrees = ${dilation_angle_residual_degrees}
     dilation_decay_distance = ${dilation_decay_distance}
-    dilation_decay_exponent = 1.0
     dilation_opens_joint = ${dilation_opens_joint}
+    accumulate_irreversible_dilation = true
+    cap_dilation_to_available_closure = false  # closing-mode concept; with opens_joint the
+                                               # dilation is an eigen-opening, not closure use
     max_dilation_increment = 0.0
 
-    # --- return map ---------------------------------------------------------
+    # (d) roughness_state export for the permeability retention (matches the decoupled law)
+    use_roughness_degradation = true
+    roughness_state_initial = ${bb_roughness_state_initial}
+    roughness_state_residual = ${bb_roughness_state_residual}
+    roughness_characteristic_slip = ${bb_roughness_characteristic_slip}
+
+    # (e) numerics / rate
     max_plastic_slip_increment = ${max_plastic_slip_increment}
     tangential_viscosity = ${tangential_viscosity}
-    max_local_newton_iterations = 80
-    max_local_substeps = 48
+    min_tau_limit = ${min_tau_limit}
+    max_return_mapping_iterations = 100
+    relative_tolerance = 1e-10
   []
   [czm_global_traction]
     type = OrcaComputeGlobalTractionSmallStrain
@@ -1777,8 +1674,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
     slip_damage_onset_slip = ${slip_damage_onset_slip}
     slip_damage_characteristic_slip = ${slip_damage_characteristic_slip}
     cumulative_plastic_slip_name = cumulative_plastic_slip
-    cumulative_plastic_slip_is_ad = true    # 94-series: the MC law exports cumulative_plastic_slip as an AD property
-                                            # (the BBFast law exports it non-AD, hence 'false' on the 93 sibling).
+    cumulative_plastic_slip_is_ad = false   # DECK49: the FastAD BB law exports this non-AD
     slip_damage_aperture_name = slip_damage_aperture
 
     min_hydraulic_aperture = ${min_hydraulic_aperture}
@@ -2178,33 +2074,33 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
   # --- BB-law state diagnostics (FastAD law exports these as NON-AD properties, except
   #     roughness_state / dilation_jump_increment / bb_normal_closure which stay AD) ---
   [cumulative_plastic_slip_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = cumulative_plastic_slip
     boundary = fracture_interface
   []
   [plastic_slip_increment_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = plastic_slip_increment
     boundary = fracture_interface
   []
   [limit_tau_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = limit_tau
     boundary = fracture_interface
   []
   # notebook alias bb_limit_tau_pa -> bb_limit_tau_pp (Coulomb shear strength, same quantity)
   [bb_limit_tau_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = limit_tau
     boundary = fracture_interface
   []
   [friction_coefficient_effective_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = friction_coefficient_effective
     boundary = fracture_interface
   []
   [cohesion_effective_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = cohesion_effective
     boundary = fracture_interface
   []
@@ -2213,21 +2109,54 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
     property = roughness_state
     boundary = fracture_interface
   []
-  # 94-SERIES BUILD FIX 2026-08-18: [bb_dilation_angle_pp] REMOVED.  It read the
-  # non-AD property bb_dilation_angle_degrees, which only the Barton-Bandis law
-  # declares, so every MC deck aborted at initialSetup with "The non-AD material
-  # property 'bb_dilation_angle_degrees' does not exist" (observed on the SW-S3
-  # pair, SLURM 19188659/19188660).  It was meant to be replaced by
-  # mc_dilation_angle_effective_pp -- present below -- but was left behind.
-  # NOTE: orca-opt --check-input does NOT catch this; material-property
-  # resolution happens at initialSetup, after the parse.  Smoke-run 1 rank /
-  # 2 steps to validate a block swap, never --check-input alone.
+  # DECK49: dilation_state does not exist in the BB law; the mobilized dilation ANGLE is the
+  # equivalent diagnostic (psi_mob decaying peak -> residual with slip).
+  [bb_dilation_angle_pp]
+    type = SideAverageMaterialProperty
+    property = bb_dilation_angle_degrees
+    boundary = fracture_interface
+  []
   [dilation_jump_increment_pp]
     type = ADSideAverageMaterialProperty
     property = dilation_jump_increment
     boundary = fracture_interface
   []
   # --- BB-specific diagnostics: closure, mobilized friction, JRC ---
+  [bb_normal_closure_pp]
+    type = ADSideAverageMaterialProperty
+    property = bb_normal_closure
+    boundary = fracture_interface
+  []
+  [bb_normal_closure_um_pp]
+    type = ParsedPostprocessor
+    pp_names = bb_normal_closure_pp
+    expression = 'bb_normal_closure_pp * 1e6'
+  []
+  [bb_law_normal_stress_pp]           # sigma_n the BB law computed from its closure (Pa, +compression)
+    type = SideAverageMaterialProperty
+    property = bb_compressive_normal_stress
+    boundary = fracture_interface
+  []
+  [bb_peak_friction_angle_pp]
+    type = SideAverageMaterialProperty
+    property = bb_peak_friction_angle_degrees
+    boundary = fracture_interface
+  []
+  [bb_mu_peak_pp]
+    type = SideAverageMaterialProperty
+    property = bb_peak_friction_coefficient
+    boundary = fracture_interface
+  []
+  [bb_jrc_mobilized_pp]
+    type = SideAverageMaterialProperty
+    property = bb_jrc_mobilized
+    boundary = fracture_interface
+  []
+  [bb_normal_stiffness_tangent_pp]    # tangent Kn along the power-law closure (Pa/m)
+    type = SideAverageMaterialProperty
+    property = bb_normal_stiffness_tangent
+    boundary = fracture_interface
+  []
 
   # --- shear traction magnitude |tau| = sqrt(tau_1^2 + tau_2^2), Pa ---
   [czm_tau_1_pp]
@@ -2423,7 +2352,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
   # for d_n on the other three specimens.
   # ---------------------------------------------------------------------------
   [czm_dn_total_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = normal_opening_total
     boundary = fracture_interface
   []
@@ -2436,47 +2365,6 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
     type = ParsedPostprocessor
     pp_names = czm_shear_slip_mm_pp
     expression = 'czm_shear_slip_mm_pp * 1'
-  []
-
-  # ---------------------------------------------------------------------------
-  # 94-series: MC envelope evolution.  These stand in one-for-one for the seven
-  # bb_* channels of the BBFast sibling, whose Barton-Bandis material properties
-  # do not exist under this law.  Channel count stays at 91.
-  # ---------------------------------------------------------------------------
-  [mc_roughness_state_pp]
-    type = ADSideAverageMaterialProperty
-    property = roughness_state
-    boundary = fracture_interface
-  []
-  [mc_mu_effective_pp]                # mu(R): the analogue of bb_mu_peak_pp
-    type = ADSideAverageMaterialProperty
-    property = friction_coefficient_effective
-    boundary = fracture_interface
-  []
-  [mc_cohesion_effective_pp]          # c(R), Pa
-    type = ADSideAverageMaterialProperty
-    property = cohesion_effective
-    boundary = fracture_interface
-  []
-  [mc_dilation_angle_effective_pp]    # degrees
-    type = ADSideAverageMaterialProperty
-    property = dilation_angle_effective
-    boundary = fracture_interface
-  []
-  [mc_limit_tau_pp]                   # tau_lim, Pa: the analogue of the BB envelope
-    type = ADSideAverageMaterialProperty
-    property = limit_tau
-    boundary = fracture_interface
-  []
-  [mc_normal_contact_pressure_pp]     # Pa, +compression: analogue of bb_law_normal_stress_pp
-    type = ADSideAverageMaterialProperty
-    property = normal_contact_pressure
-    boundary = fracture_interface
-  []
-  [mc_cumulative_plastic_slip_pp]     # m
-    type = ADSideAverageMaterialProperty
-    property = cumulative_plastic_slip
-    boundary = fracture_interface
   []
 []
 
@@ -2495,7 +2383,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
   solve_type = Newton
   line_search = l2
   start_time = 0
-  end_time = 3500              # FULL SW-S4 cycle (was 1800 -> truncated mid-experiment, before the burst)
+  end_time = 4920.7
 
   [TimeStepper]
     type = IterationAdaptiveDT

@@ -1,41 +1,6 @@
 # =============================================================================
-# 94-SERIES -- MOHR-COULOMB BASELINE.  SW-T2 mesh 3
-#
-# Built from 93_04_swt2_final_theta30_resc9p71_ppfix_mesh3.i by replacing ONE block: [czm_contact].
-# Everything else -- mesh file, source nodesets and their coordinates, boundary
-# conditions, the digitized injection schedule, the paper-frame trig constants,
-# the flow constants, the solver, and 84 of the 91 postprocessors -- is
-# byte-identical to the BBFast sibling.  A 93/94 pair therefore isolates the
-# constitutive law and nothing else, which is what the paper's "BBFast primary,
-# MC baseline" comparison needs.
-#
-# The seven bb_* envelope postprocessors are replaced by seven mc_* analogues,
-# because the Barton-Bandis material properties they read are not declared by
-# this law.  Count stays at 91.
-#
-# WHY NOT THE OLD MC DECKS.  All four predate the 89-92 corrections and none is
-# usable as-is:
-#   SW-S3  83_11  sits on sw3_mesh_size5 (L = 124.40 mm, superseded by L123p4)
-#                 and biot_coefficient = 1e-12.
-#   SW-S4  67_11  sits on ye2018_sw_s4_size5_mesh (theta = 28.9904 deg, fracture
-#                 plane 2.85 mm off-centre) and emits no paper-frame sigma'_n or
-#                 tau channel at all, so the gate silently fell through to the
-#                 local BB frame.
-#   SW-T1/T2      biot 1e-12, the split mass kernel, T2 on the non-theta30 mesh,
-#                 and -- decisively -- THE PAPER-FRAME THETA CONSTANTS ARE
-#                 SWAPPED: SWT1_MC carries a 32 deg mesh with 31 deg constants
-#                 and SWT2_MC a 31 deg mesh with 32 deg constants.  At this
-#                 campaign's differential stress that is about 2.3 MPa on
-#                 sigma'_n, roughly 3x SW-T1's entire sigma'_n RMSE, so the
-#                 cohesions fitted in those decks (14.54 / 15.41 MPa) were fitted
-#                 against mis-resolved stresses and cannot be ported.
-# The one thing those decks had right -- the digitized injection schedule -- is
-# already what the BBFast sibling carries, so the Table-2 gate scores these
-# unchanged.
-# =============================================================================
-# =============================================================================
-# 93-SERIES -- MESH AND POSTPROCESSOR AUDIT FIXES.  SW-T2 mesh 3
-# Built from 92_05_swt2_final_theta30_resc9p71_mesh3.i.  Constitutive parameters are UNCHANGED;
+# 93-SERIES -- MESH AND POSTPROCESSOR AUDIT FIXES.  SW-T2 mesh 5
+# Built from 91_04_swt2_bbfast_theta30_resc9p71_kernel_SV_biot0p6.i.  Constitutive parameters are UNCHANGED;
 # this series changes only what is measured and reported, plus one source-node
 # coordinate on SW-T1 mesh-5.
 #
@@ -55,59 +20,58 @@
 #     to four decimals -- verified against the Exodus fracture_interface nodeset).
 # =============================================================================
 # =============================================================================================
-# 94_04_swt2_mc_final_mesh3
+# 97_02_swt2_cyclic3
 #
-# 92-SERIES, MESH CONVERGENCE.  SW-T2 is FINAL; this is the same physics on the size-3 mesh.
+# 91-SERIES: fix the RESIDUAL, keep the ONSET.  Back-analysis of the 90-series, 2026-08-17.
 #
-# Parent: 94_04_swt2_mc_final_mesh3.i  (size-5, the calibrated deck of record)
+# Parent: 90_03_swt2_bbfast_theta30_cohesion_c33p2_kernel_SV_biot0p6.i
 #
-# WHY SW-T2 IS FINAL.  Scored against Ye & Ghassemi (2018) Table 2 with
-# scripts/table2_gate.py -- eleven injection hold stages, five independent measured quantities
-# per stage, each normalised by its own measured range:
+# WHAT THE 90-SERIES SETTLED.  The level correction worked.  Every deck that was given more peak
+# strength moved its margin crossing to the top of the staircase and its onset onto the measured
+# event:
 #
-#     case    Q      sigma'n  tau     d_n     d_s     MEAN nRMSE
-#     90_03   7.59   2.87     3.88    3.46    2.95     4.15
-#     91_03   4.46   1.06     1.43    2.36    2.63     2.39
-#     91_04   5.87   1.26     1.70    2.06    1.25     2.43   <-- FINAL, mesh 5
+#     specimen  case    crosses 0 at   slip onset (sim vs val)   mean nRMSE (corrected sigma_d)
+#     SW-T1     90_01   24->25 MPa     1610 vs 1650-1725 s        10.6%
+#     SW-T1     90_02   never          locked                     51.3%
+#     SW-T2     90_03   24->25 MPa     2220 vs 2225-2255 s         6.3%
+#     SW-T2     90_04   never          locked                     37.7%
+#     SW-S3     90_05   24->25 MPa     2431 vs 2445 s              8.8%
+#     SW-S3     90_06   24->25 MPa     2428 vs 2445 s              9.1%
+#     SW-S4     90_07   19->20 MPa     1404 vs 1320 s (stage 2)    6.9%
+#     SW-S4     90_08   19->20 MPa     1402 vs 1320 s (stage 2)    6.8%
 #
-# 2.4% is the best of the four specimens by a factor of two.  Both bracket arms sit within
-# 0.6 MPa of the residual cohesion that all five observables independently ask for (tau 9.15,
-# sigma'_n 9.15, d_s 9.65, d_n 9.36, Q 8.51 MPa), so the parameter is identified and there is
-# nothing left for another sweep to find.  91_04 is preferred over 91_03 on the displacements
-# (d_s 1.25 vs 2.63) and because its 9.71 MPa sits in the same 9-10 MPa band that SW-T1
-# independently converged on, which is what two mated Mode-I fractures in the same granite
-# should do.  What remains is model-form: the measurement BACK-SLIPS 19 um during unloading
-# (d_s 0.571 -> 0.552 mm) and an irreversible plastic-slip law cannot reverse, so both arms
-# drift +0.011 to +0.029 mm by stage 11.  No parameter fixes that.
+# THE REPORTING-CHANNEL CORRECTION.  The scores above use differential_stress_reaction_mpa_pp,
+# not differential_stress_mpa_pp.  The latter is (sigma1_pp - 30e6)*1e-6: it subtracts a TOTAL
+# confining stress from a SKELETON axial stress and therefore reads alpha*p ~= 3.5 MPa low for
+# the entire run.  Two independent operators agree against it -- the load-cell reaction
+# (|top reaction|/A - confining) and sigma1 - sigma3_bulk -- and they agree with each other to
+# < 0.4 MPa and with the digitized pre-event plateau to 0.1-0.5 MPa on SW-S4.  The broken channel
+# is referenced nowhere outside [Postprocessors], so no physics was affected and no re-run was
+# needed; the notebooks were repointed instead.  It is the channel the paper-frame tau and
+# sigma'_n operators already consumed, so the margin analysis was never contaminated.
 #
-# NOT ONE CONSTITUTIVE PARAMETER CHANGES IN THIS DECK.  The only differences from the parent are
-# the mesh file, the injection/production node coordinates (which are mesh-resolution
-# dependent), and the output file_base names.  Any difference in the results is therefore
-# discretisation error and nothing else -- which is the entire point of running it.
+# WHAT IS LEFT, AND IT IS NOT THE ONSET.  With the corrected channel the residual differential
+# stress splits cleanly by fracture type:
 #
-# THE MESH-3 SOURCE-NODE TRAP, FIXED HERE.  ExtraNodesetGenerator with use_closest_node = true
-# never errors: if the requested coordinate misses the fracture plane it silently pins the
-# source to the nearest BULK node and the run drives the matrix instead of the joint.  On the
-# size-3 SW-T2 mesh the parent's coordinates do exactly that -- the nearest node is a bulk node
-# 584.9 um away, and the nearest INTERFACE node is 956.8 um away and loses.  This deck therefore
-# carries the exact size-3 interface-node coordinates instead:
+#     SW-T1 90_01   final sigma_d 71.52 vs 62.68 MPa   +8.83   UNDER-weakened   res_c = 11.176 MPa
+#     SW-T2 90_03   final sigma_d 67.36 vs 62.84 MPa   +4.52   UNDER-weakened   res_c = 10.695 MPa
+#     SW-S3 90_05   final sigma_d  1.60 vs  5.50 MPa   -3.90   OVER-weakened    res_c = 0
+#     SW-S4 90_08   final sigma_d  5.36 vs  5.14 MPa   +0.22   correct          res_c = 0
 #
-#     source_in    -0.018370909 0 0.034530652   ->  -0.017892500 0 0.035359281
-#     source_out    0.018370909 0 0.098169348   ->   0.017892500 0 0.097340719
+# The two mated tensile fractures keep too much interlock after the burst; the saw cut that was
+# given none keeps too little.  SW-S4, whose roughness-degradation floor supplies its residual,
+# is already right.  So the 91-series moves residual_cohesion only, at fixed peak envelope, on
+# the three specimens that need it -- and brackets D_c on SW-S4, where the remaining error is
+# the SHAPE of the transition rather than its level.
 #
-# Both sit 7.367 mm inside the sidewall on this resolution, against 7.395 mm on the size-5 mesh,
-# so the borehole has moved 28 um -- the physical position is preserved to well inside the
-# element size.  Verified with scripts/check_source_nodes.py, which must be re-run after ANY
-# mesh change.  injection_pressure_pp and pp_outlet_pp are AverageNodalVariableValue over
-# source_in / source_out, so they follow the nodeset automatically and need no edit.
+# THIS DECK.  The conservative half of the SW-T2 residual bracket: residual_cohesion
+# 1.0695e7 -> 9.71e6 Pa (-0.98 MPa), peak cohesion unchanged at 3.320e7 Pa.
 #
-# WHAT TO CHECK IN THE RESULT.  flow_rate_validation_ml_min_pp is the paper's Eq. 9 cubic-law
-# value and is built from boundary averages, so it should be mesh-insensitive.  flow_rate_pp
-# (a NodalSum of the injection flux over a one-node set) and flow_rate_mesh_geometry_ml_min_pp
-# are NOT mesh-independent by construction -- they are diagnostics, they are not what the paper
-# reports, and a change in them between mesh 3 and mesh 5 is expected rather than alarming.
+# SW-T2 is the specimen with the least to gain -- 90_03 already scores 6.3% -- so the risk here
+# is losing a good case to an over-correction.  This deck exists so that outcome is recoverable
+# without another round.  Expect final sigma_d 64-66 MPa; it should be strictly between 90_03's
+# 67.36 and 91_03's result, and if it is not, the residual response is nonlinear in cohesion.
 #
-# HPC: --chdir pinned absolutely, Outputs/chk disabled, file_base names distinct from the parent.
 # =============================================================================================
 # ==============================================================================
 # 90_03_swt2_bbfast_theta30_cohesion_c33p2_kernel_SV_biot0p6
@@ -225,7 +189,7 @@
 #       whenever the mesh, penalty, elastic properties, or boundary setup changes.
 ################################################################################
 
-mesh_file = mesh/ye2018_sw_T2_theta30_mesh_size_3.e   # 92_05: mesh-convergence run. Was size_5.
+mesh_file = mesh/ye2018_sw_T2_theta30_mesh_size_5.e
 sample_radius = 0.02526
 sample_area = 0.00200454848465
 bulk_sin_theta = 0.4999999999999999          # 93-series: sin(30.0 deg), THIS specimen's fracture angle.
@@ -294,9 +258,9 @@ paper_flow_width_over_length = 0.813242611781
 mesh_flow_width_over_length = 0.813242611781
 ml_per_m3_per_min = 6.0e7
 
-exodus_file_base = results_exodus_hpc_rorqual/94_04_swt2_mc_final_mesh3_hpc
-csv_file_base    = results_csv_hpc_rorqual/94_04_swt2_mc_final_mesh3_hpc
-checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_hpc
+exodus_file_base = results_exodus_hpc_rorqual/97_02_swt2_cyclic3_hpc
+csv_file_base    = results_csv_hpc_rorqual/97_02_swt2_cyclic3_hpc
+checkpoint_file_base = results_checkpoint_hpc_rorqual/97_02_swt2_cyclic3_hpc
 
 [GlobalParams]
   displacements = 'disp_x disp_y disp_z'
@@ -323,14 +287,14 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
   [source_in]
     type = ExtraNodesetGenerator
     input = sidesets_from_nodesets
-    coord = '-0.017892500 0.0 0.035359281'   # 92_05: EXACT size-3 interface node. The size-5 coord snaps to a BULK node here.   # exact interface node on the 30 deg plane
+    coord = '-0.018370909 0.0 0.034530652'   # exact interface node on the 30 deg plane
     new_boundary = source_in
     use_closest_node = true
   []
   [source_out]
     type = ExtraNodesetGenerator
     input = source_in
-    coord = '0.017892500 0.0 0.097340719'   # 92_05: EXACT size-3 interface node. The size-5 coord snaps to a BULK node here.   # exact interface node on the 30 deg plane
+    coord = '0.018370909 0.0 0.098169348'   # exact interface node on the 30 deg plane
     new_boundary = source_out
     use_closest_node = true
   []
@@ -390,21 +354,30 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
       expression = 'if(t<2.0,${axial_pres_initial},if(t<55.0,${axial_pres_initial}+(${axial_pres_final}-${axial_pres_initial})*(t-2.0)/53.0,${axial_pres_final}))'
     []
 
+  # ------------------------------------------------------------------------
+  # DISCUSSION DECK (cyclic).  3 EQUAL-PEAK load/unload cycles.
+  # This REPLACES the digitized Ye & Ghassemi schedule; do not score against
+  # Table 2.  The validated run is the 93-series parent.
+  #
+  # Ramp rate R = 10.0966 kPa/s, taken from this specimen's own
+  # schedule (5.00 -> 28.00 MPa in 2280.0 s), so the cyclic run
+  # loads at the same rate as the run it is compared against.
+  # Peak 28.00 MPa held 200 s; floor 8.00 MPa held 200 s.
+  #
+  # PERMEABILITY IS READ AT THE HOLDS, where the pressure is identical from
+  # cycle to cycle and the slip velocity has relaxed (so the eta*V overstress
+  # is not in the reading).  Probe instants:
+  #     cycle 1 peak  hold  t =    2380.0 s
+  #     cycle 1 floor hold  t =    4560.9 s
+  #     cycle 2 peak  hold  t =    6741.7 s
+  #     cycle 2 floor hold  t =    8922.6 s
+  #     cycle 3 peak  hold  t =   11103.5 s
+  #     cycle 3 floor hold  t =   13284.3 s
+  # ------------------------------------------------------------------------
   [injection_pressure]
-    # REBUILT 2026-08-16 from SWT2_injection_pressure_MPA.csv (re-extraction dated 2026-08-16).
-    # The previous schedule was a hand-built idealised staircase: correct hold LEVELS but
-    # transition times late by +48..+155 s, and the 28 MPa peak hold only 220 s of measured
-    # duration. Because injection pressure is the DRIVER, that timing error propagates into
-    # flow rate, permeability, slip onset and the unload branch -- so it must be fixed before
-    # any friction/dilation parameter is re-tuned against these curves.
-    #
-    # Plateau VALUES are snapped to the nominal 5/8/12/16/20/24/28 MPa the experiment held;
-    # only the measured TRANSITION TIMES are adopted. Feeding the raw digitised trace would
-    # inject +-0.3 MPa extraction jitter as a real pressure BC and excite spurious transients.
-    #   whole-record RMSE against the measurement: 1.536 MPa -> 0.266 MPa
     type = PiecewiseLinear
-    x = '0.0 60.0 130.0 480.0 565.0 995.0 1070.0 1360.0 1460.0 1755.0 1850.0 2145.0 2280.0 2500.0 2510.0 2560.0 2570.0 2605.0 2615.0 2650.0 2660.0 2705.0 2725.0 2830.0 2852.5'
-    y = '5e+06 5e+06 8e+06 8e+06 1.2e+07 1.2e+07 1.6e+07 1.6e+07 2e+07 2e+07 2.4e+07 2.4e+07 2.8e+07 2.8e+07 2.4e+07 2.4e+07 2e+07 2e+07 1.6e+07 1.6e+07 1.2e+07 1.2e+07 8e+06 8e+06 8e+06'
+    x = '0.0000 2.0000 2280.0000 2480.0000 4460.8696 4660.8696 6641.7391 6841.7391 8822.6087 9022.6087 11003.4783 11203.4783 13184.3478 13384.3478 13681.4783 13881.4783'
+    y = '5e+06 5e+06 2.8e+07 2.8e+07 8e+06 8e+06 2.8e+07 2.8e+07 8e+06 8e+06 2.8e+07 2.8e+07 8e+06 8e+06 5e+06 5e+06'
   []
 
   [production_pressure_fn]
@@ -1022,7 +995,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
     execute_on = TIMESTEP_END
   []
   [fracture_state_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = fracture_state
     variable = fracture_state
@@ -1038,7 +1011,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
     execute_on = TIMESTEP_END
   []
   [roughness_damage_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = roughness_damage
     variable = roughness_damage
@@ -1062,7 +1035,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
     execute_on = TIMESTEP_END
   []
   [limit_tau_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = limit_tau
     variable = limit_tau
@@ -1070,7 +1043,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
     execute_on = TIMESTEP_END
   []
   [plastic_slip_increment_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = plastic_slip_increment
     variable = plastic_slip_increment
@@ -1086,7 +1059,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
     execute_on = TIMESTEP_END
   []
   [cumulative_plastic_slip_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = cumulative_plastic_slip
     variable = cumulative_plastic_slip
@@ -1094,7 +1067,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
     execute_on = TIMESTEP_END
   []
   [friction_coefficient_effective_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = friction_coefficient_effective
     variable = friction_coefficient_effective
@@ -1102,7 +1075,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
     execute_on = TIMESTEP_END
   []
   [cohesion_effective_aux]
-    type = ADMaterialRealAux
+    type = MaterialRealAux
     check_boundary_restricted = false
     property = cohesion_effective
     variable = cohesion_effective
@@ -1181,107 +1154,59 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
     pore_pressure = pore_pressure
   []
   [czm_contact]
-    # =========================================================================
-    # MOHR-COULOMB BASELINE.  Roughness-dependent Coulomb return map with a
-    # decoupled dilation law.  This is the ONLY block that differs from the
-    # BBFast sibling 94_04_swt2_mc_final_mesh3.i.
-    #
-    #   tau_lim = c(R) + sigma'_n * mu(R),   Rbar = (R - R_res)/(1 - R_res)
-    #   mu(R)   = mu_smooth + (mu_rough - mu_smooth) * Rbar^n_f     (n_f = 1)
-    #   c(R)    = c_smooth  + (c_rough  - c_smooth ) * Rbar^n_c     (n_c = 1)
-    #   R       = R_res + (R_0 - R_res) * exp(-gamma / D_R)
-    #
-    # WHERE THESE NUMBERS COME FROM.  They are not a fresh calibration; they are
-    # a transfer of the Barton-Bandis envelope this specimen was already
-    # calibrated to, so that a 93/94 pair differs in constitutive FORM and not
-    # in fitted strength.
-    #
-    #   BB peak      tau = c + sigma'_n * tan(phi_r + JRC*log10(JCS/sigma'_n))
-    #   BB residual  tau = c_res + sigma'_n * tan(phi_r,sw)      <- already Coulomb
-    #
-    #   * mu_smooth / c_smooth are an EXACT transfer of the BB residual line.
-    #   * mu_rough / c_rough tangent-match the BB PEAK envelope at the onset
-    #     normal stress sigma'_n* = 57.88 MPa (Table 2, last stick stage of
-    #     stages 1-5), where the BB peak friction angle is 35.81 deg and the
-    #     BB peak strength is 74.95 MPa.
-    #   * the (mu_rough, c_rough) written here are pre-divided by
-    #     Rbar_0 = 1.0000 so that MC's strength AT ZERO SLIP equals the BB peak,
-    #     because this deck starts at R_0 = ${initial_roughness}, not at R = 1.
-    #
-    # ACCURACY OF THE TRANSFER, checked against Table 2's own sigma'_n values:
-    #   max |MC - BB| over the stick stages 1-5: 0.091 MPa
-    #   max |MC - BB| over the full sigma'_n range:  1.25 MPa
-    #   the MC strength margin over the measured tau at every stick stage is
-    #   identical to BB's to 0.01 MPa, so slip onset is inherited, not refitted.
-    #
-    # WHAT THE TWO LAWS STILL DISAGREE ABOUT -- which is the point of the run:
-    #   1. envelope CURVATURE.  BB is log-curved in sigma'_n; MC is a straight
-    #      line through the onset tangent.  They separate by up to 1.25 MPa at
-    #      the far end of the unloading branch.
-    #   2. the WEAKENING PATH.  BB weakens on W = exp(-(s/Dc)^m); MC weakens
-    #      linearly in Rbar = exp(-gamma/D_R).  Same endpoints, different route.
-    #   3. MC has ONE characteristic distance where BB has two (a strength Dc and
-    #      a roughness D_R).  D_R is set from the BBFast roughness distance, not
-    #      its strength distance, so the aperture-permeability path -- which feeds
-    #      the scored Q -- stays identical; the MC strength then weakens over that
-    #      same distance.  On SW-T1/SW-T2 the two BB distances are equal so this
-    #      is exact; on SW-S3 BB used Dc = 6.0e-5 against D_R = 4.0e-5 (1.5x) and
-    #      on SW-S4 7.45e-5 against 8.0e-5 (1.07x).
-    #
-    # Rate-and-state is deliberately OFF.  The old MC decks (67_11, 83_11) ran it
-    # with constants fitted against the superseded meshes; a plain Coulomb
-    # baseline is what the paper's MC comparison is for.
-    # =========================================================================
-    type = ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile
+
+    type = OrcaBartonBandisContactTractionFastADHardening
     boundary = fracture_interface
 
-    enable_tensile_cohesion = false   # pre-existing fault: start fully damaged / frictional
-
-    # --- normal closure: identical to the BBFast sibling ---------------------
     use_hyperbolic_normal_closure = true
     initial_normal_stiffness = 2.443e11
     maximum_closure = 4.591e-5
     normal_closure_stress_exponent = 3.28
     normal_closure_offset = 4.433e-5
-    penalty_normal = 2.0e13          # legacy linear fallback only; the power-law closure above
-                                     # carries the normal response. Same value the 67_11/83_11
-                                     # MC decks used. BBFast has no such parameter.
+    normal_unload_retention_fraction = 0.84
+    normal_unload_retention_time = 0.0
+    normal_reclosure_stiffness_multiplier = 1.0
+    normal_unload_activation_slip = 5.0e-5
+    reported_reversible_normal_opening_scale = 1.0
+    reported_reversible_normal_opening_retention_fraction = 0.0
+    reported_reversible_normal_opening_retention_activation_slip = 50e-6
     penalty_tangent = ${penalty_tangent}
     normal_traction_tolerance = 0.0
     tangential_traction_tolerance = ${tangential_traction_tolerance}
 
-    # --- roughness state: copied verbatim from the BBFast sibling ------------
-    # roughness_state is consumed by [czm_aperture]
-    # (ADOrcaRoughnessDamageFracturePermeability), so these three MUST match or
-    # the hydraulic aperture -- and therefore Q -- would differ for a reason that
-    # has nothing to do with the shear law. Both laws use the same decay form,
-    # R = R_res + (R_0 - R_res)*exp(-s/D), so the transfer is exact.
-    initial_roughness = ${initial_roughness}
-    residual_roughness = ${residual_roughness}
-    roughness_decay_distance = 1.5e-4
-
-    # --- Coulomb envelope transferred from Barton-Bandis --------------------
-    friction_coefficient_rough = 0.5528
-    friction_coefficient_smooth = 0.5717
-    friction_roughness_exponent = 1.0     # linear in Rbar, matching BB's linear-in-W form
-    cohesion_rough = 4.2959e7
-    cohesion_smooth = 9.710e6
-    cohesion_roughness_exponent = 1.0
-
-    # --- dilation: copied verbatim from the BBFast sibling ------------------
+    jrc = 14.63
+    jcs = 1.5e8
+    residual_friction_angle_degrees = 29.756   # granite basic friction, measured on this campaign's own saw cut (SW-S3). Was 46.29182452, above every measured granite value.
+    use_scale_correction = false
+    use_mobilized_jrc = false
+    compressive_normal_stress_floor = 1e3
+    pore_pressure_strength_coefficient = 0.0
+    use_slip_weakening = true
+    characteristic_slip_distance = 0.00015
+    slip_weakening_exponent = 1.4
+    slip_weakening_residual_friction_angle_degrees = 29.756   # slip destroys ROUGHNESS, not the rock's basic friction angle -- Barton's own picture. Was 40.2.
+    cohesion = 3.320e7          # asperity interlock of a MATED Mode-I fracture; pins the peak envelope through Table 2's last stick stage.
+    residual_cohesion = 9.71e6 # interlock surviving the burst; pins the post-burst stage. Table 2 shows this joint retaining most of its dilation, so it does not lose all interlock in one event.  # 91_04: half the 91_03 cut. Was 1.0695e7.
     use_dilatancy = true
+    use_decoupled_dilation = true
     dilation_angle_peak_degrees = 13.96539134
     dilation_angle_residual_degrees = 13.96539134
     dilation_decay_distance = 1.5e-4
-    dilation_decay_exponent = 1.0
     dilation_opens_joint = true
+    accumulate_irreversible_dilation = true
+    cap_dilation_to_available_closure = false
     max_dilation_increment = 0.0
 
-    # --- return map ---------------------------------------------------------
+    use_roughness_degradation = true
+    roughness_state_initial = ${initial_roughness}
+    roughness_state_residual = ${residual_roughness}
+    roughness_characteristic_slip = 1.5e-4
+
     max_plastic_slip_increment = 0.0
     tangential_viscosity = 400000000000
-    max_local_newton_iterations = 80
-    max_local_substeps = 48
+    min_tau_limit = 0.0
+    max_return_mapping_iterations = 100
+    relative_tolerance = 1e-10
   []
   [czm_global_traction]
     type = OrcaComputeGlobalTractionSmallStrain
@@ -1338,8 +1263,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
     slip_damage_characteristic_slip = ${slip_damage_characteristic_slip}
     slip_damage_onset_slip = ${slip_damage_onset_slip}
     cumulative_plastic_slip_name = cumulative_plastic_slip
-    cumulative_plastic_slip_is_ad = true    # 94-series: the MC law exports cumulative_plastic_slip as an AD property
-                                            # (the BBFast law exports it non-AD, hence 'false' on the 93 sibling).
+    cumulative_plastic_slip_is_ad = false
     slip_damage_aperture_name = slip_damage_aperture
 
     min_hydraulic_aperture = ${min_hydraulic_aperture}
@@ -1654,33 +1578,33 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
   []
 
   [cumulative_plastic_slip_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = cumulative_plastic_slip
     boundary = fracture_interface
   []
   [plastic_slip_increment_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = plastic_slip_increment
     boundary = fracture_interface
   []
   [limit_tau_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = limit_tau
     boundary = fracture_interface
   []
 
   [bb_limit_tau_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = limit_tau
     boundary = fracture_interface
   []
   [friction_coefficient_effective_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = friction_coefficient_effective
     boundary = fracture_interface
   []
   [cohesion_effective_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = cohesion_effective
     boundary = fracture_interface
   []
@@ -1689,15 +1613,11 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
     property = roughness_state
     boundary = fracture_interface
   []
-  # 94-SERIES BUILD FIX 2026-08-18: [bb_dilation_angle_pp] REMOVED.  It read the
-  # non-AD property bb_dilation_angle_degrees, which only the Barton-Bandis law
-  # declares, so every MC deck aborted at initialSetup with "The non-AD material
-  # property 'bb_dilation_angle_degrees' does not exist" (observed on the SW-S3
-  # pair, SLURM 19188659/19188660).  It was meant to be replaced by
-  # mc_dilation_angle_effective_pp -- present below -- but was left behind.
-  # NOTE: orca-opt --check-input does NOT catch this; material-property
-  # resolution happens at initialSetup, after the parse.  Smoke-run 1 rank /
-  # 2 steps to validate a block swap, never --check-input alone.
+  [bb_dilation_angle_pp]
+    type = SideAverageMaterialProperty
+    property = bb_dilation_angle_degrees
+    boundary = fracture_interface
+  []
   [dilation_jump_increment_pp]
     type = ADSideAverageMaterialProperty
     property = dilation_jump_increment
@@ -1805,7 +1725,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
   []
 
   [czm_dn_total_pp]
-    type = ADSideAverageMaterialProperty
+    type = SideAverageMaterialProperty
     property = normal_opening_total
     boundary = fracture_interface
   []
@@ -1888,6 +1808,41 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
 
   # Barton-Bandis envelope evolution.  All six are declared by
   # OrcaBartonBandisContactTractionFastADHardening on every BBFast deck.
+  [bb_normal_closure_pp]
+    type = ADSideAverageMaterialProperty
+    property = bb_normal_closure
+    boundary = fracture_interface
+  []
+  [bb_normal_closure_um_pp]
+    type = ParsedPostprocessor
+    pp_names = bb_normal_closure_pp
+    expression = 'bb_normal_closure_pp * 1e6'
+  []
+  [bb_law_normal_stress_pp]           # sigma_n the BB law computed from its closure (Pa, +compression)
+    type = SideAverageMaterialProperty
+    property = bb_compressive_normal_stress
+    boundary = fracture_interface
+  []
+  [bb_peak_friction_angle_pp]
+    type = SideAverageMaterialProperty
+    property = bb_peak_friction_angle_degrees
+    boundary = fracture_interface
+  []
+  [bb_mu_peak_pp]
+    type = SideAverageMaterialProperty
+    property = bb_peak_friction_coefficient
+    boundary = fracture_interface
+  []
+  [bb_jrc_mobilized_pp]
+    type = SideAverageMaterialProperty
+    property = bb_jrc_mobilized
+    boundary = fracture_interface
+  []
+  [bb_normal_stiffness_tangent_pp]    # tangent Kn along the power-law closure (Pa/m)
+    type = SideAverageMaterialProperty
+    property = bb_normal_stiffness_tangent
+    boundary = fracture_interface
+  []
 
   # Bulk (LVDT-analogue) kinematics: two probes on the cylinder surface straddling
   # the fracture, resolved onto the fracture plane with THIS specimen's theta.
@@ -1932,47 +1887,6 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
     pp_names = 'bulk_delta_x_pp bulk_delta_z_pp'
     expression = 'abs(bulk_delta_x_pp*${bulk_sin_theta} + bulk_delta_z_pp*${bulk_cos_theta}) * 1e3'
   []
-
-  # ---------------------------------------------------------------------------
-  # 94-series: MC envelope evolution.  These stand in one-for-one for the seven
-  # bb_* channels of the BBFast sibling, whose Barton-Bandis material properties
-  # do not exist under this law.  Channel count stays at 91.
-  # ---------------------------------------------------------------------------
-  [mc_roughness_state_pp]
-    type = ADSideAverageMaterialProperty
-    property = roughness_state
-    boundary = fracture_interface
-  []
-  [mc_mu_effective_pp]                # mu(R): the analogue of bb_mu_peak_pp
-    type = ADSideAverageMaterialProperty
-    property = friction_coefficient_effective
-    boundary = fracture_interface
-  []
-  [mc_cohesion_effective_pp]          # c(R), Pa
-    type = ADSideAverageMaterialProperty
-    property = cohesion_effective
-    boundary = fracture_interface
-  []
-  [mc_dilation_angle_effective_pp]    # degrees
-    type = ADSideAverageMaterialProperty
-    property = dilation_angle_effective
-    boundary = fracture_interface
-  []
-  [mc_limit_tau_pp]                   # tau_lim, Pa: the analogue of the BB envelope
-    type = ADSideAverageMaterialProperty
-    property = limit_tau
-    boundary = fracture_interface
-  []
-  [mc_normal_contact_pressure_pp]     # Pa, +compression: analogue of bb_law_normal_stress_pp
-    type = ADSideAverageMaterialProperty
-    property = normal_contact_pressure
-    boundary = fracture_interface
-  []
-  [mc_cumulative_plastic_slip_pp]     # m
-    type = ADSideAverageMaterialProperty
-    property = cumulative_plastic_slip
-    boundary = fracture_interface
-  []
 []
 
 [Preconditioning]
@@ -1989,7 +1903,7 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_04_swt2_mc_final_mesh3_
   solve_type = Newton
   line_search = l2
   start_time = 0
-  end_time = 2852.530000
+  end_time = 13881.5
 
   [TimeStepper]
     type = IterationAdaptiveDT
