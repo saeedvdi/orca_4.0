@@ -2,7 +2,7 @@
 
 **Repository:** `orca_4.0`  
 **Branch / revision examined:** `orca_v6`, `c4ae680`  
-**Consolidation date:** 2026-08-18  
+**Consolidation date:** 2026-08-18; case-99/result-set update 2026-08-19
 **Benchmark:** Ye and Ghassemi (2018), four granite-fracture injection tests
 
 This is the single synthesis of the independent analyses in `doc/`, updated with the results
@@ -23,59 +23,66 @@ Status terms used below:
 ## 1. Executive synthesis
 
 1. **The four current BBFast validations are good on the declared campaign metric.** The
-   93-series mesh-5 runs score 4.44% (SW-T1), 2.43% (SW-T2), 4.58% (SW-S3), and 6.05% (SW-S4)
+   current 93-series mesh-5 files score 4.44% (SW-T1), 2.43% (SW-T2), 4.57% (SW-S3), and 6.14% (SW-S4)
    mean normalised RMSE over the five scored Table 2 columns. The result is strongest as a
    specimen-scale reproduction of stagewise hydro-mechanical response, not as proof that every
    fitted parameter is independently identifiable.
 
-2. **The matched Mohr-Coulomb baseline is decisively worse.** The completed mesh-5 94-series
-   scores are 25.27%, 23.14%, 18.47%, and 8.91%, respectively. Averaged across specimens,
-   BBFast is 4.38% versus 18.95% for MC, a 77% reduction. The two laws are effectively identical
+2. **The eight targeted 99-series probes are complete and produce two clear improvements.**
+   Increasing SW-T1 maximum closure from 45.91 to 50.00 micrometres reduces its mean from 4.44%
+   to 3.68% and improves all five scored observables. Increasing SW-T2 aperture scale from
+   0.0165 to 0.0170 reduces its mean from 2.43% to 2.24%, mainly through flow. SW-S3 residual
+   cohesion at 1.30 MPa gives a smaller 4.57% to 4.45% gain with a shear-slip tradeoff. Both
+   SW-S4 changes worsen the total score, so `93_07` remains preferred there.
+
+3. **The matched Mohr-Coulomb baseline is decisively worse.** The completed mesh-5 94-series
+   scores are 25.27%, 23.14%, 18.47%, and 8.97%, respectively. Averaged across specimens,
+   BBFast is 4.39% versus 18.96% for MC, a 77% reduction. The two laws are effectively identical
    before yielding; the separation appears on the weakening path. This supports a performance
    claim for the two-distance BBFast form, not a claim that the narrow stress path uniquely
    identifies the curvature of the Barton-Bandis envelope.
 
-3. **The SW-S4 rate-and-state healing hypothesis was falsified.** The `b` bracket did not repair
+4. **The SW-S4 rate-and-state healing hypothesis was falsified.** The `b` bracket did not repair
    the deficient hold-stage slip, and velocity weakening produced a deterministic slip/arrest
    stall. The useful result is that the fitted Perzyna viscosity is not merely numerical: on
    SW-S4 it contributes 0.314 MPa mean and 0.871 MPa peak shear overstress during slipping.
 
-4. **Matrix Biot sensitivity is specimen-dependent.** Changing `biot_coefficient` from 0.6 to
+5. **Matrix Biot sensitivity is specimen-dependent.** Changing `biot_coefficient` from 0.6 to
    0.2 moves the tensile-pair scores only from 4.44% to 4.21% and 2.43% to 2.74%, but degrades
-   SW-S3 from 4.58% to 18.90% and SW-S4 from 6.05% to 9.60%. The assumed coefficient cannot be
+   SW-S3 from 4.57% to 18.90% and SW-S4 from 6.14% to 9.60%. The assumed coefficient cannot be
    changed by fiat across the campaign.
 
-5. **The fitted fracture pressure coefficient is not shown to be inert.** All four saw-cut
+6. **The fitted fracture pressure coefficient is not shown to be inert.** All four saw-cut
    probes that set `fault_pressure_coefficient = 1.0` stop before the peak Table 2 stage. The
    stored artifacts do not include termination logs, so the immediate cause cannot be assigned,
    but the repeated truncation proves that removing the 0.87/0.86 attenuation is not a harmless
    documentation cleanup. It requires a re-calibration and a controlled rerun.
 
-6. **Cyclic injection produces a large retained first-cycle change on the tensile specimens and
+7. **Cyclic injection produces a large retained first-cycle change on the tensile specimens and
    a small one on SW-S4.** At the same 8 MPa pressure before and after cycle 1, the retained
    permeability ratios are 5.61 (SW-T1), 4.14 (SW-T2), 1.65 (SW-S3), and 1.04 (SW-S4). Only
    SW-S4 completes all three cycles. From its cycle-1 floor to cycle-3 floor, permeability rises
    another 4.3% and flow 6.5%; almost all of that increment occurs on cycle 2, with cycle 3
    essentially saturated.
 
-7. **The cyclic campaign is not complete.** SW-T1, SW-T2, and SW-S3 end during the second cycle,
+8. **The cyclic campaign is not complete.** SW-T1, SW-T2, and SW-S3 end during the second cycle,
    at 4602, 6644, and 6054 s against requested end times of 10375, 13882, and 15793 s. Their first
    cycles are valid, but they cannot support a three-cycle accumulation claim. No corresponding
    error logs are present in the repository.
 
-8. **Shut-in causes prompt arrest in all four runs.** All 98-series runs complete. Net reported
+9. **Shut-in causes prompt arrest in all four runs.** All 98-series runs complete. Net reported
    shear-slip changes after shut-in are between -0.00030 and -0.00015 mm; once injection pressure
    is within 1% of ambient, subsequent changes are at most 0.000015 mm. The model therefore does
    not reproduce delayed post-shut-in reactivation from diffusion alone.
 
-9. **The main historical apparent failures were often measurement-path failures.** Correcting
+10. **The main historical apparent failures were often measurement-path failures.** Correcting
    stress frames, stale point coordinates, output-only displacement fits, mesh geometry, and
    digitised validation series changed conclusions without changing constitutive physics. The
    durable method is: audit the plumbing, score the source data, localise the residual, and only
    then tune a parameter.
 
-10. **The manuscript and theory manual are now much closer to the code than the August 18 audit
-    found, but the new 94/96/97/98 results have not been integrated.** In particular, the paper's
+11. **The manuscript and theory manual are now much closer to the code than the August 18 audit
+    found, but the new 94/96/97/98/99 results have not been integrated.** In particular, the paper's
     pending MC, cyclic, and shut-in sections can now be partly or wholly written, and its claim
     that there is no evidence the saw-cut fracture-pressure coefficients buy agreement must be
     revised in light of the 96-series truncations.
@@ -182,7 +189,7 @@ the five-column 93-series scores as if they used the same metric.
 - Old SW-S4 point samplers remained at coordinates from the superseded mesh. Exact interface-node
   coordinates are now used.
 - SW-S3 formerly used output-only reversible-opening parameters to improve `d_n`. Removing them
-  changed its defensible mean score from 3.59% to 4.58%.
+  changed its defensible mean score from 3.58% to 4.57% in the current result set.
 
 The conclusion is methodological as much as project-specific: a stable residual obtained through
 the same wrong postprocessor on every run looks like reproducible physics. Sibling operators and
@@ -241,8 +248,13 @@ The 93-series mesh-5 files are the final validation set used below.
 |---|---|---:|---:|---:|---:|---:|---:|
 | SW-T1 | `93_01` | 7.38% | 1.98% | 2.73% | 9.06% | 1.02% | **4.44%** |
 | SW-T2 | `93_03` | 5.87% | 1.26% | 1.70% | 2.06% | 1.25% | **2.43%** |
-| SW-S3 | `93_05` | 3.00% | 3.35% | 8.01% | 7.42% | 1.11% | **4.58%** |
-| SW-S4 | `93_07` | 4.94% | 3.74% | 10.01% | 4.53% | 7.01% | **6.05%** |
+| SW-S3 | `93_05` | 3.00% | 3.33% | 8.01% | 7.42% | 1.11% | **4.57%** |
+| SW-S4 | `93_07` | 5.01% | 3.87% | 10.10% | 4.63% | 7.08% | **6.14%** |
+
+The SW-S3 changes relative to the August 18 table are below the reproducibility floor. The SW-S4
+repeat is 0.091 percentage points higher than the earlier file, essentially at that floor; the
+ranking CSV now reports the scores recomputed from the result files currently present rather than
+retaining stale numbers tied to overwritten copies.
 
 ### 5.2 Specimen-level interpretation
 
@@ -292,9 +304,9 @@ strength, normal closure, aperture law, mesh, pressure schedule, and solver are 
 |---|---:|---:|---:|---:|
 | SW-T1 | 4.44% | 25.27% | 5.69x | 82.4% |
 | SW-T2 | 2.43% | 23.14% | 9.52x | 89.5% |
-| SW-S3 | 4.58% | 18.47% | 4.03x | 75.2% |
-| SW-S4 | 6.05% | 8.91% | 1.47x | 32.1% |
-| **specimen mean** | **4.38%** | **18.95%** | **4.33x** | **76.9%** |
+| SW-S3 | 4.57% | 18.47% | 4.04x | 75.2% |
+| SW-S4 | 6.14% | 8.97% | 1.46x | 31.6% |
+| **specimen mean** | **4.39%** | **18.96%** | **4.32x** | **76.8%** |
 
 Per-observable MC nRMSE:
 
@@ -302,8 +314,8 @@ Per-observable MC nRMSE:
 |---|---:|---:|---:|---:|---:|
 | SW-T1 | 22.88% | 18.67% | 25.85% | 31.05% | 27.90% |
 | SW-T2 | 14.54% | 19.32% | 26.17% | 27.86% | 27.83% |
-| SW-S3 | 9.59% | 8.19% | 19.55% | 27.49% | 27.54% |
-| SW-S4 | 6.32% | 4.34% | 11.30% | 16.51% | 6.06% |
+| SW-S3 | 9.59% | 8.18% | 19.55% | 27.49% | 27.54% |
+| SW-S4 | 6.32% | 4.41% | 11.41% | 16.55% | 6.18% |
 
 ### 6.2 Where the laws separate
 
@@ -322,7 +334,9 @@ pre-yield envelopes were deliberately matched and the observed divergence is dom
 post-yield evolution. BBFast's separate strength-weakening and roughness/aperture distances are the
 main expressive advantage demonstrated by this comparison.
 
-The mesh-3 94-series files all end early and cannot be used to make a converged MC comparison.
+The delivered SW-S4 mesh-3 MC result, `94_08`, now completes and scores 8.84%, versus 8.97% for
+mesh 5. The 0.14-point difference is small and does not change the constitutive comparison. The
+other three mesh-3 MC files remain incomplete.
 
 ---
 
@@ -358,8 +372,8 @@ All four `alpha = 0.2` probes complete.
 |---|---:|---:|---:|
 | SW-T1 | 4.44% | 4.21% | -0.23 points |
 | SW-T2 | 2.43% | 2.74% | +0.31 points |
-| SW-S3 | 4.58% | 18.90% | +14.32 points |
-| SW-S4 | 6.05% | 9.60% | +3.55 points |
+| SW-S3 | 4.57% | 18.90% | +14.32 points |
+| SW-S4 | 6.14% | 9.60% | +3.47 points |
 
 The tensile pair is nearly insensitive at the aggregate level, within a few tenths of a point.
 The saw cuts are not. In particular, SW-S3's error redistributes across every mechanical channel:
@@ -468,9 +482,96 @@ domain.
 
 ---
 
-## 11. Mesh, source, and verification audits
+## 11. New result: targeted material-property probes (99-series)
 
-### 11.1 Mesh state
+### 11.1 Completion and scoring state
+
+All eight 99-series runs reach their requested end time and all eleven Table 2 stages. Each is a
+one-parameter change from the corresponding mesh-5 93-series parent, so the response difference
+can be assigned to that axis without a multi-parameter interaction. The table uses the same
+stage-1 displacement datum and five-observable range-normalised RMSE as the rest of this document.
+
+| specimen | case | one changed value | Q | `sigma'_n` | `tau` | `d_n` | `d_s` | **mean** | change from 93 |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|
+| SW-T1 | `93_01` | parent | 7.38% | 1.98% | 2.73% | 9.06% | 1.02% | **4.44%** | -- |
+| SW-T1 | `99_01` | `maximum_closure`: 45.91 to 50.00 um | 6.15% | 1.69% | 2.32% | 7.28% | 0.96% | **3.68%** | **-0.76** |
+| SW-T1 | `99_02` | `aperture_scale`: 0.0160 to 0.0155 | 5.30% | 1.99% | 2.74% | 9.07% | 1.02% | **4.02%** | **-0.41** |
+| SW-T2 | `93_03` | parent | 5.87% | 1.26% | 1.70% | 2.06% | 1.25% | **2.43%** | -- |
+| SW-T2 | `99_03` | `residual_cohesion`: 9.71 to 8.74 MPa | 4.46% | 1.06% | 1.43% | 2.36% | 2.63% | **2.39%** | -0.04 |
+| SW-T2 | `99_04` | `aperture_scale`: 0.0165 to 0.0170 | 4.89% | 1.26% | 1.71% | 2.06% | 1.26% | **2.24%** | **-0.19** |
+| SW-S3 | `93_05` | parent | 3.00% | 3.33% | 8.01% | 7.42% | 1.11% | **4.57%** | -- |
+| SW-S3 | `99_05` | unload retention: 0.06 to 0.03 | 2.98% | 3.37% | 8.09% | 7.05% | 1.11% | **4.52%** | -0.06 |
+| SW-S3 | `99_06` | `residual_cohesion`: 1.40 to 1.30 MPa | 3.09% | 3.01% | 7.25% | 6.83% | 2.07% | **4.45%** | **-0.12** |
+| SW-S4 | `93_07` | parent | 5.01% | 3.87% | 10.10% | 4.63% | 7.08% | **6.14%** | -- |
+| SW-S4 | `99_07` | weakening exponent: 1.10 to 1.05 | 4.95% | 3.69% | 9.60% | 5.31% | 7.67% | **6.24%** | **+0.11** |
+| SW-S4 | `99_08` | viscosity: 3.5e12 to 3.0e12 Pa s/m | 4.81% | 3.67% | 9.54% | 5.59% | 8.15% | **6.35%** | **+0.21** |
+
+Differences smaller than 0.1 percentage points are listed for completeness but are not treated as
+resolved rankings. The updated machine-readable CSV contains exact six-decimal values and ranks.
+
+### 11.2 Interpretation and selection
+
+**SW-T1: accept `99_01` as the strongest candidate.** Recomputing the closure offset preserved
+the initial seating while the larger closure capacity improved unloading recovery. Unlike a
+purely hydraulic fit, it also lowers both stress errors and shear-slip error. Its 0.76-point gain
+is much larger than the reproducibility floor and all five observables improve. `99_02` confirms
+that a smaller aperture scale can repair flow, but it leaves the displacement residual untouched
+and is therefore the weaker explanation.
+
+**SW-T2: prefer `99_04`; do not promote `99_03` on score alone.** The aperture-scale increase
+removes enough of the peak-flow deficit to improve the mean by 0.19 points while mechanical
+metrics move by at most 0.01 points. Lower residual cohesion improves the two stress columns but
+nearly doubles the shear-slip nRMSE; its 0.04-point mean gain is below the ranking floor and
+reproduces the already-known `91_03` bracket.
+
+**SW-S3: `99_06` is a provisional balanced-score improvement, not a clean identification.** The
+1.30 MPa residual cohesion lowers effective-normal-stress, shear-stress, and normal-displacement
+errors enough to clear the 0.1-point floor, but shear-slip nRMSE rises from 1.11% to 2.07%.
+`99_05` changes only the unloading branch as intended and improves `d_n`, but the 0.06-point total
+gain is below reproducibility. The corrected-length-mesh preload offset should still be re-gated
+before treating 1.30 MPa as a newly identified material property.
+
+**SW-S4: reject both 99-series changes and retain `93_07`.** Lower exponent and lower viscosity
+both reduce the stress residual, including part of the stage-4 error, but they purchase that gain
+with worse normal and shear displacement. This confirms the earlier diagnosis: a single scalar
+change cannot move slip into stage 4 without damaging the subsequent slip budget. Further
+one-dimensional weakening or viscosity sweeps are not warranted from this evidence.
+
+### 11.3 Previously unfinished monotonic results
+
+The delivered result set completes one older file that the August 18 ranking marked partial:
+SW-S4 mesh-3 Mohr-Coulomb case `94_08` now reaches 3500 s and scores 8.84%. The remaining partial
+records still stop before all eleven stages and remain excluded. In particular, fresh copies of
+the SW-T1/SW-T2/SW-S3 mesh-3 files, the saw-cut `fault_pressure_coefficient = 1` probes, and the
+velocity-weakening rate/state run are still truncated; copying them into the result set did not
+complete their trajectories.
+
+| specimen | remaining partial case | stages reached | current end time (s) |
+|---|---|---:|---:|
+| SW-S3 | `93_06_sw3_final_resc1p40_ppfix_mesh3` | 6/11 | 2833.500000 |
+| SW-S3 | `94_06_sw3_mc_final_mesh3` | 6/11 | 2804.250000 |
+| SW-S3 | `96_04_sw3_fpc1p0` | 5/11 | 2474.913206 |
+| SW-S3 | `96_05_sw3_biot0p2_fpc1p0` | 5/11 | 2510.213260 |
+| SW-S4 | `95_16_sw4_rsf_a010_b015` | 5/11 | 1554.859285 |
+| SW-S4 | `96_07_sw4_fpc1p0` | 5/11 | 1668.494440 |
+| SW-S4 | `96_08_sw4_biot0p2_fpc1p0` | 5/11 | 1673.376124 |
+| SW-T1 | `93_02_swt1_final_c26p9_resc9p19_ppfix_mesh3` | 0/11 | 70.500000 |
+| SW-T1 | `94_02_swt1_mc_final_mesh3` | 1/11 | 372.000000 |
+| SW-T2 | `92_05_swt2_final_theta30_resc9p71_mesh3` | 5/11 | 2217.000000 |
+| SW-T2 | `93_04_swt2_final_theta30_resc9p71_ppfix_mesh3` | 4/11 | 1773.750000 |
+| SW-T2 | `94_04_swt2_mc_final_mesh3` | 4/11 | 1806.000000 |
+
+These files have neither matching recoverable checkpoints nor copied termination logs. Their
+`*_hpc_nochk.sh` launchers explicitly disable checkpoint output, so they cannot be continued from
+the last CSV row; each requires a fresh HPC run after its termination mode is identified. They
+remain marked `partial`, with blank error/accuracy fields, rather than receiving misleading scores
+from truncated loading paths.
+
+---
+
+## 12. Mesh, source, and verification audits
+
+### 12.1 Mesh state
 
 - SW-T1 is correctly meshed at 32°.
 - SW-T2's printed 31° conflicts with the paper's own Table 2 reduction, which gives 30.001°; the
@@ -480,11 +581,13 @@ domain.
 - Every mesh change must be followed by an exact source-node check. `use_closest_node = true` can
   silently select a bulk node rather than the fracture.
 
-SW-S4 is now the only complete 93-series two-mesh comparison. Its mesh-5 score is 6.05% and its
-mesh-3 score is 6.26%, a +0.22 point penalty. The conclusion of practical mesh insensitivity for
+SW-S4 is now the only complete 93-series two-mesh comparison. Its mesh-5 score is 6.14% and its
+mesh-3 score is 6.37%, a +0.23 point penalty. The conclusion of practical mesh insensitivity for
 this benchmark survives, while the other three post-slip mesh comparisons remain incomplete.
 
-### 11.2 Source comparison, resolved chronologically
+The newly completed SW-S4 MC mesh pair is similarly close: 8.97% on mesh 5 and 8.84% on mesh 3.
+
+### 12.2 Source comparison, resolved chronologically
 
 The August 15 comparison found the backup source to be a strict subset of `orca_4.0`: 53 shared
 files identical, 9 different, and 40 files present only in `orca_4.0`. The live issues were the
@@ -504,7 +607,7 @@ Current interpretation:
   now exists as an opt-in feature but is disabled in production;
 - `OrcaTestApp` in `main.C` is a registration superset and has no physics implication.
 
-### 11.3 Verification state
+### 12.3 Verification state
 
 Implemented coverage includes Terzaghi consolidation, Mandel's problem, pressure diffusion,
 mass storage, thermal storage, simple diffusion, Barton-Bandis cohesion, and Biot modulus. The
@@ -523,7 +626,7 @@ Important verification findings already established:
 
 ---
 
-## 12. Documentation reconciliation
+## 13. Documentation reconciliation
 
 The August 18 document audit found six formulation mismatches and several stale claims. The current
 paper/theory files have since corrected most of them:
@@ -549,12 +652,13 @@ Items still needing integration:
    four completed cases—and include the valid first-cycle retention table.
 4. Update the pressure-coefficient discussion: the 96-series does not support the statement that
    the saw-cut attenuation buys no agreement; all four `alpha_f = 1` variants are incomplete.
-5. Update mesh convergence: SW-S4 mesh 3 is complete at 6.26%; the other three remain partial.
+5. Update mesh convergence: SW-S4 BBFast mesh 3 is complete at 6.37% and MC mesh 3 at 8.84%;
+   the other three specimen pairs remain partial.
 6. Complete data/code availability, final references, and editorial placeholders before submission.
 
 ---
 
-## 13. Integrated back-analysis method
+## 14. Integrated back-analysis method
 
 The campaign's durable workflow is:
 
@@ -582,7 +686,7 @@ The campaign's durable workflow is:
 
 ---
 
-## 14. Research implications beyond the present validation
+## 15. Research implications beyond the present validation
 
 The Hosseini, Paluszny, and Zimmerman (2025) reading notes support a narrower second-paper direction
 than “add all rate/state fault physics to ORCA.” Their heterogeneous-fault work supplies the
@@ -608,7 +712,7 @@ separately verified hypotheses.
 
 ---
 
-## 15. Prioritised remaining work
+## 16. Prioritised remaining work
 
 ### Blocking a complete paper result
 
@@ -622,8 +726,8 @@ separately verified hypotheses.
 
 ### High-value verification and robustness
 
-6. Complete the three missing post-slip mesh comparisons; the complete SW-S4 pair already shows a
-   small 0.22-point change.
+6. Complete the three missing post-slip mesh comparisons; the complete SW-S4 BBFast and MC pairs
+   already show small 0.23- and 0.14-point changes.
 7. Score and report the independent mesh-geometry flow channel so the fitted `W/L` route is not the
    only hydraulic comparison.
 8. Fix or retire the stale split mass-balance kernels.
@@ -632,7 +736,7 @@ separately verified hypotheses.
 
 ### Not recommended without new evidence
 
-- another one-dimensional `D_c`, cohesion, or JRC sweep for SW-S4;
+- another one-dimensional `D_c`, cohesion, JRC, weakening-exponent, or viscosity sweep for SW-S4;
 - further `b` or `D_rs` brackets for hold-stage healing;
 - adopting RSF because it is more physical despite no net score improvement;
 - quoting four fitted JRC/JCS/cohesion values as independently measured properties;
@@ -641,7 +745,7 @@ separately verified hypotheses.
 
 ---
 
-## 16. Source map and authority
+## 17. Source map and authority
 
 | source document | contribution to this consolidation | authority |
 |---|---|---|
@@ -650,6 +754,7 @@ separately verified hypotheses.
 | `90_01_91_01_91_02_vs_validation_analysis.md` | SW-T1 residual-cohesion bracket | historical |
 | `91_05_vs_validation_analysis.md` | SW-S3 residual-cohesion diagnosis | historical |
 | `HPC_90_91_92_TABLE2_ERROR_ANALYSIS.md` | scoring convention, 92/93 selection, residual tables | authoritative method/result lineage |
+| `TABLE2_ERROR_ACCURACY_RANKING.csv` | current per-sample scores, completion state, and ranks including 99-series | authoritative machine-readable result index |
 | `MC_BASELINE_94_SERIES.md` | matched MC construction and transfer | authoritative design; results added here |
 | `V6_RATE_STATE_AND_POROELASTIC_PROBES.md` | 95 design/results and 96 design | authoritative; 96 results added here |
 | `DISCUSSION_DECKS_97_98.md` | cyclic/shut-in design and preregistered metrics | authoritative design; results added here |
@@ -663,7 +768,7 @@ separately verified hypotheses.
 | `back_analysis_method_claude_raw_analysis.md` | raw precursor to the method document | superseded; no separate authority |
 | `reading_hosseini2025_rsf_heterogeneous_fault.md` | rate/state foundations and paper-2 scope | literature synthesis |
 | `Theory/orca_czm_theory.md` | complete formulation and implementation manual | current technical reference, subject to implemented-test limits |
-| `Paper/paper_draft_ye_ghassemi_validation.md` | manuscript narrative | current draft; pending blocks identified in §12 |
+| `Paper/paper_draft_ye_ghassemi_validation.md` | manuscript narrative | current draft; pending blocks identified in §13 |
 | `TODO.md` | work log and historical queue | useful chronology; individual statuses may lag current artifacts |
 
 ### Reproduction entry points
@@ -690,7 +795,7 @@ permeability, and validation-flow channels without refitting.
 
 ---
 
-## 17. Final statement
+## 18. Final statement
 
 The strongest result is not that one constitutive law matches four plots. It is that a consistent
 audit-and-score workflow separated four kinds of discrepancy that initially looked alike:
@@ -698,4 +803,7 @@ reporting errors, data-reduction errors, identifiable parameter errors, and genu
 limits. After those separations, BBFast reproduces the monotonic benchmark substantially better
 than a matched Mohr-Coulomb baseline; repeated cycling mostly saturates where it completes; and
 shut-in produces no delayed reactivation. Those negative and comparative results define the next
-model more sharply than another marginal improvement to the calibrated score would.
+model more sharply than another marginal improvement to the calibrated score would. Within the
+targeted 99-series, the SW-T1 closure-capacity and SW-T2 aperture-scale changes are material
+improvements; SW-S3 remains a tradeoff and the SW-S4 negative result closes the proposed scalar
+weakening/viscosity adjustment.
