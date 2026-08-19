@@ -2527,6 +2527,8 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
   [exodus]
     type = Exodus
     file_base = ${exodus_file_base}
+    execute_on = 'TIMESTEP_END FINAL'
+    time_step_interval = 10
   []
   [chk]
     type = Checkpoint
@@ -2535,6 +2537,5 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_08_sw4_mc_final_mesh3_h
     num_files = 4
   []
 []
-
 
 

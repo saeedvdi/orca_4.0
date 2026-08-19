@@ -2218,6 +2218,8 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/96_05_sw3_biot0p2_fpc1p0
   [exodus]
     type = Exodus
     file_base = ${exodus_file_base}
+    execute_on = 'TIMESTEP_END FINAL'
+    time_step_interval = 10
   []
   [chk]
     type = Checkpoint

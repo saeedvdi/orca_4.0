@@ -3070,6 +3070,8 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/98_03_sw3_shutin_hpc
   [exodus]
     type = Exodus
     file_base = ${exodus_file_base}
+    execute_on = 'TIMESTEP_END FINAL'
+    time_step_interval = 10
   []
   [chk]
     type = Checkpoint

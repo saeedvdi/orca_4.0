@@ -2020,7 +2020,8 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/94_03_swt2_mc_final_hpc
   [exodus]
     type = Exodus
     file_base = ${exodus_file_base}
-    execute_on = FINAL
+    execute_on = 'TIMESTEP_END FINAL'
+    time_step_interval = 10
   []
   [chk]
     type = Checkpoint

@@ -1975,7 +1975,8 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/93_01_swt1_final_c26p9_res
   [exodus]
     type = Exodus
     file_base = ${exodus_file_base}
-    execute_on = FINAL
+    execute_on = 'TIMESTEP_END FINAL'
+    time_step_interval = 10
   []
   [chk]
     type = Checkpoint
