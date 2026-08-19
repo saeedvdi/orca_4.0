@@ -22,8 +22,14 @@ four are **resolved in the model**; one remains a drafting decision:
 Barton–Bandis runs `93_01`, `93_03`, `93_05` and `93_07`, scored by
 `scripts/table2_gate.py` with an independent recomputation, and cross-checked in
 `Examples/YeGhasemmi2018/HPC_90_91_92_TABLE2_ERROR_ANALYSIS.md`. What remains outstanding is
-§5.5 and §6.3 (the four Mohr–Coulomb runs, built and smoke-tested, queued), §6.6 and §6.7 (the
-cyclic and shut-in runs, likewise), and the post-slip branch of the mesh-convergence comparison.
+§5.5 and §6.3 (the four Mohr–Coulomb runs, built and smoke-tested, queued) and the post-slip branch
+of the mesh-convergence comparison.
+
+**§6.6 and §6.7 now report the 97 and 98 runs.** All four shut-in runs (`98_01`–`98_04`) completed;
+three of the four cyclic runs were terminated by their wall-clock allocation, and §6.6.8 states
+exactly which cycles each one reached and which conclusion each does and does not support. SW-S3's
+cyclic run reached one cycle of three and contributes nothing; re-running `97_03` at 32 ranks is the
+one outstanding item in this pair of sections.
 
 Working and derivations: `doc/paper_vs_model_audit_2026-08-16.md`;
 `scripts/paper_parameter_audit.py` (states the problem);
@@ -2372,7 +2378,7 @@ reasons in descending order of weight.
 
 First, the Barton–Bandis formulation carries explicit scale corrections to JRC and JCS which are
 disabled in all four calibrations (§6.9). Moving to field scale means switching on precisely the one
-term this dataset does not validate, and Table 11 shows it is not a small correction.
+term this dataset does not validate, and Table 13 shows it is not a small correction.
 
 Second, the claim would change character. At specimen scale, cyclic-against-monotonic is a
 controlled numerical experiment on a validated model: same mesh, same parameters, same boundary
@@ -2387,21 +2393,86 @@ Third, cost — a new mesh, a new in-situ stress state, new boundary conditions 
 The field-scale statement this study can support is made instead through the compliance argument of
 §6.9, which transfers a mechanism rather than a parameter set.
 
-`[PENDING — the four cyclic runs. Report: (i) floor-to-floor $a_h$ and $Q$ ratios, cycle 2 and
-cycle 3 against cycle 1; (ii) cumulative plastic slip at each floor, which decides between outcomes
-1 and 2 above; (iii) retained $d_n$ at each floor, to separate dilation-driven from
-damage-driven enhancement; (iv) $W$, $\psi$ and $a_{\rm gouge}$ per cycle, to attribute the result
-to the channels of Table 9; and (v) the peak-to-floor ratio within each cycle, which isolates the
-reversible part. SW-S4 must be reported separately for the reason given in §5.4 — its flow channel
-does not track its opening, so its $Q$ ratio and its $d_n$ ratio are two findings, not one.]`
+#### 6.6.8 Result: outcome 1, and the saturating mechanism is not in the aperture law
 
-Two caveats will travel with the result. SW-S4's parent deck carries fitted, time-anchored
-loading-frame terms — a piston relaxation and a confinement bleed — which saturate and then hold, so
-they do not diverge over a run three times longer than the one they were fitted on, but they do sit
-at their saturated values for most of it. And cycles 2 and 3 start from the 8 MPa floor rather than
-from ambient, so cycle 1's excursion is the longest in pressure range even though all three share a
-peak; this is a second reason the comparison is made floor-to-floor rather than cycle-total to
-cycle-total.
+The runs land on outcome 1. Repeating an excursion to the same peak pressure reproduces the same
+aperture, the same flow rate and the same slip as the first excursion, to four or five significant
+figures, on every specimen for which more than one cycle is available.
+
+**Table 11.** Cyclic result, read at the designed holds. Ratios are against the same hold in cycle 1;
+$a_h$ is hydraulic aperture, $Q$ the reference-area flow rate, $s$ the reported shear slip. The
+within-cycle column is the peak-hold value divided by the floor-hold value of the *same* cycle, which
+is the reversible part of the response. SW-S3 is reported at cycle 1 only; see below.
+
+| Specimen | cycles reached | $a_h$ floor c2 / c3 | $Q$ floor c2 / c3 | $s$ floor c2 / c3 | $a_h$ peak c2 / c3 | within-cycle $a_h$ | $\sigma'_n$ floor, c1 → last (MPa) |
+|---|---|---:|---:|---:|---:|---:|---:|
+| SW-T1 | 3 peaks, 2 floors | 1.0000 / — | 1.0000 / — | 1.0000 / — | 1.0000 / 1.0000 | 1.093 | 41.636 → 41.635 |
+| SW-T2 | 2 of 3 | 1.0000 / — | 1.0000 / — | 1.0000 / — | 1.0000 / — | 1.082 | 39.426 → 39.426 |
+| SW-S3 | 1 of 3 | — | — | — | — | 1.302 | — |
+| SW-S4 | 3 of 3 | 1.0211 / 1.0212 | 1.0645 / 1.0651 | 1.1167 / 1.1175 | 1.0626 / 1.0642 | 1.329 → 1.385 | 24.755 → 24.092 |
+
+For the two tensile fractures the answer is exact repetition. Cumulative plastic slip moves in the
+sixth significant figure between cycles — $5.30426\times10^{-4}$, $5.30432\times10^{-4}$,
+$5.30433\times10^{-4}$ m at SW-T1's three peak holds — which is the criterion §6.6.5 named for
+distinguishing outcome 1 from outcome 2, and it is unambiguous. The dilation channel, the gouge
+channel and the roughness state are all frozen at their cycle-1 values because all three are
+functions of slip alone and slip has stopped. **In this model permeability enhancement is a function
+of the greatest effective-stress reduction ever reached, not of the number of times it is reached.**
+
+The mechanism, however, is not the one §6.6.5 guessed. That outcome anticipated the joint ending each
+cycle with its driving shear stress *below* residual strength, so that later excursions would be
+elastic. It does not. At every peak hold the interface sits exactly *on* its yield surface: SW-T1
+gives $\tau = \tau_{\rm lim} = 29.3962$, $29.3959$, $29.3959$ MPa on cycles 1, 2 and 3, a strength
+margin of zero to five figures, and SW-T2 the same at 27.860 MPa. The joint is in neutral plastic
+equilibrium, not elastic unloading. With $W$ spent to $2.7\times10^{-3}$ (Table 10) the yield surface
+no longer moves with slip, while the series compliance of the loading column (§3.5.5, Appendix A.2)
+sheds differential stress as soon as slip resumes; the two together define a fixed point that the
+first cycle reaches and every later cycle returns to. **The saturating mechanism is the loading
+frame, not the aperture law** — which matters, because §6.6.4 established that SW-T1 and SW-T2 have
+no saturating mechanism in the aperture channel at all. Had the frame been stiffer, cycles 2 and 3
+would have dilated at exactly the cycle-1 rate.
+
+SW-S4 is the one specimen with a non-unit ratio, and most of it is not cycling. The confinement bleed
+its parent deck inherits ($t_0 = 1900$ s, saturating over 1400 s) lowers $\sigma'_n$ by 0.65 MPa
+between the cycle-1 and cycle-2 holds and is fully spent thereafter, so cycle 1 → cycle 2 straddles
+it and cycle 2 → cycle 3 does not. Pricing it against the closure law on cycle 3's down-leg at frozen
+slip, where $\mathrm{d}k/\mathrm{d}\sigma'_n = -0.099\times10^{-13}$ m²/MPa near 15–16 MPa, the bleed
+alone accounts for $+7.4$ of the $+13.1$ % peak-hold permeability gain and $+3.1$ of the $+4.1$ % at
+the floor. The uncontaminated comparison is therefore cycle 2 against cycle 3, and it gives
+$+0.15$ % in aperture, $+0.30$ % in permeability and $+0.52$ % in slip — saturation, to within the
+run-to-run reproducibility of the flow channel. The interface strength margin tells the same story
+from the other side: $-1.28$ %, $-1.08$ %, $-0.05$ % at the three peak holds. SW-S4 is still creeping
+under the Perzyna overstress (§3.9.5) at cycle 2, because the bleed reopened a margin the first cycle
+had closed, and has arrested by cycle 3 at the same neutral equilibrium the tensile fractures reached
+one cycle earlier. Its $Q$ and $d_n$ ratios do differ, as §5.4 requires them to — 1.065 against 1.021
+at the floor — but both are small and both saturate together, so the distinction changes no
+conclusion here.
+
+The within-cycle column separates what is reversible from what is not, and it is the largest number
+in the table: 1.08–1.09 in aperture on the tensile fractures and 1.30–1.38 on the saw cuts, against
+1.000–1.021 cycle-to-cycle. Expressed in flow rate the contrast is starker still — a factor of 10 to
+20 within a cycle against 1.00–1.07 between cycles — although most of that factor is the driving
+pressure difference rather than the aperture, since $Q$ carries $\Delta p$ as well as $a_h^3$. **The
+overwhelming majority of the transmissivity swing in a cyclic history is the reversible response to
+the current effective stress, not retained stimulation.**
+
+Three of the four runs were terminated by their wall-clock allocation rather than by the schedule,
+each mid-stride at a full time step with no reduction in $\Delta t$ and no convergence difficulty:
+SW-T1 at 9088 s of 10 375 (three peak holds, two floor holds), SW-T2 at 10 960 of 13 882 (two full
+cycles), SW-S3 at 6214 of 15 793 (one cycle). The conclusion above rests on SW-T1, SW-T2 and SW-S4
+and does not depend on the missing segments; but **SW-S3 contributes nothing to it**, and that is a
+real gap rather than a cosmetic one. Outcome 3 — gouge outrunning dilation, so that a later cycle
+closes below the cycle-1 floor — is specifically a saw-cut prediction, and Table 10 leaves SW-S3 with
+more unspent gouge capacity than SW-S4 (0.095 µm against 0.039 µm). SW-S3 is therefore the sharpest
+remaining test of outcome 3, and it has not been made. Outcome 3 is accordingly reported here as *not
+observed on SW-S4*, not as excluded.
+
+Two secondary caveats travel with the result and are unchanged by it. Cycles 2 and 3 start from the
+8 MPa floor rather than from ambient, so cycle 1's excursion is the longest in pressure range even
+though all three share a peak — a second reason the comparison is made floor-to-floor rather than
+cycle-total to cycle-total. And SW-S4's parent deck also carries a fitted piston relaxation
+($t_0 = 1000$ s over 800 s); unlike the confinement bleed it saturates *before* the cycle-1 peak hold
+at 1821 s, so it is common to all three cycles and cancels from every ratio in Table 11.
 
 ### 6.7 Shut-in: whether slip continues once injection stops
 
@@ -2419,18 +2490,67 @@ the injection pressure has stopped. Whether that is enough to sustain slip depen
 between the two drainage timescales and the residual strength — which is a model output, not an
 input.
 
-`[PENDING — the four shut-in runs. Report: whether shear slip continues to rise after injection
-pressure has returned near ambient (the headline yes/no); the lag between the shut-in instant and
-the peak slip rate; and residual hydraulic aperture at the end of observation against its
-pre-injection value.]`
+The answer is no, on all four specimens, without qualification. Slip arrests within the shut-in
+transient and does not resume during 3000 s of observation.
 
-The field relevance is direct and is worth stating even if the answer is negative. Post-shut-in
+**Table 12.** Shut-in result. Slip is the reported shear slip at the interface; the lag is between
+the shut-in instant and the instant of peak slip *rate*, so a negative value means the peak rate
+occurred before shut-in. The retained permeability compares the end of observation with the point on
+the initial loading ramp carrying the *same* effective normal stress, which removes the ambient
+pressure difference between the two states.
+
+| Specimen | $s$ at shut-in (mm) | $s$ at end (mm) | growth after shut-in | peak slip-rate lag (s) | $a_h$ end (µm) | retained $k$ at matched $\sigma'_n$ |
+|---|---:|---:|---:|---:|---:|---:|
+| SW-T1 | 0.53393 | 0.53371 | $-0.04$ % | $-262$ | 3.773 | 5.52 × |
+| SW-T2 | 0.57009 | 0.56994 | $-0.03$ % | $-412$ | 4.242 | 4.03 × |
+| SW-S3 | 0.07415 | 0.07386 | $-0.39$ % | $-491$ | 1.559 | 1.50 × |
+| SW-S4 | 0.08420 | 0.08403 | $-0.20$ % | $-463$ | 0.747 | 0.91 × |
+
+The lag column is the decisive one, and it is negative on every specimen: the peak slip rate occurs
+262–491 s *before* the well is shut, during the injection ramp, and no second slip-rate maximum
+appears afterwards. Slip does not merely fail to accelerate after shut-in — it never rises again at
+all, the small negative growth being elastic recovery of the interface as the joint recloses.
+
+The mechanism §6.7 identified as the one that could sustain slip does not operate at these
+permeabilities. Mean fracture pressure attains its maximum at the shut-in instant on all four
+specimens and falls monotonically thereafter; the effective normal stress rises monotonically from
+that instant, by 10.4 MPa on SW-T1 and 10.2 MPa on SW-S4. The matrix never feeds the fracture faster
+than the fracture bleeds. With $k_m = 5\times10^{-19}$ m² and a stimulated fracture transmissivity,
+the two drainage timescales are separated by far more than enough for the fracture to win. The
+interface strength margin follows directly: it recovers from marginally negative at shut-in
+($-2.4$ % on SW-T1, $-8.9$ % on SW-S4, both still yielding under the Perzyna overstress) to
+$+21$ % and $+68$ % respectively by the end of observation. The joint is not near failure at any
+point after the well is shut.
+
+The retained-permeability column is a second finding, and it separates the two fracture types in the
+direction physical intuition predicts but by a larger factor than expected. The tensile fractures
+retain 4.0–5.5 × their pre-injection permeability at matched effective normal stress; the saw cuts
+retain 1.50 × and 0.91 × — SW-S4 ends marginally *below* where it started. The ordering is not
+roughness acting directly but slip acting through dilation: the tensile fractures slip 0.53–0.57 mm
+against the saw cuts' 0.074–0.084 mm, seven times more, at comparable dilation angles, and their
+gouge channel is inactive (Table 9) so nothing takes the opening back. On SW-S4 the gouge term is
+86 % spent and just cancels the dilation. This is a consistency check on the calibration as much as a
+prediction — the same channels that Table 5 scored against the measured $d_n$ produce it — but it
+does mean the retained-enhancement ranking is a readout of the calibrated dilation and unloading
+parameters, each constrained by a single unloading stage per specimen in Table 2, and should be
+carried no further than that.
+
+The field relevance is direct, and the negative answer is the informative one. Post-shut-in
 seismicity is routinely observed and is the operationally awkward case, because it occurs when the
-obvious control — stop injecting — has already been applied. A hydromechanical model that reproduces
-delayed reactivation from diffusion alone, with no rate-and-state or poroelastic-stress-transfer
-machinery added for the purpose, would locate part of that phenomenon in ordinary coupled
-poroelasticity. A model that arrests promptly would say the opposite: that the observed delays
-require a mechanism this formulation lacks, and would point at which one.
+obvious control — stop injecting — has already been applied. Had this model reproduced delayed
+reactivation from diffusion alone, with no rate-and-state or poroelastic-stress-transfer machinery
+added for the purpose, part of that phenomenon would be located in ordinary coupled poroelasticity.
+It does not, and the arrest is not marginal: the strength margin recovers by 24 to 77 percentage
+points within the observation window and the peak slip rate precedes shut-in by 4 to 8 minutes. The conclusion
+is therefore the opposite one, and it is specific about scope. At specimen scale, with a
+5 cm drainage path and 3000 s of observation, diffusive relaxation into a decimetre of wall rock
+supplies no delayed reactivation whatever. Observed field delays of hours to months must then rest on
+something outside this formulation — the candidates being the longer diffusion path of a metre- to
+kilometre-scale fault, poroelastic stress transfer from a pressurised volume that has no analogue in
+a laterally confined core, rate-and-state healing during the quiescent period, or aseismic creep
+loading a locked patch (§6.6.6 lists the corresponding absences for the cyclic case). Distinguishing
+between them requires a model at the scale where they differ; what this result establishes is that
+none of them can be replaced by the diffusion already in the formulation.
 
 ### 6.8 Limitations
 
@@ -2497,7 +2617,7 @@ require a mechanism this formulation lacks, and would point at which one.
     reverse-shear test would.
 17. The Barton block-size corrections to JRC and JCS are disabled in every run (§6.9.1). This is
     correct at the 95–104 mm fracture trace length of these specimens, but it means the study
-    supplies no evidence for the one term a field-scale application must enable, and Table 11 shows
+    supplies no evidence for the one term a field-scale application must enable, and Table 13 shows
     the correction is large — at a 10 m joint length it would remove three-quarters of SW-T1's JRC
     and compress the four-specimen roughness contrast from 7.8× to 2.3×.
 
@@ -2530,11 +2650,29 @@ fitted curve: it is the mechanical dilation, cubed. On the two saw cuts it is pa
 permeability through a channel calibrated against the flow it is meant to predict will always look
 successful.
 
-`[PENDING — once §6.6's cyclic runs are complete: state the enhancement factor implied by each
-specimen's calibrated dilation angle and retention fraction, and compare the roughness range's
-spread in that factor against its spread in JRC, to say whether joint roughness alone is a useful
-predictor of field-scale permeability gain or whether the retention fraction — which forms no part
-of the published JRC characterisation — dominates it instead.]`
+Table 12's retained-permeability column supplies the enhancement factor those parameters imply, and
+the comparison it invites is unflattering to roughness as a predictor. Ranked against the four
+calibrations:
+
+| Specimen | JRC | $\psi_p$ (°) | retention fraction | slip (mm) | $s\tan\psi$ (mm) | retained $k$ |
+|---|---:|---:|---:|---:|---:|---:|
+| SW-T1 | 15.32 | 16.44 | 0.94 | 0.534 | 0.158 | 5.52 × |
+| SW-T2 | 14.63 | 13.97 | 0.84 | 0.570 | 0.142 | 4.03 × |
+| SW-S3 | 1.96 | 26.00 | 0.06 | 0.074 | 0.036 | 1.50 × |
+| SW-S4 | 5.00 | 24.00 | 0.04 | 0.084 | 0.027 | 0.91 × |
+
+JRC does not order the outcome: SW-S4 carries two and a half times SW-S3's JRC and retains a third
+less permeability. The dilation angle orders it backwards — the two specimens with the *highest*
+calibrated $\psi$ retain the least. What does order it, exactly, are the retention fraction and the
+total dilation produced $s\tan\psi$, and with four specimens these two cannot be separated, since
+they happen to rank identically. Either way the conclusion for extrapolation is the same and it is
+the cautionary one. Roughness enters the retained enhancement only through the slip it permits and
+the dilation angle it is calibrated alongside, not directly; the retention fraction, which spans a
+factor of 23 across these four calibrations against JRC's factor of 8, forms no part of any published
+JRC characterisation and is recoverable only from an unloading stage. **A field-scale permeability
+forecast built from a JRC estimate alone is therefore unconstrained in the parameter that matters
+most**, and the unloading data needed to constrain it is exactly what routine joint characterisation
+omits.
 
 #### 6.9.1 What the calibrated roughness parameters may and may not be carried to
 
@@ -2559,7 +2697,7 @@ evidence whatever for the one term that any field-scale extrapolation would have
 The size of that gap can be priced without running anything, by evaluating the corrections at the
 calibrated $\mathrm{JRC}_0$ of each specimen:
 
-**Table 11.** The Barton block-size corrections evaluated on this study's calibrated roughness, for
+**Table 13.** The Barton block-size corrections evaluated on this study's calibrated roughness, for
 joints 1, 10 and 100 m long against the $L_0 = 0.1$ m laboratory reference. JCS is 150 MPa for all
 four specimens. No run reported in this paper uses these values; the table exists to bound the
 extrapolation, not to license it.
