@@ -16,7 +16,7 @@ for f in SW*/99_0*_hpc_nochk.sh; do
     sbatch "$f"
 done
 
-for f in SW*/100_0*_hpc_nochk.sh; do
+for f in SW*/101_0*_hpc_nochk.sh; do
     echo "Submitting $f"
     sbatch "$f"
 done

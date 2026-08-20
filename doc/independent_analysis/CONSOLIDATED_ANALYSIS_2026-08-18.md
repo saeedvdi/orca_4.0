@@ -1,8 +1,8 @@
 # ORCA 4.0 consolidated analysis
 
 **Repository:** `orca_4.0`  
-**Branch / revision examined:** `orca_v6`, `c4ae680`  
-**Consolidation date:** 2026-08-18; case-99/result-set update 2026-08-19
+**Branch / revision examined:** `orca_v6`, `c6f3dec`<br>
+**Consolidation date:** 2026-08-18; case-99/100 result-set update 2026-08-19
 **Benchmark:** Ye and Ghassemi (2018), four granite-fracture injection tests
 
 This is the single synthesis of the independent analyses in `doc/`, updated with the results
@@ -34,6 +34,11 @@ Status terms used below:
    0.0165 to 0.0170 reduces its mean from 2.43% to 2.24%, mainly through flow. SW-S3 residual
    cohesion at 1.30 MPa gives a smaller 4.57% to 4.45% gain with a shear-slip tradeoff. Both
    SW-S4 changes worsen the total score, so `93_07` remains preferred there.
+
+   The completed SWT2 100-series refinement lowers the selected hydraulic-only result further to
+   2.131869% at `aperture_scale = 0.0177`. The `0.0175` case scores 2.135737%, only 0.003869
+   points higher, so the two bracket values are not resolved; `0.0177` is a nominal selection,
+   not evidence for four-decimal identification of the property.
 
 3. **The matched Mohr-Coulomb baseline is decisively worse.** The completed mesh-5 94-series
    scores are 25.27%, 23.14%, 18.47%, and 8.97%, respectively. Averaged across specimens,
@@ -129,7 +134,7 @@ fracture storage and tangential flow, and the finite compliance of the loading t
 | specimen | JRC | JCS (MPa) | residual angle | cohesion (MPa) | residual cohesion (MPa) | `eta_t` (Pa s/m) | closure exponent | aperture `chi` |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | SW-T1 | 15.32 | 150 | 29.756° | 26.88 | 9.19 | `4.0e11` | 4.0 | 0.0160 |
-| SW-T2 | 14.63 | 150 | 29.756° | 33.20 | 9.71 | `4.0e11` | 4.0 | 0.0165 |
+| SW-T2 | 14.63 | 150 | 29.756° | 33.20 | 9.71 | `4.0e11` | 4.0 | 0.0177* |
 | SW-S3 | 1.96 | 150 | 29.756° | 1.67 | 1.40 | `4.0e11` | 4.0 | 0.0010 |
 | SW-S4 | 5.00 | 150 | 22.72° | 0 | 0 | `3.5e12` | 2.0 | 0.0010 |
 
@@ -137,6 +142,9 @@ These are calibrated sets, not eight independently measured material properties.
 range visited, cohesion and JRC produce envelope slopes differing by only about 3%; the loading
 path constrains an effective strength combination much more strongly than it constrains either
 parameter separately. SW-S4's adopted JRC of 5 is calibrated and differs from its measured 1.19.
+The asterisk marks the nominal 100-series SWT2 selection; `0.0175–0.0177` is unresolved at the
+campaign reproducibility floor, while the 93-series `0.0165` deck remains the locked validation
+control.
 
 ---
 
@@ -518,7 +526,7 @@ is much larger than the reproducibility floor and all five observables improve. 
 that a smaller aperture scale can repair flow, but it leaves the displacement residual untouched
 and is therefore the weaker explanation.
 
-**SW-T2: prefer `99_04`; do not promote `99_03` on score alone.** The aperture-scale increase
+**SW-T2: use `99_04` as the parent of the 100-series refinement; do not promote `99_03` on score alone.** The aperture-scale increase
 removes enough of the peak-flow deficit to improve the mean by 0.19 points while mechanical
 metrics move by at most 0.01 points. Lower residual cohesion improves the two stress columns but
 nearly doubles the shear-slip nRMSE; its 0.04-point mean gain is below the ranking floor and
@@ -537,7 +545,32 @@ with worse normal and shear displacement. This confirms the earlier diagnosis: a
 change cannot move slip into stage 4 without damaging the subsequent slip budget. Further
 one-dimensional weakening or viscosity sweeps are not warranted from this evidence.
 
-### 11.3 Previously unfinished monotonic results
+### 11.3 SWT2 aperture-scale refinement (100-series)
+
+Both completed 100-series runs reach 2852.53 s and all eleven Table 2 stages. They change only
+SWT2 `aperture_scale` from the `99_04` value of 0.0170; contact, strength, loading, mesh, and
+reporting channels are unchanged.
+
+| case | `aperture_scale` | Q | `sigma'_n` | `tau` | `d_n` | `d_s` | **mean** | change from `99_04` |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `99_04` | 0.0170 | 4.892625% | 1.263352% | 1.708291% | 2.061925% | 1.256864% | **2.236611%** | -- |
+| `100_03` | 0.0175 | 4.364306% | 1.271138% | 1.718877% | 2.065487% | 1.258877% | **2.135737%** | **-0.100874** |
+| `100_04` | 0.0177 | 4.335516% | 1.274194% | 1.723031% | 2.066893% | 1.259708% | **2.131869%** | **-0.104743** |
+
+The refinement behaves as intended: almost the entire gain comes from flow. From `99_04` to
+`100_04`, Q nRMSE falls by 0.557109 points, while each mechanical nRMSE changes by no more than
+0.014740 points. The flow residual changes sign across the path—peak-stage underprediction is
+reduced while unloading-stage overprediction grows—so the aggregate minimum is shallow rather
+than a uniformly better stagewise match.
+
+`100_04` is the exact numerical winner and is retained as the nominal calibrated candidate, but
+its 0.003869-point advantage over `100_03` is twenty-five times smaller than the 0.1-point
+resolution criterion. The identified result is therefore a bracket (`0.0175–0.0177`), not an
+exact four-decimal material property. No finer aperture-scale sweep is warranted without a more
+precise independent flow constraint. Relative to the locked 93-series control, the nominal mean
+improves by 0.295952 points (2.427821% to 2.131869%).
+
+### 11.4 Previously unfinished monotonic results
 
 The delivered result set completes one older file that the August 18 ranking marked partial:
 SW-S4 mesh-3 Mohr-Coulomb case `94_08` now reaches 3500 s and scores 8.84%. The remaining partial
@@ -754,7 +787,7 @@ separately verified hypotheses.
 | `90_01_91_01_91_02_vs_validation_analysis.md` | SW-T1 residual-cohesion bracket | historical |
 | `91_05_vs_validation_analysis.md` | SW-S3 residual-cohesion diagnosis | historical |
 | `HPC_90_91_92_TABLE2_ERROR_ANALYSIS.md` | scoring convention, 92/93 selection, residual tables | authoritative method/result lineage |
-| `TABLE2_ERROR_ACCURACY_RANKING.csv` | current per-sample scores, completion state, and ranks including 99-series | authoritative machine-readable result index |
+| `TABLE2_ERROR_ACCURACY_RANKING.csv` | current per-sample scores, completion state, overall ranks, and separate model-family ranks including 100-series | authoritative machine-readable result index |
 | `MC_BASELINE_94_SERIES.md` | matched MC construction and transfer | authoritative design; results added here |
 | `V6_RATE_STATE_AND_POROELASTIC_PROBES.md` | 95 design/results and 96 design | authoritative; 96 results added here |
 | `DISCUSSION_DECKS_97_98.md` | cyclic/shut-in design and preregistered metrics | authoritative design; results added here |
@@ -804,6 +837,6 @@ limits. After those separations, BBFast reproduces the monotonic benchmark subst
 than a matched Mohr-Coulomb baseline; repeated cycling mostly saturates where it completes; and
 shut-in produces no delayed reactivation. Those negative and comparative results define the next
 model more sharply than another marginal improvement to the calibrated score would. Within the
-targeted 99-series, the SW-T1 closure-capacity and SW-T2 aperture-scale changes are material
-improvements; SW-S3 remains a tradeoff and the SW-S4 negative result closes the proposed scalar
-weakening/viscosity adjustment.
+targeted 99/100-series, the SW-T1 closure-capacity and SW-T2 aperture-scale changes are material
+improvements; the latter is identified only to the `0.0175–0.0177` bracket. SW-S3 remains a
+tradeoff and the SW-S4 negative result closes the proposed scalar weakening/viscosity adjustment.
