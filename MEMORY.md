@@ -17,7 +17,17 @@ wrong hypotheses are worth as much as right ones, and rediscovering a dead end c
 more than recording it. Update §1 whenever a task opens or closes, and add a line to
 §10.
 
-Last updated: 2026-08-16.
+Last updated: 2026-08-20.
+
+> **Current analysis status.** The exhaustive coverage indexes in
+> `doc/independent_analysis/INPUT_DECK_ANALYSIS_COVERAGE.csv` and
+> `doc/independent_analysis/RESULT_FILE_ANALYSIS_COVERAGE.csv` supersede the campaign-state table
+> below for completion questions. They cover all 174 repository `.i` files (166 sample decks and
+> eight software tests) and all 111 available campaign result CSVs. The authoritative monotonic
+> table contains 64 complete/ranked and 15 partial/unranked cases;
+> 60 decks have no result. All 16 corrected 101-series runs completed, but the four SW-S4 controls
+> are qualified because they fail the preregistered pre-injection-slip check. Earlier “running” and
+> “queued” entries remain as dated experimental history.
 
 ---
 

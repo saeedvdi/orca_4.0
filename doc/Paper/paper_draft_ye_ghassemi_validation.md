@@ -4,7 +4,8 @@
 Fractures: A Cohesive-Zone Hydromechanical Model Validated Across a Roughness Range
 
 **Status:** original draft 2026-08-07, revised 2026-08-11, audited against the source PDF
-2026-08-16, **findings applied to the model 2026-08-16 (branch `orca_v5`)**.
+2026-08-16, **findings applied to the model 2026-08-16 and results updated through
+2026-08-20 (branch `orca_v6`)**.
 
 The audit pass compared every physical property in the decks, meshes and this draft against
 Ye & Ghassemi (2018) directly, and inserted `[bracketed]` correction notes wherever the draft
@@ -21,15 +22,14 @@ four are **resolved in the model**; one remains a drafting decision:
 **§5 now reports the 93-series runs.** The scores quoted in §5.2 are the completed mesh-5
 Barton–Bandis runs `93_01`, `93_03`, `93_05` and `93_07`, scored by
 `scripts/table2_gate.py` with an independent recomputation, and cross-checked in
-`Examples/YeGhasemmi2018/HPC_90_91_92_TABLE2_ERROR_ANALYSIS.md`. What remains outstanding is
-§5.5 and §6.3 (the four Mohr–Coulomb runs, built and smoke-tested, queued) and the post-slip branch
-of the mesh-convergence comparison.
+`doc/independent_analysis/CONSOLIDATED_ANALYSIS_2026-08-18.md` and
+`doc/independent_analysis/TABLE2_ERROR_ACCURACY_RANKING.csv`. The completed Mohr–Coulomb
+comparison is now reported in §5.5 and §6.3. Three post-slip mesh comparisons remain incomplete.
 
-**§6.6 and §6.7 now report the 97 and 98 runs.** All four shut-in runs (`98_01`–`98_04`) completed;
-three of the four cyclic runs were terminated by their wall-clock allocation, and §6.6.8 states
-exactly which cycles each one reached and which conclusion each does and does not support. SW-S3's
-cyclic run reached one cycle of three and contributes nothing; re-running `97_03` at 32 ranks is the
-one outstanding item in this pair of sections.
+**§6.6 and §6.7 now report the corrected 101-series controls.** All 16 runs complete. Equal-peak
+cycling adds no material enhancement, escalating peaks expose specimen-specific thresholds, and
+the valid slow-bleed SW-T1 control still arrests after shut-in. The four SW-S4 101 runs are
+qualified because their preregistered check detected 0.001186 mm slip before injection began.
 
 Working and derivations: `doc/paper_vs_model_audit_2026-08-16.md`;
 `scripts/paper_parameter_audit.py` (states the problem);
@@ -182,8 +182,7 @@ Results-only.]`
    injection-induced shear slip in four granite fractures to 2.4–6.1 % normalised RMS error
 2. The published data over-determines fracture orientation and load-frame compliance, allowing
    calibration without free geometric parameters
-3. A linear Mohr–Coulomb baseline is compared under a matched calibration procedure
-   `[PENDING: state the outcome once §5.5 numbers are in]`
+3. The matched Barton–Bandis law reduces mean error by 77% relative to a linear Mohr–Coulomb baseline
 4. Simulated flow is about half the reported rate at matching aperture, a geometry-factor
    difference rather than a constitutive error
 
@@ -208,8 +207,9 @@ compliance of the loading column are both recoverable from the tabulated stress 
 histories alone, to within 0.03° and 3 % respectively. This removes the geometric parameters from
 the calibration and makes the remaining comparison a test of the interface constitutive law. The
 model reproduces the eleven-stage flow, stress and displacement histories to a mean normalised RMS
-error of 2.4 % to 6.1 % across five independent observables. We compare a linear Mohr–Coulomb
-envelope with a Barton–Bandis envelope under a matched calibration procedure `[PENDING]`, and show
+error of 2.4 % to 6.1 % across five independent observables. Under a matched calibration, the
+Barton–Bandis formulation reduces the four-specimen mean error by 77% relative to a linear
+Mohr–Coulomb baseline. We also show
 that this loading path cannot separate cohesion from joint roughness, so the two must be reported as
 one constrained combination. Simulated flow rates fall consistently below the reported values at
 matching hydraulic aperture; we show this reflects the difference between a one-dimensional slab
@@ -1820,8 +1820,8 @@ statistics.
 |---|---:|---:|---:|---:|---:|---:|
 | SW-T1 | 7.38 % | 1.98 % | 2.73 % | 9.06 % | 1.02 % | **4.44 %** |
 | SW-T2 | 5.87 % | 1.26 % | 1.70 % | 2.06 % | 1.25 % | **2.43 %** |
-| SW-S3 | 3.00 % | 3.35 % | 8.01 % | 7.42 % | 1.11 % | **4.58 %** |
-| SW-S4 | 4.94 % | 3.74 % | 10.01 % | 4.53 % | 7.01 % | **6.05 %** |
+| SW-S3 | 3.00 % | 3.33 % | 8.01 % | 7.42 % | 1.11 % | **4.57 %** |
+| SW-S4 | 5.01 % | 3.87 % | 10.10 % | 4.63 % | 7.08 % | **6.14 %** |
 
 In absolute terms the stress residuals are 0.64 MPa mean absolute error on $\sigma'_n$ and 1.02 MPa
 on $\tau$ for SW-T1, against stresses of 30–67 MPa; 0.42 and 0.72 MPa for SW-T2; 0.47 and 0.82 MPa
@@ -1841,7 +1841,7 @@ normal-displacement error metric by up to 10.8 %, giving a floor of roughly 0.08
 No conclusion in this paper rests on a difference smaller than that.
 
 **One score is worse than it could be, deliberately.** SW-S3's $d_n$ error is 7.42 %. An earlier
-calibration reported 2.46 %, and a mean of 3.59 % rather than 4.58 %. The difference is not a model
+calibration reported 2.46 %, and a mean of 3.59 % rather than 4.57 %. The difference is not a model
 change: it is the removal of two output-only settings that rescaled and partially retained the
 reported normal opening without entering the residual, the Jacobian or the hydraulic aperture. With
 them removed, all four specimens report the raw kinematic jump on the same basis. The worse number
@@ -1879,7 +1879,7 @@ as a single stage that is too strong, not as a drift, so "a few hundred seconds 
 distance $D_c$ *is* identifiable, and it is over-determined in the unhelpful sense — stage 4 is
 fitted by $D_c \approx 58\ \mu$m and stage 11 by 74 µm, and no single value satisfies both. Brackets
 either side of the chosen value were run and both scored worse (16.9 % and 18.9 % mean nRMSE against
-6.05 %), so the split is not resolvable by moving $D_c$. §6.4 gives the mechanism: this specimen's
+6.14 %), so the split is not resolvable by moving $D_c$. §6.4 gives the mechanism: this specimen's
 cohesion channel is identically zero, so $D_c$ carries the post-peak response with nothing to trade
 against.
 
@@ -1958,12 +1958,20 @@ against a straight line through the onset tangent, an exponential weakening path
 in the roughness state, and one characteristic distance instead of two. Any claim about nonlinear
 *closure* would require a different pair of decks, and we make none.
 
-`[PENDING — Table 6 and Figure F2: the five-observable scores for the four Mohr–Coulomb runs
-alongside Table 5, and the per-stage comparison. The decks are built and validated; the runs are
-queued. Three build checks must pass before the numbers are believed: slip onset must land on the
-same injection stage as the Barton–Bandis sibling, since the peak envelopes agree to 0.09 MPa;
-$Q$ must agree to better than 1 % at stages 1–5, before anything has yielded; and $\sigma'_n$ and
-$\tau$ must agree at stage 1.]`
+All four mesh-5 baseline runs complete. Table 6 reports the same five-observable metric as Table 5.
+
+**Table 6.** Matched Mohr–Coulomb baseline normalised RMS errors.
+
+| Specimen | $Q$ | $\sigma'_n$ | $\tau$ | $d_n$ | $d_s$ | **mean** | Barton–Bandis mean |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| SW-T1 | 22.88 % | 18.67 % | 25.85 % | 31.05 % | 27.90 % | **25.27 %** | 4.44 % |
+| SW-T2 | 14.54 % | 19.32 % | 26.17 % | 27.86 % | 27.83 % | **23.14 %** | 2.43 % |
+| SW-S3 | 9.59 % | 8.18 % | 19.55 % | 27.49 % | 27.54 % | **18.47 %** | 4.57 % |
+| SW-S4 | 6.32 % | 4.41 % | 11.41 % | 16.55 % | 6.18 % | **8.97 %** | 6.14 % |
+
+The matched Barton–Bandis mean is 4.39% across specimens, versus 18.96% for Mohr–Coulomb, a
+76.8% reduction. The two laws agree closely before yield as designed; the separation appears on
+the post-yield weakening path and is present in every scored channel, not only the headline mean.
 
 A caveat that will shape how the result can be read, whichever way it falls. The two envelopes are
 tangent by construction at the onset stress, and they separate only as $\sigma'_n$ moves away from
@@ -2007,6 +2015,14 @@ mechanism $\alpha_f$ would represent, the two tensile fractures do not need it. 
 carry 0.87 and 0.86, an attenuation of under 15 %, and they are also the two specimens whose
 scores are worst. There is no evidence here that a fitted $\alpha_f$ is buying agreement.
 
+The direct 96-series probe does not establish the opposite. Setting $\alpha_f=1$ in the two saw
+cuts causes all four affected arms to stop before the peak Table 2 stage, so none is eligible for
+the ranking and the immediate cause cannot be assigned without the missing termination logs. The
+repeatable truncation nevertheless rules out treating the 0.87/0.86 values as an inert
+documentation choice: changing them requires recalibration and controlled reruns. Thus there is no
+completed evidence that attenuation improves the fit, but there is also no completed unit-coefficient
+control that disproves it.
+
 **It is not separately identifiable from the matrix Biot coefficient.** Both enter slip onset
 through the same channel — how much of a pore-pressure increment is converted into a reduction of
 the normal traction the walls feel. With $\alpha = 0.6$ assumed for the matrix rather than measured
@@ -2033,9 +2049,10 @@ constant form does not — and §5.3 identifies which those are.
 
 ### 6.3 Roughness and the choice of strength envelope
 
-`[PENDING — the four Mohr–Coulomb runs, §5.5. The claim to make is a performance claim: which law
-reproduces Table 2 better across four specimens under a matched calibration procedure. Write it as
-a comparison of scores against Table 5, per observable, not only on the mean.]`
+The matched comparison is decisive in performance: Barton–Bandis lowers the four-specimen mean
+nRMSE from 18.96% to 4.39%, with specimen-level reductions from 31.6% (SW-S4) to 82.9% (SW-T1).
+Every specimen improves in every scored channel. Because the envelopes are tangent at onset and
+share the same closure and loading system, the separation is a post-yield weakening-path result.
 
 Two things about that comparison should be settled in advance of the numbers, because they
 determine what the result is allowed to mean.
@@ -2093,7 +2110,7 @@ was being taken in the skeleton frame while Table 2 reports it in the total-stre
 model curve was low by $\alpha p$ throughout — an error that grows exactly as injection proceeds,
 which is why it looked like a post-slip failure. It was caught by requiring two sibling
 postprocessors that should agree to actually agree, and corrected in the reporting channel; no
-constitutive parameter changed. SW-S4's final score is 6.05 % mean nRMSE (§5.2).
+constitutive parameter changed. SW-S4's final score is 6.14 % mean nRMSE (§5.2).
 
 The general point is worth more than the specific bug. A postprocessor-only channel can fabricate a
 model error that survives repeated calibration attempts, because every attempt is scored through
@@ -2106,7 +2123,7 @@ What remains genuinely open on SW-S4 is narrower and is stated in §6.8: its coh
 identically zero, so the slip-weakening distance $D_c$ has no second parameter to trade against, and
 its bracket splits — the stage-4 response wants $D_c \approx 58\ \mu$m while stage 11 wants 74 µm.
 No single value satisfies both, which is why the specimen retains the largest shear-stress residual
-of the four (10.01 % nRMSE on $\tau$).
+of the four (10.10 % nRMSE on $\tau$).
 
 ### 6.5 What the plasticity formulation adds, and where it constrains the calibration
 
@@ -2393,7 +2410,10 @@ Third, cost — a new mesh, a new in-situ stress state, new boundary conditions 
 The field-scale statement this study can support is made instead through the compliance argument of
 §6.9, which transfers a mechanism rather than a parameter set.
 
-#### 6.6.8 Result: outcome 1, and the saturating mechanism is not in the aperture law
+#### 6.6.8 Superseded 97-series result: outcome 1
+
+This subsection records the original 97-series evidence and its resourcing/loading-frame limits.
+The complete, corrected 101-series controls in §6.6.9 supersede its quantitative conclusions.
 
 The runs land on outcome 1. Repeating an excursion to the same peak pressure reproduces the same
 aperture, the same flow rate and the same slip as the first excursion, to four or five significant
@@ -2474,7 +2494,33 @@ cycle-total to cycle-total. And SW-S4's parent deck also carries a fitted piston
 ($t_0 = 1000$ s over 800 s); unlike the confinement bleed it saturates *before* the cycle-1 peak hold
 at 1821 s, so it is common to all three cycles and cancels from every ratio in Table 11.
 
+#### 6.6.9 Corrected 101-series result
+
+All eight three-cycle runs and both SW-T1 frame-stiffness arms reach their requested end times.
+The equal-peak result is sharper than the partial 97-series evidence: at matched 8 MPa floor holds,
+cycle-3/cycle-1 permeability ratios are 1.000002, 0.999997, 1.000002 and 1.000383 for SW-T1,
+SW-T2, SW-S3 and SW-S4. The first three are valid controls and show no material cycle-count gain.
+
+Escalating peaks reveal responses that equal-peak repetition cannot. For successive equal 2 MPa
+increments, peak-hold aperture changes are +0.015/+2.502 um on SW-T1, +2.373/+0.121 um on SW-T2,
+and +0.315/+0.283 um on SW-S3. SW-T1 therefore crosses an abrupt threshold only at 28 MPa;
+SW-T2 largely saturates after its 26 MPa event; SW-S3 continues evolving through both increments.
+There is no specimen-independent saturation curve.
+
+The frame bracket supports the loading-compliance mechanism in direction but shows that its
+residual effect is small. The SW-T1 half-stiffness arm adds 0.000367 mm slip at the second peak and
+raises aperture by 0.026%; the double-stiffness arm adds effectively nothing. This is a laboratory
+loading-system result, not a transferable field-scale cyclic enhancement.
+
+The preregistered SW-S4 check fails: retiming its fitted loading-frame terms produces 0.001186 mm
+slip before injection begins at 800 s. All four SW-S4 101 trajectories are numerically complete but
+qualified and cannot support a clean frozen-frame claim without a redesigned settling window and
+rerun.
+
 ### 6.7 Shut-in: whether slip continues once injection stops
+
+The 98-series result below establishes the original fast-shut-in response. Section 6.7.1 reports
+the corrected no-hold and slow-bleed 101 controls.
 
 The shut-in runs ask a narrower question with a clean yes/no answer: after the injection pressure
 has fallen back toward ambient, does slip keep growing? Each deck ramps to its own peak, holds past
@@ -2490,8 +2536,10 @@ the injection pressure has stopped. Whether that is enough to sustain slip depen
 between the two drainage timescales and the residual strength — which is a model output, not an
 input.
 
-The answer is no, on all four specimens, without qualification. Slip arrests within the shut-in
-transient and does not resume during 3000 s of observation.
+The 98-series answer is no on all four specimens: slip arrests within the shut-in transient and
+does not resume during 3000 s of observation. The corrected 101-series controls in §6.7.1 preserve
+that conclusion for the valid SW-T1 run, while the four SW-S4 controls remain qualified by their
+pre-injection slip and cannot provide an unqualified independent confirmation.
 
 **Table 12.** Shut-in result. Slip is the reported shear slip at the interface; the lag is between
 the shut-in instant and the instant of peak slip *rate*, so a negative value means the peak rate
@@ -2552,6 +2600,20 @@ loading a locked patch (§6.6.6 lists the corresponding absences for the cyclic 
 between them requires a model at the scale where they differ; what this result establishes is that
 none of them can be replaced by the diffusion already in the formulation.
 
+#### 6.7.1 Corrected no-hold and slow-bleed controls
+
+All six 101 shut-in controls complete, and their global slip-rate maxima precede shut-in. Removing
+the pre-shut-in hold produces maximum immediate forward growth of 0.000084 mm (SW-T1), 0.000002 mm
+(SW-T2), zero at resolved precision (SW-S3), and 0.000212 mm (SW-S4), followed by relaxation rather
+than delayed accumulation. Net changes at the end are -0.000134, -0.000150, -0.000351 and
++0.000005 mm, respectively.
+
+The valid SW-T1 slow-bleed control, with a 200 s hold and pressure-decay time of 1500 s, has no
+resolved forward post-shut-in growth and a net -0.000222 mm change. Arrest is therefore not an
+artefact of the original 150 s fall-off. Its end/matched-normal-stress permeability ratio is 1.584,
+compared with 1.609 in the no-hold arm. The SW-S4 slow-bleed result points the same way, but it and
+the SW-S4 no-hold result remain qualified by the failed pre-injection check in §6.6.9.
+
 ### 6.8 Limitations
 
 1. Parameters were determined with knowledge of the experimental outcome. This is a validation
@@ -2601,10 +2663,10 @@ none of them can be replaced by the diffusion already in the formulation.
     parameterisations' envelopes differ by about 3 % in slope over the range injection sweeps.
     Reported JRC, JCS and $c$ values should be read as one calibrated combination, not three
     independently constrained properties.
-14. Mesh convergence is demonstrated over the pre-slip response only (§5.1). The finer mesh-3 runs
-    are still in progress at the time of writing, so the post-slip branch is not yet covered, and
-    SW-T1's mesh-5/mesh-3 pair differs by 3.1 % in source-node separation, which is a geometry
-    difference rather than a discretisation one.
+14. Post-slip mesh comparison is complete only for SW-S4 (§5.1): BBFast changes from 6.14 % on
+    mesh 5 to 6.37 % on mesh 3, and Mohr–Coulomb from 8.97 % to 8.84 %. The other three fine-mesh
+    runs are incomplete, and SW-T1's mesh-5/mesh-3 pair differs by 3.1 % in source-node separation,
+    which is a geometry difference rather than a discretisation one.
 15. Repeat runs of an identical deck on different machines agree to seven digits in $Q$,
     $\sigma'_n$ and $\tau$ but differ by up to 10.8 % in the normal-displacement error metric, giving
     a floor of about 0.08 percentage points on mean nRMSE. Differences below roughly 0.1 points
@@ -2755,7 +2817,7 @@ will eventually be asked to run at reservoir scale.
 1. A three-dimensional cohesive-zone hydromechanical formulation, in which the fracture is a
    zero-thickness interface carrying its own Reynolds-equation flow within a Biot poroelastic
    matrix, reproduces the injection-induced slip and permeability enhancement measured in four
-   granite fractures spanning JRC 1.96 to 15.32 to a mean normalised RMS error of 2.43 % to 6.05 %
+   granite fractures spanning JRC 1.96 to 15.32 to a mean normalised RMS error of 2.43 % to 6.14 %
    across five independent observables, with stress residuals of 0.4 to 1.0 MPa against stresses of
    12 to 67 MPa.
 2. The published laboratory table over-determines the fracture orientation and the series
@@ -2798,6 +2860,13 @@ will eventually be asked to run at reservoir scale.
    sign reversal in shear stress survived several calibration generations and was a stress-frame
    mismatch in a postprocessor, not a model failure. Because every attempt is scored through the
    same channel, a reporting error fails consistently and therefore reads as a robust finding.
+10. Under matched calibration, the Barton–Bandis formulation reduces the four-specimen mean error
+    from 18.96 % for the Mohr–Coulomb baseline to 4.39 %, a 76.8 % reduction. The gain is present on
+    every specimen and is largest on the tensile fractures.
+11. Corrected cyclic controls show no material equal-peak permeability accumulation over three
+    cycles; escalating peaks instead reveal specimen-specific thresholds. The valid SW-T1 shut-in
+    controls arrest, including under slow bleed. The corresponding SW-S4 controls are not treated as
+    clean evidence because they fail the preregistered pre-injection-slip check.
 
 ---
 

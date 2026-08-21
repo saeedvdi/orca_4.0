@@ -2,6 +2,12 @@
 
 Initial audit: 2026-08-17. Latest update: 2026-08-18.
 
+> **Historical series report.** This file preserves the 90–93 campaign interpretation and its
+> then-current rounded scores. It is not the current all-file ranking. For values recomputed with
+> the final scoring convention and for later 94–101 results, use
+> `independent_analysis/TABLE2_ERROR_ACCURACY_RANKING.csv` and
+> `independent_analysis/CONSOLIDATED_ANALYSIS_2026-08-18.md` (updated through 2026-08-20).
+
 ## Original 90/91/92 result
 
 The original audit covers all **20** CSV files then present whose names begin with `90_`, `91_`, or `92_` under the four `results_csv_hpc_rorqual` directories. Every one of those original runs reaches all **11/11** Table 2 hold stages. The 2026-08-18 extension, including incomplete mesh-3 snapshots, is appended at the end.

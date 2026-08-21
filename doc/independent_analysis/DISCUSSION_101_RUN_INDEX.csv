@@ -1,0 +1,17 @@
+sample,case,group,design,result_status,run_status,analysis_status,pre_injection_slip_at_800s_mm,run_end_s,expected_end_s,source_csv
+SWT1,101_01_swt1_cyclic3_eq,A,equal-peak 3-cycle,present,complete,valid,,10375.4,10375.3913,Examples/YeGhasemmi2018/SWT1/results_csv_hpc_rorqual/101_01_swt1_cyclic3_eq_hpc.csv
+SWT2,101_02_swt2_cyclic3_eq,A,equal-peak 3-cycle,present,complete,valid,,13881.5,13881.4783,Examples/YeGhasemmi2018/SWT2/results_csv_hpc_rorqual/101_02_swt2_cyclic3_eq_hpc.csv
+SWS3,101_03_sw3_cyclic3_eq,A,equal-peak 3-cycle,present,complete,valid,,15792.7,15792.7197,Examples/YeGhasemmi2018/SWS3/results_csv_hpc_rorqual/101_03_sw3_cyclic3_eq_hpc.csv
+SWS4,101_04_sw4_cyclic3_eq,A,equal-peak 3-cycle,present,complete,qualified_failed_pre_injection_falsifier,0.0011863023,11613.9,11613.9247,Examples/YeGhasemmi2018/SWS4/results_csv_hpc_rorqual/101_04_sw4_cyclic3_eq_hpc.csv
+SWT1,101_05_swt1_cyclic3_esc,B,escalating-peak 3-cycle,present,complete,valid,,9520.8,9520.78261,Examples/YeGhasemmi2018/SWT1/results_csv_hpc_rorqual/101_05_swt1_cyclic3_esc_hpc.csv
+SWT2,101_06_swt2_cyclic3_esc,B,escalating-peak 3-cycle,present,complete,valid,,12693,12692.9565,Examples/YeGhasemmi2018/SWT2/results_csv_hpc_rorqual/101_06_swt2_cyclic3_esc_hpc.csv
+SWS3,101_07_sw3_cyclic3_esc,B,escalating-peak 3-cycle,present,complete,valid,,14442.7,14442.746,Examples/YeGhasemmi2018/SWS3/results_csv_hpc_rorqual/101_07_sw3_cyclic3_esc_hpc.csv
+SWS4,101_08_sw4_cyclic3_esc,B,escalating-peak 3-cycle,present,complete,qualified_failed_pre_injection_falsifier,0.0011863023,10715.6,10715.6495,Examples/YeGhasemmi2018/SWS4/results_csv_hpc_rorqual/101_08_sw4_cyclic3_esc_hpc.csv
+SWT1,101_09_swt1_shutin_nohold,C,"shut-in, no hold, tau=150 s",present,complete,valid,,4640,4640,Examples/YeGhasemmi2018/SWT1/results_csv_hpc_rorqual/101_09_swt1_shutin_nohold_hpc.csv
+SWT2,101_10_swt2_shutin_nohold,C,"shut-in, no hold, tau=150 s",present,complete,valid,,5280,5280,Examples/YeGhasemmi2018/SWT2/results_csv_hpc_rorqual/101_10_swt2_shutin_nohold_hpc.csv
+SWS3,101_11_sw3_shutin_nohold,C,"shut-in, no hold, tau=150 s",present,complete,valid,,5569.2,5569.2,Examples/YeGhasemmi2018/SWS3/results_csv_hpc_rorqual/101_11_sw3_shutin_nohold_hpc.csv
+SWS4,101_12_sw4_shutin_nohold,C,"shut-in, no hold, tau=150 s",present,complete,qualified_failed_pre_injection_falsifier,0.0011863023,5518.7,5518.7,Examples/YeGhasemmi2018/SWS4/results_csv_hpc_rorqual/101_12_sw4_shutin_nohold_hpc.csv
+SWT1,101_13_swt1_shutin_slowtau,D,"shut-in, 200 s hold, tau=1500 s",present,complete,valid,,7840,7840,Examples/YeGhasemmi2018/SWT1/results_csv_hpc_rorqual/101_13_swt1_shutin_slowtau_hpc.csv
+SWS4,101_14_sw4_shutin_slowtau,D,"shut-in, 200 s hold, tau=1500 s",present,complete,qualified_failed_pre_injection_falsifier,0.0011863023,8718.7,8718.7,Examples/YeGhasemmi2018/SWS4/results_csv_hpc_rorqual/101_14_sw4_shutin_slowtau_hpc.csv
+SWT1,101_15_swt1_cyclic2_frame2x,E,"equal-peak 2-cycle, frame 2x",present,complete,valid,,7126.7,7126.69565,Examples/YeGhasemmi2018/SWT1/results_csv_hpc_rorqual/101_15_swt1_cyclic2_frame2x_hpc.csv
+SWT1,101_16_swt1_cyclic2_frame0p5x,E,"equal-peak 2-cycle, frame 0.5x",present,complete,valid,,7126.7,7126.69565,Examples/YeGhasemmi2018/SWT1/results_csv_hpc_rorqual/101_16_swt1_cyclic2_frame0p5x_hpc.csv

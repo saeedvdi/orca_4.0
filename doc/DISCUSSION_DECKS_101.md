@@ -349,7 +349,84 @@ memory note *orca-cross-machine-reproducibility-floor*.
 
 ---
 
-## 6. Known limits of this batch
+## 6. Results (2026-08-20)
+
+All 16 result CSVs are present and reach their requested end times. The reproducible reader is
+`scripts/analyze_101.py`; its machine-readable outputs are:
+
+- `doc/independent_analysis/DISCUSSION_101_RUN_INDEX.csv`;
+- `doc/independent_analysis/DISCUSSION_101_CYCLIC_METRICS.csv`;
+- `doc/independent_analysis/DISCUSSION_101_SHUTIN_METRICS.csv`.
+
+### 6.1 Preregistered SW-S4 falsifier
+
+The SW-S4 check in §3.1 **fails**. All four retimed SW-S4 runs carry
+`reported_czm_shear_slip_mm_pp = 0.0011863 mm` at the sample nearest 800 s, before injection
+starts. The confinement/axial-frame retiming therefore caused a small ambient-pressure slip.
+Those four trajectories are numerically complete, but their cycle and shut-in comparisons are
+qualified rather than clean frozen-frame controls. They must not replace the 93-series validation
+or support an unqualified SW-S4 mechanism claim without a redesigned settling window and rerun.
+
+### 6.2 Group A: equal-peak cycling
+
+At matched 8 MPa floor holds, cycle-3/cycle-1 retained hydraulic ratios are:
+
+| specimen | aperture | permeability | flow | slip change (mm) | status |
+|---|---:|---:|---:|---:|---|
+| SW-T1 | 0.999995 | 1.000002 | 0.999986 | +0.00000389 | valid |
+| SW-T2 | 0.999997 | 0.999997 | 0.999992 | +0.00000011 | valid |
+| SW-S3 | 1.000001 | 1.000002 | 1.000003 | -0.00000017 | valid |
+| SW-S4 | 1.000191 | 1.000383 | 1.000573 | +0.00008390 | qualified by §6.1 |
+
+The three valid specimens reproduce their first-cycle retained state to much better than 0.01%.
+Equal-peak repetition therefore adds no material hydraulic enhancement in this formulation. The
+larger accumulation previously inferred from 97-series SW-S4 was dominated by its moving loading
+frame; after retiming it nearly disappears, although the failed pre-injection falsifier prevents
+calling the new SW-S4 number a clean control.
+
+### 6.3 Group B: escalating peaks
+
+Peak-hold hydraulic-aperture increments for equal 2 MPa pressure increments are:
+
+| specimen | cycle 1 to 2 (um) | cycle 2 to 3 (um) | interpretation |
+|---|---:|---:|---|
+| SW-T1 | +0.01546 | +2.50179 | abrupt threshold response at 28 MPa |
+| SW-T2 | +2.37291 | +0.12060 | strong saturation after the 26 MPa event |
+| SW-S3 | +0.31507 | +0.28348 | similar increments; slip increments continue to grow |
+| SW-S4 | +0.06794 | +0.06845 | no diminishing increment, but qualified by §6.1 |
+
+Escalation therefore exposes specimen-specific thresholds that equal-peak cycling cannot see. It
+does not support one universal saturation law across all four specimens.
+
+### 6.4 Group E: loading-frame stiffness
+
+For SW-T1, the cycle-2/cycle-1 peak-hold aperture ratios are 1.000002 for the reference frame,
+1.000000 for the 2x-stiffer frame, and 1.000256 for the 0.5x frame. The softer arm adds
+0.000367 mm slip at the second peak; the stiffer arm adds only 0.000000011 mm. The direction agrees
+with the preregistered frame-control prediction, but the aperture effect is only 0.026%. This is
+evidence that loading-column compliance controls the tiny residual accumulation, not evidence for
+a large transferable field-scale cyclic gain.
+
+### 6.5 Groups C and D: shut-in
+
+| case | max forward growth after shut-in (mm) | net slip to end (mm) | global rate-peak lag (s) | end/matched permeability | status |
+|---|---:|---:|---:|---:|---|
+| SW-T1, no hold, 150 s tau | +0.000084 | -0.000134 | -62.4 | 1.609 | valid |
+| SW-T2, no hold, 150 s tau | +0.000002 | -0.000150 | -211.5 | 1.459 | valid |
+| SW-S3, no hold, 150 s tau | +0.000000 | -0.000351 | -290.7 | 1.497 | valid |
+| SW-S4, no hold, 150 s tau | +0.000212 | +0.000005 | -417.2 | 0.859 | qualified by §6.1 |
+| SW-T1, 200 s hold, 1500 s tau | +0.000000 | -0.000222 | -262.4 | 1.584 | valid |
+| SW-S4, 200 s hold, 1500 s tau | +0.000002 | -0.000223 | -617.2 | 0.855 | qualified by §6.1 |
+
+The global slip-rate maximum precedes shut-in in every case. Removing the hold produces a small
+immediate forward transient on SW-T1 and SW-S4, followed by relaxation rather than delayed
+accumulation. The valid slow-bleed SW-T1 run also arrests, so the negative result is not an
+artefact of the 150 s pressure-decay time. SW-S4 shows the same direction but remains qualified by
+the failed settling-window check.
+
+---
+
+## 7. Known limits of this batch
 
 * **`fault_pressure_coefficient` is redundant with the Biot coefficient.**
   α = 0.6 with E = 67 GPa / ν = 0.32 implies K_s = 155 GPa, which is not a rock

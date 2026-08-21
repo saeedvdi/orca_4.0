@@ -1800,12 +1800,13 @@ The 99/100-series cases are controlled material-property recalibrations, not non
 
 | Sample | Selected result | Material-property implication | Status |
 |---|---|---|---|
-| SWT1 | `99_01` | `maximum_closure = 50.00e-6 m`, with its seating offset recomputed | strongest candidate; all five scored observables improve |
+| SWT1 | `100_01` | `maximum_closure = 55.00e-6 m`, with its seating offset recomputed | resolved minimum at 2.688632%; all five observables improve relative to `99_01` |
 | SWT2 | `100_04` nominally | `aperture_scale = 0.0177`; `0.0175–0.0177` is unresolved | nominal minimum is 2.131869%; `100_03` differs by only 0.003869 points, below reproducibility |
-| SWS3 | `99_06` | `residual_cohesion = 1.30e6 Pa` | provisional tradeoff; re-gate preload before promotion |
+| SWS3 | `100_06` nominally | `residual_cohesion = 1.30e6 Pa` plus zero unload retention | 4.353781% nominal minimum; only 0.097 points below `99_06`, so the bracket is unresolved |
 | SWS4 | `93_07` | no 99-series material change accepted | both tested scalar changes worsen the mean |
 
 For SWT2, the refinement changes only the hydraulic aperture scale. Relative to `99_04` (`0.0170`), `100_04` lowers flow nRMSE from 4.892625% to 4.335516% while the four mechanical nRMSE values each move by at most 0.015 points. Its mean falls from 2.236611% to 2.131869%. The gain is resolved relative to the 93-series control but the two 100-series bracket values are not distinguishable from each other.
+For SWT1, `100_01` lowers the mean from 3.678819% (`99_01`) to 2.688632% and improves all five channels, making the 55 um closure-capacity change a resolved calibration result. For SWS3, `100_06` improves on the locked `93_05` by 0.220541 points but differs from `99_06` by less than the reproducibility floor; zero unload retention is therefore not independently identified.
 
 ## 7. Can accuracy improve without changing those properties?
 
@@ -1815,15 +1816,15 @@ For SWT2, the refinement changes only the hydraulic aperture scale. Relative to 
 |---:|---|---|---|
 | 1 | SWS3 | Re-gate the axial preload on the corrected 123.40 mm mesh while leaving strength, roughness, closure, aperture and permeability parameters unchanged. Treat `axial_pres_initial`/the preload boundary state as apparatus/loading setup, not a strength knob. | The remaining shear-stress residual contains an approximately constant stage-1 offset introduced when the mesh length changed but the preload was retained. This is the clearest justified route to a genuine score improvement. |
 | 2 | All | Re-audit exact injection-pressure transition times, ramp shapes, production pressure, confining pressure and Table-2 sampling times against the measured driver. Only correct provenance errors; do not tune the imposed history to the response. | Earlier schedule errors shifted transitions by 48–155 s and propagated into flow, slip and unloading. Correct driver timing can improve history agreement without changing material physics. Current production schedules already include major corrections, so remaining gains may be small. |
-| 3 | All, especially incomplete 96/97 runs | Capture stdout/stderr, reduce event-window timestep caps, preserve checkpoints, and diagnose nonlinear/active-set termination before changing physics. Use two-step smoke runs after material-block changes. | Four `alpha_f = 1` probes and three cyclic runs are incomplete. Numerical robustness can make their conclusions complete, but must not be misreported as a lower constitutive error until full Table-2 coverage exists. |
+| 3 | All, especially incomplete mesh/96 runs | Capture stdout/stderr, reduce event-window timestep caps, preserve checkpoints, and diagnose nonlinear/active-set termination before changing physics. Use two-step smoke runs after material-block changes. | The corrected 101 cyclic runs complete, but four `alpha_f = 1` probes and several mesh runs remain incomplete. The four SW-S4 101 controls also require redesign because their preregistered pre-injection-slip check failed. |
 | 4 | All | Re-run mesh/source-node audits and require exact interface-node placement rather than relying only on `use_closest_node`. Complete the missing post-slip mesh comparisons. | Historical apparent failures were caused by stale coordinates and geometry. SWS4's completed mesh pair changes the score by only 0.22 point, suggesting limited but nonzero discretisation sensitivity. |
 | 5 | All | Score the independent mesh-geometry flow channel and retain the five-column Table-2 metric; keep derived aperture/permeability out of the headline average. | This removes dependence on the fitted paper `W/L` route and improves the defensibility and diagnostic accuracy of `Q`. It may change the reported score, but it does not change physical predictions. |
 | 6 | SWS4 | Localise the stage-4 ramp residual using measured ramp/apparatus response. If a new hypothesis is allowed, test a separately verified pressure/path-dependent coupling or larger-scale mechanism; do not use another scalar cohesion/JRC/`D_c` adjustment. | SWS4 has roughly the correct final slip but distributes it over the wrong pressure windows. Rate/state healing and one-dimensional `D_c` brackets already failed. A static material shift cannot generate the missing shape without damaging adjacent stages. |
-| 7 | SWT1/SWT2 | Preserve the 93-series baseline as the validation control and keep accepted material refinements explicitly labelled as recalibrations. | The SWT2 100-series lowers the nominal score to 2.13% by changing `aperture_scale`; it is useful calibration evidence but does not qualify as a non-material improvement. |
+| 7 | SWT1/SWT2/SWS3 | Preserve the 93-series baseline as the validation control and keep accepted material refinements explicitly labelled as recalibrations. | The 100-series lowers the SWT1, SWT2, and nominal SWS3 scores by changing material/contact properties; these are useful calibration results but do not qualify as non-material improvements. |
 
 ### Expected outcome by sample
 
-- **SWT1:** modest improvement may be possible in flow and normal displacement through driver/geometry/reporting checks, but no existing non-material probe demonstrates a large gain.
+- **SWT1:** the material-calibrated `100_01` reaches 2.69% through a resolved closure-capacity change; further non-material gains should come only from driver/geometry/reporting evidence.
 - **SWT2:** the hydraulic-only 100-series reaches 2.13%, but the `0.0175` and `0.0177` cases are indistinguishable at campaign precision. Further fine spacing on this scalar is not justified.
 - **SWS3:** the corrected-mesh preload re-gate is the best concrete non-material opportunity. It should be tested as a minimal-diff deck with a preregistered prediction for the shear-stress offset.
 - **SWS4:** numerical and driver audits remain worthwhile, but a large physical improvement is unlikely without a new path-dependent mechanism. The existing rate/state and static-strength directions should not be repeated without new evidence.
@@ -1834,7 +1835,7 @@ Stress-frame corrections, exact point samplers, displacement zeroing, corrected 
 
 ## 8. Recommendation
 
-Use each specimen's authoritative 93-series deck as the locked-property control. Treat `99_01` and nominal `100_04` as separately labelled material-calibration candidates, with the SWT2 bracket uncertainty stated explicitly. Build only minimal-diff non-material variants, beginning with the SWS3 preload re-gate. For each variant, record the expected affected observable and load window before running, require complete stage coverage, and reject changes that improve one channel by degrading already-correct neighbouring stages. Do not rank partial runs with complete runs.
+Use each specimen's authoritative 93-series deck as the locked-property control. Treat `100_01`, nominal `100_04`, and the unresolved SWS3 `99_06`/`100_05`/`100_06` bracket as separately labelled material-calibration results. Build only minimal-diff non-material variants, beginning with the SWS3 preload re-gate. For each variant, record the expected affected observable and load window before running, require complete stage coverage, and reject changes that improve one channel by degrading already-correct neighbouring stages. Do not rank partial runs with complete runs.
 
 For SWS4, treat the remaining stage-4 residual as a model-form/path-dependence question, not as permission to alter the rock/fracture constants. For SWT2, the 2.13% refined score should now be followed by mesh, machine, driver, and scoring robustness rather than a finer aperture-scale sweep.
 

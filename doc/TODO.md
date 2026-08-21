@@ -1,7 +1,18 @@
 # orca_4.0 — TODO
 
-**Last updated:** 2026-08-15
-**Repo:** `/media/geomechanics/Data4TB/projects/orca_4.0`, branch `orca_v2`
+**Last updated:** 2026-08-20
+**Repo:** `/media/geomechanics/Data4TB/projects/orca_4.0`, branch `orca_v6`
+
+> **Current analysis status (supersedes the old campaign state below).** The material comparison
+> covers all 166 sample decks; the input coverage index additionally classifies all eight software
+> test inputs (174 repository `.i` files total). All 111 available result CSVs are classified in
+> `independent_analysis/INPUT_DECK_ANALYSIS_COVERAGE.csv` and
+> `independent_analysis/RESULT_FILE_ANALYSIS_COVERAGE.csv`. The authoritative monotonic ranking has
+> 64 complete/ranked and 15 partial/unranked cases. Sixty decks have no result and cannot yet be
+> scored. All 16 corrected 101-series runs completed; the four SW-S4 controls fail the
+> preregistered pre-injection-slip check and need redesigned reruns. The dated task record below is
+> retained as campaign history; its “running”, “queued”, branch, and deck-count statements are not
+> the current analysis status.
 
 `orca_4.0` is the consolidation repo. It supersedes `orca_3.0` (R&D) and `orca_3.0_full`
 (previous "final"/paper repo, branch `orca_edit_v27`).

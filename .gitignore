@@ -392,3 +392,13 @@ binaryoutput
 
 
 !doc/independent_analysis/TABLE2_ERROR_ACCURACY_RANKING.csv
+!doc/independent_analysis/INPUT_DECK_ANALYSIS_COVERAGE.csv
+!doc/independent_analysis/RESULT_FILE_ANALYSIS_COVERAGE.csv
+!doc/independent_analysis/DISCUSSION_101_RUN_INDEX.csv
+!doc/independent_analysis/DISCUSSION_101_CYCLIC_METRICS.csv
+!doc/independent_analysis/DISCUSSION_101_SHUTIN_METRICS.csv
+
+# Local rendered validation notebooks exceed GitHub's 100 MB object limit.
+# Keep them on the workstation; do not add them to repository history.
+/Examples/YeGhasemmi2018/All_fracture_samples_validation_comparison.ipynb
+/Examples/YeGhasemmi2018/All_fracture_samples_validation_comparison (Copy).ipynb

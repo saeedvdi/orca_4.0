@@ -180,6 +180,11 @@ def find_deck(csv_path: Path, tag: str | None) -> Path:
     """
     stem = csv_path.stem
     stems = [stem]
+    # Cluster submissions deliberately append ``_hpc`` to csv_file_base so a
+    # delivered result cannot overwrite a local run of the same deck.  The
+    # input deck itself keeps the unsuffixed name.
+    if stem.endswith("_hpc"):
+        stems.append(stem[:-4])
     if tag and stem.endswith("_" + tag):
         stems.append(stem[: -(len(tag) + 1)])
     # results_csv/<name>.csv -> ../<name>.i is the layout every sample dir uses.
@@ -375,6 +380,30 @@ def summarise(res: dict) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def normalised_scores(res: dict) -> dict[str, float]:
+    """Return the campaign's range-normalised RMSE percentages.
+
+    This is the metric used by ``TABLE2_ERROR_ACCURACY_RANKING.csv``.  Keep it
+    next to ``score_run`` so ranking generators and one-off checks cannot drift
+    into subtly different normalisation or displacement-datum conventions.
+    """
+    if res["reached"] != len(PI_TARGETS):
+        return {}
+
+    out = res["table"]
+    scores: dict[str, float] = {}
+    for key in SCORED:
+        sub = out.iloc[1:] if res["datum"] == "stage1" and key in ("dn_mm", "ds_mm") else out
+        err = sub[key + "_err"].dropna()
+        paper_range = float(np.ptp(TABLE2[res["sample"]][key]))
+        if len(err) == 0 or paper_range <= 0.0:
+            return {}
+        scores[key] = 100.0 * float(np.sqrt((err ** 2).mean())) / paper_range
+    scores["mean"] = float(np.mean(list(scores.values())))
+    scores["accuracy"] = 100.0 - scores["mean"]
+    return scores
+
+
 def fmt(v, width=10, prec=4):
     if v is None or (isinstance(v, float) and not np.isfinite(v)):
         return " " * (width - 1) + "-"
@@ -471,7 +500,7 @@ def main() -> int:
     ap.add_argument("--sample", choices=sorted(TABLE2), help="override sample detection")
     ap.add_argument("--tag", default="biot_ab_20260815",
                     help="campaign tag to strip when mapping a CSV back to its deck")
-    ap.add_argument("--tol-mpa", type=float, default=0.35,
+    ap.add_argument("--tol-mpa", type=float, default=0.15,
                     help="how close a schedule point must sit to a target to count as that hold")
     ap.add_argument("--datum", choices=["stage1", "preload"], default="stage1")
     ap.add_argument("--preload-time", type=float, default=55.0)

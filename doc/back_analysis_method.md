@@ -3,6 +3,11 @@
 *A working method, written from the Ye & Ghassemi (2018) four-specimen validation. Every rule
 below is followed by the case that produced it, because a rule without its scar is just advice.*
 
+> **Method and historical examples.** Numerical values attached to older campaign examples are
+> retained as originally analysed. Use `independent_analysis/TABLE2_ERROR_ACCURACY_RANKING.csv`
+> for the current recomputed ranking and
+> `independent_analysis/CONSOLIDATED_ANALYSIS_2026-08-18.md` for current conclusions.
+
 ---
 
 ## The shape of the whole thing

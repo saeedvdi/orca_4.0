@@ -1,8 +1,8 @@
 # ORCA 4.0 consolidated analysis
 
 **Repository:** `orca_4.0`  
-**Branch / revision examined:** `orca_v6`, `c6f3dec`<br>
-**Consolidation date:** 2026-08-18; case-99/100 result-set update 2026-08-19
+**Branch / revision examined:** `orca_v6`, working tree based on `de7ee16`<br>
+**Consolidation date:** 2026-08-18; result and coverage updates through 2026-08-20
 **Benchmark:** Ye and Ghassemi (2018), four granite-fracture injection tests
 
 This is the single synthesis of the independent analyses in `doc/`, updated with the results
@@ -35,10 +35,12 @@ Status terms used below:
    cohesion at 1.30 MPa gives a smaller 4.57% to 4.45% gain with a shear-slip tradeoff. Both
    SW-S4 changes worsen the total score, so `93_07` remains preferred there.
 
-   The completed SWT2 100-series refinement lowers the selected hydraulic-only result further to
-   2.131869% at `aperture_scale = 0.0177`. The `0.0175` case scores 2.135737%, only 0.003869
-   points higher, so the two bracket values are not resolved; `0.0177` is a nominal selection,
-   not evidence for four-decimal identification of the property.
+   The six completed 100-series runs refine three specimens. SW-T1 `100_01` is the strongest
+   resolved improvement: `maximum_closure = 55 um` lowers the mean to 2.688632%. SW-T2 reaches
+   2.131869% at `aperture_scale = 0.0177`, but `0.0175` differs by only 0.003869 points. SW-S3
+   `100_06` is the nominal physical minimum at 4.353781%; its 0.097-point gain over `99_06` is
+   below the reproducibility floor. The latter two selections are brackets, not exact property
+   identifications.
 
 3. **The matched Mohr-Coulomb baseline is decisively worse.** The completed mesh-5 94-series
    scores are 25.27%, 23.14%, 18.47%, and 8.97%, respectively. Averaged across specimens,
@@ -63,22 +65,23 @@ Status terms used below:
    but the repeated truncation proves that removing the 0.87/0.86 attenuation is not a harmless
    documentation cleanup. It requires a re-calibration and a controlled rerun.
 
-7. **Cyclic injection produces a large retained first-cycle change on the tensile specimens and
-   a small one on SW-S4.** At the same 8 MPa pressure before and after cycle 1, the retained
-   permeability ratios are 5.61 (SW-T1), 4.14 (SW-T2), 1.65 (SW-S3), and 1.04 (SW-S4). Only
-   SW-S4 completes all three cycles. From its cycle-1 floor to cycle-3 floor, permeability rises
-   another 4.3% and flow 6.5%; almost all of that increment occurs on cycle 2, with cycle 3
-   essentially saturated.
+7. **The corrected 101-series cyclic campaign is complete.** All four equal-peak three-cycle runs
+   reach their requested end times. At matched 8 MPa floor holds, cycle-3/cycle-1 permeability
+   ratios are 1.000002 (SW-T1), 0.999997 (SW-T2), 1.000002 (SW-S3), and 1.000383 (SW-S4).
+   Equal-peak repetition therefore produces no material additional enhancement. Escalating peaks
+   expose specimen-specific thresholds instead: SW-T1 changes abruptly at 28 MPa, SW-T2 largely
+   saturates after its 26 MPa event, and SW-S3 continues evolving through both increments.
 
-8. **The cyclic campaign is not complete.** SW-T1, SW-T2, and SW-S3 end during the second cycle,
-   at 4602, 6644, and 6054 s against requested end times of 10375, 13882, and 15793 s. Their first
-   cycles are valid, but they cannot support a three-cycle accumulation claim. No corresponding
-   error logs are present in the repository.
+8. **The preregistered SW-S4 101-series validity check fails.** Retiming the fitted loading-frame
+   terms causes 0.001186 mm slip before injection begins at 800 s. All four SW-S4 101 trajectories
+   are numerically complete but qualified; they cannot be presented as clean frozen-frame controls
+   without a redesigned settling window and rerun.
 
-9. **Shut-in causes prompt arrest in all four runs.** All 98-series runs complete. Net reported
-   shear-slip changes after shut-in are between -0.00030 and -0.00015 mm; once injection pressure
-   is within 1% of ambient, subsequent changes are at most 0.000015 mm. The model therefore does
-   not reproduce delayed post-shut-in reactivation from diffusion alone.
+9. **Shut-in still produces arrest, including the slow-bleed control.** In every 101 shut-in run,
+   the global slip-rate maximum precedes shut-in. Removing the hold produces only small immediate
+   forward transients before relaxation. The valid SW-T1 `tau = 1500 s` run has zero resolved
+   forward growth and -0.000222 mm net change, so the negative result is not an artefact of the
+   original 150 s pressure-decay time. The SW-S4 direction agrees but remains qualified by item 8.
 
 10. **The main historical apparent failures were often measurement-path failures.** Correcting
    stress frames, stale point coordinates, output-only displacement fits, mesh geometry, and
@@ -86,11 +89,11 @@ Status terms used below:
    durable method is: audit the plumbing, score the source data, localise the residual, and only
    then tune a parameter.
 
-11. **The manuscript and theory manual are now much closer to the code than the August 18 audit
-    found, but the new 94/96/97/98/99 results have not been integrated.** In particular, the paper's
-    pending MC, cyclic, and shut-in sections can now be partly or wholly written, and its claim
-    that there is no evidence the saw-cut fracture-pressure coefficients buy agreement must be
-    revised in light of the 96-series truncations.
+11. **All current result files are indexed and the main findings are integrated into the manuscript.** The
+    ranking covers every valid monotonic simulation result; non-monotonic 97/98/101 results,
+    retired runs, duplicates, and derived summaries are explicitly classified in the coverage
+    indexes. The paper now reports the 94/96/99/100/101 findings and the qualified SW-S4 limit;
+    final editorial and data-availability work remains outside this analysis update.
 
 ---
 
@@ -570,7 +573,31 @@ exact four-decimal material property. No finer aperture-scale sweep is warranted
 precise independent flow constraint. Relative to the locked 93-series control, the nominal mean
 improves by 0.295952 points (2.427821% to 2.131869%).
 
-### 11.4 Previously unfinished monotonic results
+### 11.4 SWT1 and SWS3 100-series refinements
+
+The four remaining 100-series runs also complete all eleven stages and are now included in the
+ranking.
+
+| specimen | case | principal change | Q | `sigma'_n` | `tau` | `d_n` | `d_s` | **mean** |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| SW-T1 | `99_01` | 50 um parent | 6.154969% | 1.685639% | 2.317053% | 7.280400% | 0.956031% | **3.678819%** |
+| SW-T1 | `100_01` | maximum closure 55 um | 4.510711% | 1.439992% | 1.978421% | 4.583625% | 0.930413% | **2.688632%** |
+| SW-T1 | `100_02` | 50 um plus aperture scale 0.0155 | 4.029055% | 1.690447% | 2.323676% | 7.292947% | 0.957575% | **3.258740%** |
+| SW-S3 | `99_06` | residual cohesion 1.30 MPa parent | 3.092301% | 3.006069% | 7.253266% | 6.833630% | 2.069985% | **4.451050%** |
+| SW-S3 | `100_05` | residual cohesion 1.25 MPa | 3.168550% | 2.851208% | 6.898029% | 6.604122% | 2.656679% | **4.435718%** |
+| SW-S3 | `100_06` | 1.30 MPa plus zero unload retention | 3.060460% | 3.069703% | 7.391637% | 6.173958% | 2.073149% | **4.353781%** |
+
+`100_01` is a resolved SW-T1 improvement: its 0.990187-point gain over `99_01` is large relative
+to the 0.1-point floor and all five channels improve. `100_02` confirms the independent hydraulic
+gain but preserves the larger normal-displacement residual, so it is not the preferred combined
+fit.
+
+For SW-S3, `100_06` is the nominal physical minimum and is 0.220541 points better than the locked
+`93_05` control. It is only 0.097269 points better than `99_06`, however, and `100_05` lies between
+them with a stress/slip tradeoff. The defensible result is therefore a narrow unresolved
+`99_06`/`100_05`/`100_06` bracket, not identification of zero unloading retention.
+
+### 11.5 Previously unfinished monotonic results
 
 The delivered result set completes one older file that the August 18 ranking marked partial:
 SW-S4 mesh-3 Mohr-Coulomb case `94_08` now reaches 3500 s and scores 8.84%. The remaining partial
@@ -581,6 +608,7 @@ complete their trajectories.
 
 | specimen | remaining partial case | stages reached | current end time (s) |
 |---|---|---:|---:|
+| SW-S3 | `86_02_sw3_bbfast_biot0p6_phir9p00_m0_kernel_SV` | 2/11 | 1304.250000 |
 | SW-S3 | `93_06_sw3_final_resc1p40_ppfix_mesh3` | 6/11 | 2833.500000 |
 | SW-S3 | `94_06_sw3_mc_final_mesh3` | 6/11 | 2804.250000 |
 | SW-S3 | `96_04_sw3_fpc1p0` | 5/11 | 2474.913206 |
@@ -588,6 +616,8 @@ complete their trajectories.
 | SW-S4 | `95_16_sw4_rsf_a010_b015` | 5/11 | 1554.859285 |
 | SW-S4 | `96_07_sw4_fpc1p0` | 5/11 | 1668.494440 |
 | SW-S4 | `96_08_sw4_biot0p2_fpc1p0` | 5/11 | 1673.376124 |
+| SW-S4 | `68_02_sw4_bbfast_tail6p75_eta3p25_m0_kernel_SV` | 0/11 | 75.000000 |
+| SW-S4 | `68_03_sw4_bbfast_tail6p50_eta3p25_m0` | 2/11 | 717.316353 |
 | SW-T1 | `93_02_swt1_final_c26p9_resc9p19_ppfix_mesh3` | 0/11 | 70.500000 |
 | SW-T1 | `94_02_swt1_mc_final_mesh3` | 1/11 | 372.000000 |
 | SW-T2 | `92_05_swt2_final_theta30_resc9p71_mesh3` | 5/11 | 2217.000000 |
@@ -599,6 +629,22 @@ These files have neither matching recoverable checkpoints nor copied termination
 the last CSV row; each requires a fresh HPC run after its termination mode is identified. They
 remain marked `partial`, with blank error/accuracy fields, rather than receiving misleading scores
 from truncated loading paths.
+
+### 11.6 Corrected cyclic and shut-in campaign (101-series)
+
+All 16 101-series runs complete. The full preregistered metrics and tables are in
+`doc/DISCUSSION_DECKS_101.md` and the three `DISCUSSION_101_*.csv` files. The principal results are:
+
+- equal-peak cycle-3/cycle-1 floor permeability differs by no more than 0.0004 for any specimen;
+- escalating peaks produce an abrupt final-step response on SW-T1, early response followed by
+  saturation on SW-T2, and continuing increments on SW-S3;
+- the SW-T1 half-stiffness frame arm adds 0.000367 mm second-cycle slip while the double-stiffness
+  arm adds effectively none, supporting the predicted loading-frame control in direction but at
+  only a 0.026% aperture effect;
+- the global slip-rate maximum precedes shut-in in all six shut-in controls; the valid slow-bleed
+  SW-T1 arm has no resolved forward post-shut-in growth;
+- all four SW-S4 101 runs fail their preregistered pre-injection check with 0.001186 mm slip at
+  800 s and are therefore qualified, despite being numerically complete.
 
 ---
 
@@ -677,17 +723,19 @@ paper/theory files have since corrected most of them:
 | reporting-frame sign reversal described as constitutive | retained only as a historical diagnostic lesson |
 | rate/viscosity role omitted | corrected and quantified |
 
-Items still needing integration:
+Integration completed through 2026-08-20:
 
-1. Replace the pending §5.5/§6.3 MC blocks with the 94-series results in §6 of this document.
-2. Replace the pending shut-in block with the complete negative result in §10.
-3. Report the cyclic campaign as one complete three-cycle result plus three partial runs—not as
-   four completed cases—and include the valid first-cycle retention table.
-4. Update the pressure-coefficient discussion: the 96-series does not support the statement that
-   the saw-cut attenuation buys no agreement; all four `alpha_f = 1` variants are incomplete.
-5. Update mesh convergence: SW-S4 BBFast mesh 3 is complete at 6.37% and MC mesh 3 at 8.84%;
-   the other three specimen pairs remain partial.
-6. Complete data/code availability, final references, and editorial placeholders before submission.
+1. The matched 94-series comparison is reported in manuscript §5.5 and §6.3.
+2. The corrected 101-series cyclic and shut-in controls replace the partial 97/98 conclusions;
+   all 16 runs are complete and the four SW-S4 controls are explicitly qualified.
+3. The 96-series pressure-coefficient discussion now states that all four `alpha_f = 1` saw-cut
+   arms are incomplete and cannot establish a score comparison.
+4. Mesh convergence now reports the complete SW-S4 BBFast (6.14%/6.37%) and MC
+   (8.97%/8.84%) pairs while retaining the other three specimen pairs as incomplete.
+5. The 99/100 calibration refinements and their reproducibility limits are reported.
+
+Data/code availability, final references, and removal of editorial-plan material remain submission
+tasks rather than analysis-coverage gaps.
 
 ---
 
@@ -749,10 +797,10 @@ separately verified hypotheses.
 
 ### Blocking a complete paper result
 
-1. Diagnose and rerun the incomplete SW-T1, SW-T2, and SW-S3 cyclic cases, preserving their current
-   CSVs and capturing stdout/stderr. Do not infer a common failure cause from truncation alone.
-2. Insert the completed 94-series and 98-series results into the manuscript.
-3. Insert the partial/complete 97-series result with its limits stated explicitly.
+1. Redesign the SW-S4 101 settling window so its loading-frame terms do not trigger pre-injection
+   slip, then rerun the four qualified SW-S4 controls.
+2. Insert the completed 94/96/99/100/101 results into the manuscript.
+3. Treat the 97/98 results as superseded design lineage and report the corrected 101 controls.
 4. Reconcile manuscript §6.2 with the 96-series coefficient sensitivity.
 5. Re-gate SW-S3 preload on the corrected-length mesh or retain the current offset as a declared
    limitation.
@@ -786,11 +834,15 @@ separately verified hypotheses.
 | `90_01_90_02_vs_validation_analysis.md` | focused strength brackets and event timing | historical |
 | `90_01_91_01_91_02_vs_validation_analysis.md` | SW-T1 residual-cohesion bracket | historical |
 | `91_05_vs_validation_analysis.md` | SW-S3 residual-cohesion diagnosis | historical |
-| `HPC_90_91_92_TABLE2_ERROR_ANALYSIS.md` | scoring convention, 92/93 selection, residual tables | authoritative method/result lineage |
-| `TABLE2_ERROR_ACCURACY_RANKING.csv` | current per-sample scores, completion state, overall ranks, and separate model-family ranks including 100-series | authoritative machine-readable result index |
+| `HPC_90_91_92_TABLE2_ERROR_ANALYSIS.md` | scoring convention, 92/93 selection, residual tables | historical method/result lineage; current scores are in the ranking CSV |
+| `TABLE2_ERROR_ACCURACY_RANKING.csv` | every available monotonic simulation result, completion state, overall ranks, and model-family ranks; unphysical historical arms remain explicitly labelled | authoritative machine-readable result index |
 | `MC_BASELINE_94_SERIES.md` | matched MC construction and transfer | authoritative design; results added here |
 | `V6_RATE_STATE_AND_POROELASTIC_PROBES.md` | 95 design/results and 96 design | authoritative; 96 results added here |
 | `DISCUSSION_DECKS_97_98.md` | cyclic/shut-in design and preregistered metrics | authoritative design; results added here |
+| `DISCUSSION_DECKS_101.md` | corrected cyclic/shut-in design, completed results, and failed SW-S4 falsifier | authoritative 101-series design and interpretation |
+| `independent_analysis/DISCUSSION_101_*.csv` | 101 run inventory and cyclic/shut-in metrics | authoritative machine-readable 101 result index |
+| `independent_analysis/INPUT_DECK_ANALYSIS_COVERAGE.csv` | disposition of all 174 repository inputs: 166 specimen decks and 8 verification tests | authoritative coverage index |
+| `independent_analysis/RESULT_FILE_ANALYSIS_COVERAGE.csv` | disposition of all 111 simulation/derived result CSVs | authoritative coverage index |
 | `MESHES.md` | geometry provenance and node-placement rules | authoritative |
 | `biot_alpha_study_2026-08-15.md` | early Biot A/B evidence | historical; superseded by 93/96 production probes |
 | `sample_parameter_unification_2026-08-16.md` | cross-specimen/data audit | authoritative diagnosis; some parameter tables historical |
@@ -801,14 +853,21 @@ separately verified hypotheses.
 | `back_analysis_method_claude_raw_analysis.md` | raw precursor to the method document | superseded; no separate authority |
 | `reading_hosseini2025_rsf_heterogeneous_fault.md` | rate/state foundations and paper-2 scope | literature synthesis |
 | `Theory/orca_czm_theory.md` | complete formulation and implementation manual | current technical reference, subject to implemented-test limits |
-| `Paper/paper_draft_ye_ghassemi_validation.md` | manuscript narrative | current draft; pending blocks identified in §13 |
+| `Paper/paper_draft_ye_ghassemi_validation.md` | manuscript narrative | current results draft; remaining work is editorial/submission preparation |
 | `TODO.md` | work log and historical queue | useful chronology; individual statuses may lag current artifacts |
 
 ### Reproduction entry points
 
 ```bash
 # Current Table 2 score for any completed monotonic run
-python3 scripts/table2_gate.py --tag hpc path/to/results.csv
+python3 scripts/table2_gate.py path/to/results.csv
+
+# Recompute the complete monotonic ranking
+python3 scripts/update_table2_ranking.py --write
+
+# Recompute 101 metrics and exhaustive deck/result coverage
+python3 scripts/analyze_101.py
+python3 scripts/audit_analysis_coverage.py
 
 # Cross-sample digitised-history scorecard
 python3 scripts/sample_scorecard.py
@@ -821,7 +880,7 @@ python3 scripts/check_source_nodes.py --deck path/to/deck.i
 python3 scripts/paper_parameter_audit.py
 ```
 
-For the new 97/98 calculations, values were sampled at the hold times written into the decks.
+For the 97/98 and corrected 101 calculations, values were sampled at the hold times written into the decks.
 Cyclic retention compares equal-pressure 8 MPa states. Shut-in “near ambient” is defined as within
 1% of the peak-to-ambient pressure excursion. Ratios use the model's reported hydraulic aperture,
 permeability, and validation-flow channels without refitting.
@@ -835,8 +894,10 @@ audit-and-score workflow separated four kinds of discrepancy that initially look
 reporting errors, data-reduction errors, identifiable parameter errors, and genuine model-form
 limits. After those separations, BBFast reproduces the monotonic benchmark substantially better
 than a matched Mohr-Coulomb baseline; repeated cycling mostly saturates where it completes; and
-shut-in produces no delayed reactivation. Those negative and comparative results define the next
+shut-in produces no delayed reactivation in the valid controls. Those negative and comparative results define the next
 model more sharply than another marginal improvement to the calibrated score would. Within the
 targeted 99/100-series, the SW-T1 closure-capacity and SW-T2 aperture-scale changes are material
-improvements; the latter is identified only to the `0.0175–0.0177` bracket. SW-S3 remains a
-tradeoff and the SW-S4 negative result closes the proposed scalar weakening/viscosity adjustment.
+improvements; the latter is identified only to the `0.0175–0.0177` bracket. SW-S3 remains an
+unresolved narrow tradeoff. The SW-S4 monotonic negative result closes the proposed scalar
+weakening/viscosity adjustment, while its four 101-series discussion runs remain qualified by
+their failed pre-injection falsifier.
