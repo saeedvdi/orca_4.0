@@ -100,7 +100,7 @@ def replace_once(text: str, old: str, new: str, deck: Path) -> str:
     return text.replace(old, new, 1)
 
 
-def build(spec: DeckSpec) -> Path:
+def build_deck(spec: DeckSpec) -> Path:
     sample_dir = EXAMPLES / spec.sample
     source = sample_dir / spec.mc_parent
     target = sample_dir / spec.output
@@ -143,10 +143,27 @@ def build(spec: DeckSpec) -> Path:
     return target
 
 
+def build_job(spec: DeckSpec) -> Path:
+    """Clone the validated MC parent's Slurm wrapper for the 102-series deck."""
+    sample_dir = EXAMPLES / spec.sample
+    old_case = Path(spec.mc_parent).stem
+    new_case = Path(spec.output).stem
+    source = sample_dir / f"{old_case}_hpc_nochk.sh"
+    target = sample_dir / f"{new_case}_hpc_nochk.sh"
+    text = source.read_text()
+
+    if old_case not in text:
+        raise RuntimeError(f"{source}: case name {old_case!r} is absent")
+
+    target.write_text(text.replace(old_case, new_case))
+    target.chmod(source.stat().st_mode & 0o777)
+    return target
+
+
 def main() -> None:
     for spec in SPECS:
-        path = build(spec)
-        print(path.relative_to(ROOT))
+        for path in (build_deck(spec), build_job(spec)):
+            print(path.relative_to(ROOT))
 
 
 if __name__ == "__main__":
