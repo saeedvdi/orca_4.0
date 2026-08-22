@@ -152,8 +152,10 @@ change in shut-in decay time moves this by less than 2% (1.609 → 1.584;
 
 ### Why SW-S4 loses what the others keep
 
-My first explanation was roughness destruction, and the data falsify it. All four
-degrade, and SW-S3 degrades *most* while still gaining permeability:
+**Two explanations were proposed here and both were wrong. Corrected 2026-08-22.**
+
+*First attempt — roughness destruction.* Falsified by the 101 data itself. All
+four degrade, and SW-S3 degrades **most** while still gaining permeability:
 
 ```
 SW-T1  roughness_state 0.2246 -> 0.1264  (-43.7%)   slip 532 um   k x1.609
@@ -162,15 +164,59 @@ SW-S3                  0.6400 -> 0.1862  (-70.9%)   slip  74 um   k x1.497
 SW-S4                  0.4478 -> 0.2128  (-52.5%)   slip  91 um   k x0.859
 ```
 
-The sign is set by the *balance* between the aperture that shear dilation adds
-and the aperture that roughness loss takes away — not by either alone. SW-S4 is
-the specimen whose dilation contribution was cut by a factor of 17 during
-calibration, so it is the only one where the loss term wins.
+*Second attempt — "SW-S4's dilation contribution was cut 17× in calibration, so
+it is the one specimen where the loss term wins."* Also wrong, and it was the
+version first committed here. SW-T1 and SW-T2 carry `dilation_scale = 0.0`,
+strictly **less** than SW-S4's 0.0117, and they prop open the most. The parameter
+cannot be compared across specimens at all, because it is only live when
+`use_kinematic_aperture = false`.
 
-That makes the closure result **calibration-driven, not a prediction of the
-constitutive law**, and it should be reported that way. It is also consistent
-with the independently established fact that SW-S4's Q is a stress readout rather
-than an aperture readout (r = 0.562 against d_n, where SW-T1/T2 give r = 1.000).
+*What the source actually says.* In
+`ADOrcaRoughnessDamageFracturePermeability.C::computeQpProperties`:
+
+```
+a_h = a_h0 + stress_aperture + aperture_scale*mechanical_aperture
+                             + dilation_term + self_prop - slip_damage_fill
+
+dilation_term = 0                                            if kinematic
+              = dilation_scale * cumulative_dilation * retention(R)   otherwise
+retention(R)  = retention_residual + (1 - retention_residual)*R
+R             = 1  if kinematic   else roughness_state
+```
+
+and the decks pair up:
+
+| specimen | a_h0 | kinematic | dilation_scale | use_slip_damage | fill at end | fill / a_h0 |
+|---|---:|---|---:|---|---:|---:|
+| SW-T1 | 1.63 µm | true | 0.0 | **false** | — | — |
+| SW-T2 | 2.11 µm | true | 0.0 | **false** | — | — |
+| SW-S3 | 1.22 µm | false | 0.038 | true | 0.307 µm | 25% |
+| SW-S4 | **0.74 µm** | false | 0.0117 | true | 0.253 µm | **34%** |
+
+SW-T1/T2 run the kinematic path, where **R is pinned at 1**, the dilation term is
+off by construction (it already lives in `mechanical_aperture`), and gouge-fill is
+disabled. Their aperture has **no subtraction channel of any kind** — roughness
+degradation is structurally incapable of closing them, which is why the first
+explanation failed.
+
+The gouge-fill term is enabled on SW-S3 and SW-S4 only, and
+0.28 × (1 − e^(−(90.7−20)/30)) = 0.253 µm reproduces SW-S4's own
+`slip_damage_aperture_um_pp` to four figures — so this is the term, not an
+estimate of it.
+
+**Working hypothesis:** the sign is set by the balance between the dilation term
+and the gouge-fill term, and SW-S4 loses because it has the smallest dilation
+gain (a third of SW-S3's) against the largest fractional subtraction (34% of
+a_h0, and it starts filling at 20 µm of slip rather than 30 µm).
+
+This is still **calibration-driven rather than a prediction of the constitutive
+law**, and should be reported that way. It is consistent with the independently
+established fact that SW-S4's Q is a stress readout rather than an aperture
+readout (r = 0.562 against d_n, where SW-T1/T2 give r = 1.000).
+
+The hypothesis is *not yet tested* — the 104-series decks
+(`scripts/build_104_decks.py`) separate the two arms, one parameter each, with
+predictions and falsifiers registered before the runs.
 
 ## 5. The frame-stiffness bracket, and what it costs the paper
 
@@ -237,10 +283,26 @@ was the wrong test.
 6. The frame bracket (§5) belongs in the limitations, attached to every absolute
    number quoted from these runs.
 
-## Open
+## Open — both now have decks (104-series)
 
-- The §4 closure sign for SW-S4 rests on a calibration choice (the 17× dilation
-  cut). Worth a deck that restores the dilation scale and re-runs the shut-in, to
-  confirm the sign flips back.
-- SW-T2 and SW-S3 have no slow-τ shut-in; group D covers only SW-T1 and SW-S4.
-  The rate independence is therefore established on two specimens, not four.
+Built by `scripts/build_104_decks.py`, `--check-input` clean, SLURM at 32 ranks,
+submit with `Examples/YeGhasemmi2018/submit_followup_104.sh`, read with
+`scripts/analyze_104.py`. ~35 h of 32-rank time in total.
+
+**Arm 1 — the §4 closure sign.** Three decks, one parameter each, testing the
+corrected hypothesis (dilation gain versus gouge-fill subtraction):
+
+| deck | specimen | change | prediction | est |
+|---|---|---|---|---:|
+| `104_01` | SW-S4 | `use_slip_damage` → false | k ratio crosses 1.0 | 3.4 h |
+| `104_02` | SW-S4 | `dilation_scale` 0.0117 → 0.038 | k ratio rises | 3.4 h |
+| `104_03` | SW-S3 | `use_slip_damage` → false | k ratio rises above 1.497 | 6.8 h |
+
+`104_03` is the **sign control and is not optional**. A knob that flips SW-S4 but
+does nothing to SW-S3 is not the channel the two specimens differ by, and the
+hypothesis would be wrong even though its headline prediction came true.
+
+**Arm 2 — finish the rate-independence test.** `104_04` (SW-T2) and `104_05`
+(SW-S3) at τ = 1500 s, no parameter changes at all — ordinary group-D decks for
+the two specimens group D skipped. Predictions: within ~2% of ×1.459 and ×1.497.
+10.4 h and 10.7 h.
