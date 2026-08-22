@@ -137,16 +137,29 @@ against the loading path at the same σ'ₙ, so elastic closure is differenced o
 | specimen | σ'ₙ matched | aperture ratio | **k ratio** |
 |---|---:|---:|---:|
 | SW-T1 | 43.14 MPa | ×1.250 | **×1.609** |
-| SW-T2 | 40.90 MPa | ×1.195 | **×1.459** |
+| SW-T2 | 40.90 MPa | ×1.192 | **×1.451** |
 | SW-S3 | 26.16 MPa | ×1.227 | **×1.497** |
 | SW-S4 | 25.73 MPa | ×0.932 | **×0.859** |
 | SW-T1 τ=1500 s | 42.86 MPa | ×1.240 | **×1.584** |
 | SW-S4 τ=1500 s | 25.32 MPa | ×0.929 | **×0.855** |
 
-Three specimens self-prop: after the pressure is removed they are 46–61% more
+> **Corrected 2026-08-22.** SW-T2 read ×1.459 when this was first written. The
+> matched-state search was a nearest-neighbour pick over a window in which σ'ₙ is
+> *not monotonic* — the confining preload ramps it up before injection brings it
+> back down — so the reference could be drawn from the preload ramp instead of
+> the injection branch, and even on the injection branch it snapped to the
+> nearest stored row. `scripts/analyze_101.py` now searches only from peak σ'ₙ
+> and interpolates to the target stress. Ten of the eleven shut-in cases are
+> unchanged to the last digit; SW-T2 moves ×1.459 → ×1.451 because its nearest
+> row sat 0.10 MPa off target. The bug was caught by `104_04` and is documented
+> in `DISCUSSION_104_RESULTS.md` §0, which also shows that **Table 12 of the
+> manuscript carries the uncorrected artifact** on both tensile specimens.
+
+Three specimens self-prop: after the pressure is removed they are 45–61% more
 permeable than they were passing through the same stress on the way up. A ten-fold
 change in shut-in decay time moves this by less than 2% (1.609 → 1.584;
-0.859 → 0.855), so the retention is rate-independent over the range tested.
+0.859 → 0.855), so the retention is rate-independent over the range tested —
+**confirmed on all four specimens by the 104-series arm 2.**
 
 **SW-S4 does the opposite — it grinds shut, ×0.86.**
 
@@ -159,7 +172,7 @@ four degrade, and SW-S3 degrades **most** while still gaining permeability:
 
 ```
 SW-T1  roughness_state 0.2246 -> 0.1264  (-43.7%)   slip 532 um   k x1.609
-SW-T2                  0.1882 -> 0.1206  (-35.9%)   slip 569 um   k x1.459
+SW-T2                  0.1882 -> 0.1206  (-35.9%)   slip 569 um   k x1.451
 SW-S3                  0.6400 -> 0.1862  (-70.9%)   slip  74 um   k x1.497
 SW-S4                  0.4478 -> 0.2128  (-52.5%)   slip  91 um   k x0.859
 ```
@@ -214,9 +227,13 @@ law**, and should be reported that way. It is consistent with the independently
 established fact that SW-S4's Q is a stress readout rather than an aperture
 readout (r = 0.562 against d_n, where SW-T1/T2 give r = 1.000).
 
-The hypothesis is *not yet tested* — the 104-series decks
-(`scripts/build_104_decks.py`) separate the two arms, one parameter each, with
-predictions and falsifiers registered before the runs.
+> **CONFIRMED 2026-08-22 by the 104-series** (`DISCUSSION_104_RESULTS.md` §1).
+> Turning gouge-fill off flips SW-S4 from ×0.859 to ×1.531; raising its dilation
+> gain to SW-S3's flips it to ×1.916; and the same knob on SW-S3 raises it from
+> ×1.497 to ×2.126 **without** crossing 1.0. Both saw cuts lose a similar
+> *absolute* aperture to wear (0.2533 µm on SW-S4, 0.3056 on SW-S3); SW-S4's
+> baseline is 40% smaller, so the same subtraction is decisive on one and a tax
+> on the other. The calibration-driven caveat above stands unchanged.
 
 ## 5. The frame-stiffness bracket, and what it costs the paper
 
@@ -279,30 +296,20 @@ was the wrong test.
 2. Escalating peaks give up to ×5.6 permeability at matched conditions (§2).
 3. The end state is path-independent iff the joint ends on the yield surface (§3).
 4. Shut-in produces no delayed slip (§4) — stated as a limitation.
-5. Self-propping ×1.46–1.61, rate-independent, three of four specimens (§4).
+5. Self-propping ×1.45–1.61, rate-independent, three of four specimens (§4).
 6. The frame bracket (§5) belongs in the limitations, attached to every absolute
    number quoted from these runs.
 
-## Open — both now have decks (104-series)
+## Closed by the 104-series (2026-08-22)
 
-Built by `scripts/build_104_decks.py`, `--check-input` clean, SLURM at 32 ranks,
-submit with `Examples/YeGhasemmi2018/submit_followup_104.sh`, read with
-`scripts/analyze_104.py`. ~35 h of 32-rank time in total.
+Both follow-ups this document opened have run to completion. Full results in
+`DISCUSSION_104_RESULTS.md`; in one line each:
 
-**Arm 1 — the §4 closure sign.** Three decks, one parameter each, testing the
-corrected hypothesis (dilation gain versus gouge-fill subtraction):
-
-| deck | specimen | change | prediction | est |
-|---|---|---|---|---:|
-| `104_01` | SW-S4 | `use_slip_damage` → false | k ratio crosses 1.0 | 3.4 h |
-| `104_02` | SW-S4 | `dilation_scale` 0.0117 → 0.038 | k ratio rises | 3.4 h |
-| `104_03` | SW-S3 | `use_slip_damage` → false | k ratio rises above 1.497 | 6.8 h |
-
-`104_03` is the **sign control and is not optional**. A knob that flips SW-S4 but
-does nothing to SW-S3 is not the channel the two specimens differ by, and the
-hypothesis would be wrong even though its headline prediction came true.
-
-**Arm 2 — finish the rate-independence test.** `104_04` (SW-T2) and `104_05`
-(SW-S3) at τ = 1500 s, no parameter changes at all — ordinary group-D decks for
-the two specimens group D skipped. Predictions: within ~2% of ×1.459 and ×1.497.
-10.4 h and 10.7 h.
+- **Arm 1 — the §4 closure sign.** Confirmed, with its sign control behaving as
+  required: gouge-fill off flips SW-S4 (×0.859 → ×1.531) and raises but does not
+  flip SW-S3 (×1.497 → ×2.126).
+- **Arm 2 — rate independence.** Confirmed on the two missing specimens, so the
+  claim now rests on all four: −1.6 / −1.1 / −0.2 / −0.5% across a ten-fold
+  change in bleed-off time constant.
+- **Unplanned.** Arm 2 exposed a bug in the matched-state metric that invalidates
+  two numbers in the manuscript's Table 12 (see the correction note in §4).

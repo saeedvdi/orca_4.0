@@ -219,6 +219,42 @@ def analyze_cyclic(case: Case, frame: pd.DataFrame) -> list[dict]:
     return rows
 
 
+def interpolate_at_sigma(
+    window: pd.DataFrame, sigma_column: str, target: float
+) -> pd.Series:
+    """Linearly interpolate every column of `window` to sigma' == `target`.
+
+    Nearest-neighbour matching leaves the reference state at the mercy of the
+    output interval: on the slow-bleed decks the injection branch is sampled
+    every few MPa, so the closest stored row can sit a third of an MPa from the
+    target and carry a visibly different aperture.  Interpolating between the
+    two bracketing rows removes that dependence, so a deck and its mirror are
+    compared at the same stress rather than at the same row number.
+    """
+    nearest = window.iloc[(window[sigma_column] - target).abs().argsort()[:1]]
+    row = nearest.iloc[0]
+    position = window.index.get_loc(nearest.index[0])
+    sigma_here = float(row[sigma_column])
+    if sigma_here == target:
+        return row
+
+    # Prefer the neighbour that brackets the target; fall back to the nearest
+    # row alone when the target lies outside the branch entirely.
+    for offset in (1, -1):
+        other = position + offset
+        if not 0 <= other < len(window):
+            continue
+        partner = window.iloc[other]
+        sigma_there = float(partner[sigma_column])
+        if (sigma_here - target) * (sigma_there - target) <= 0.0:
+            span = sigma_there - sigma_here
+            if abs(span) < 1.0e-12:
+                return row
+            weight = (target - sigma_here) / span
+            return row + (partner - row) * weight
+    return row
+
+
 def analyze_shutin(case: Case, frame: pd.DataFrame) -> dict:
     expected_end, _, t_shut = expected(case)
     assert t_shut is not None
@@ -234,15 +270,23 @@ def analyze_shutin(case: Case, frame: pd.DataFrame) -> dict:
     max_rate_idx = int(after[rate_column].idxmax())
     global_rate_idx = int(frame[rate_column].idxmax())
 
-    # Match the end-state effective normal stress on the initial loading ramp.
-    # Exclude t=0 initialisation rows, and stop at shut-in so the match cannot
-    # select the later unloading branch itself.
-    start = T_SETTLE[case.sample]
-    loading = frame[(frame["time"] >= start) & (frame["time"] <= t_shut)].copy()
+    # Match the end-state effective normal stress on the injection branch.
+    #
+    # The window MUST start at peak sigma'_n, not at T_SETTLE.  sigma'_n is not
+    # monotonic over the run: the confining preload ramps it up (25 -> 68 MPa
+    # over the first ~55 s on the tensile decks) before injection brings it back
+    # down, so every target below the peak is attained TWICE inside a window
+    # that begins at T_SETTLE.  Which of the two a nearest-neighbour search
+    # returns is then decided by output sampling density rather than by physics
+    # -- 104_04 matched a preload row at t = 21 s and reported k x4.03 where the
+    # injection-branch match gives x1.46.  Capping at t_shut is still needed so
+    # the match cannot select the unloading branch (which contains the end state
+    # itself, and would make the ratio identically 1).
     sigma_column = CYCLIC_COLUMNS["effective_normal_mpa"][0]
     target_sigma = float(end[sigma_column])
-    match_idx = int((loading[sigma_column] - target_sigma).abs().idxmin())
-    matched = frame.loc[match_idx]
+    t_peak = float(frame.loc[frame[sigma_column].idxmax(), "time"])
+    loading = frame[(frame["time"] >= t_peak) & (frame["time"] <= t_shut)]
+    matched = interpolate_at_sigma(loading, sigma_column, target_sigma)
 
     def scaled(source: pd.Series, name: str) -> float:
         return value(source, name)

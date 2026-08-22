@@ -60,18 +60,27 @@ TRIOS = [
      "100_06_sw3_resc1p30_unld0p00_ppfix", "102_03_sw3_mc_resc1p30_ppfix"),
 ]
 
-# Where each arm's CSV lives.  The controls may be running locally; the parents
-# and pairs came off the cluster.
+# Where each arm's CSV lives.  A deck can end up in more than one of these --
+# the 103 controls were started locally and then re-run on the cluster, leaving
+# a truncated local CSV beside a complete HPC one.  Directory order therefore
+# cannot decide it: take whichever copy reached the largest simulation time.
 SUBDIRS = ["results_csv_local", "results_csv_hpc_rorqual", "results_csv_hpc", "results_csv"]
 
 
 def find_csv(sample, stem):
+    best, best_end = None, -1.0
     for sub in SUBDIRS:
         for suffix in ("_local", "_hpc", ""):
             p = EX / sample / sub / f"{stem}{suffix}.csv"
-            if p.exists():
-                return p
-    return None
+            if not p.exists():
+                continue
+            try:
+                end = float(pd.read_csv(p, usecols=["time"])["time"].max())
+            except Exception:
+                continue
+            if end > best_end:
+                best, best_end = p, end
+    return best
 
 
 def at(df, t):

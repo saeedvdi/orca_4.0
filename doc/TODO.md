@@ -1,6 +1,6 @@
 # orca_4.0 — TODO
 
-**Last updated:** 2026-08-20
+**Last updated:** 2026-08-22
 **Repo:** `/media/geomechanics/Data4TB/projects/orca_4.0`, branch `orca_v6`
 
 > **Current analysis status (supersedes the old campaign state below).** The material comparison
@@ -8,11 +8,33 @@
 > test inputs (174 repository `.i` files total). All 111 available result CSVs are classified in
 > `independent_analysis/INPUT_DECK_ANALYSIS_COVERAGE.csv` and
 > `independent_analysis/RESULT_FILE_ANALYSIS_COVERAGE.csv`. The authoritative monotonic ranking has
-> 64 complete/ranked and 15 partial/unranked cases. Sixty decks have no result and cannot yet be
-> scored. All 16 corrected 101-series runs completed; the four SW-S4 controls fail the
-> preregistered pre-injection-slip check and need redesigned reruns. The dated task record below is
-> retained as campaign history; its “running”, “queued”, branch, and deck-count statements are not
-> the current analysis status.
+> 64 complete/ranked and 15 partial/unranked cases. The dated task record below is retained as
+> campaign history; its “running”, “queued”, branch, and deck-count statements are not the current
+> analysis status.
+>
+> **2026-08-22 — the discussion simulations are finished; one verification gap remains.**
+> All 16 of the 101-series (cyclic / shut-in / frame bracket), all 3 of the 103-series
+> (slip-weakening-exponent control) and all 5 of the 104-series (gouge mechanism + rate
+> independence) completed on the cluster and are analysed. Write-ups:
+> `DISCUSSION_101_RESULTS.md`, `DISCUSSION_104_RESULTS.md`, and the result section added to
+> `Examples/YeGhasemmi2018/MC_BBFAST_BEST_CASE_COMPARISON_DISCUSSION.md`. The manuscript's §5.1,
+> §6.3.1, §6.6, §6.7, §6.9 and Conclusions are updated against them.
+>
+> **The one open simulation item is mesh convergence** (task #81). The 3 mm refined siblings are
+> complete only for SW-S4, on both constitutive laws; SW-T2 reaches stage 4 of 11, SW-S3 stage 6,
+> and SW-T1 dies during preload at t = 70.5 s of 3500. §5.1 now states this honestly rather than
+> quoting the stale partial-stage table it carried before. Closing it properly means rerunning the
+> three refined decks with a much larger allocation, and the SW-T1 case may not be affordable.
+>
+> **Two defects found on 2026-08-22, one fixed and one still live.**
+> 1. *Fixed.* The matched-state metric behind every "retained permeability" number searched a
+>    window in which σ'ₙ is not monotonic, so it could match the confining preload ramp instead of
+>    the injection branch. It put two wrong values (5.52 ×, 4.03 ×) into manuscript Table 12 and a
+>    third into a §6.9 argument whose ordering claim was consequently false. Corrected in
+>    `scripts/analyze_101.py::interpolate_at_sigma`; all affected text rewritten.
+> 2. *Still live.* `scripts/make_hpc_nochk_jobs.py` rewrites only `--time`, leaving `--ntasks` and
+>    the `srun -n` line stale. This truncated the 97/98 batch. Any future batch generated through
+>    it will be silently under-resourced.
 
 `orca_4.0` is the consolidation repo. It supersedes `orca_3.0` (R&D) and `orca_3.0_full`
 (previous "final"/paper repo, branch `orca_edit_v27`).

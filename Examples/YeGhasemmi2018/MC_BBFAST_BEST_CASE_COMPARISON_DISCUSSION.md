@@ -268,6 +268,38 @@ to represent it" — a statement about constitutive form, which is what this com
 to be about. If the prediction fails, the 102 result still stands as a performance claim but its
 mechanism is unexplained, and that should be said.
 
+### Result (2026-08-22): confirmed on the tensile pair, falsified on SW-S3
+
+All three controls ran to their full end times on the cluster. Read with
+`scripts/score_103_control.py`. Stage 5 is the deciding stage — the one where the MC arms yield
+and the measurement does not.
+
+| specimen | stage-5 slip: parent → control → pair (mm) | measured | mean nRMSE: parent / control / pair |
+|---|---|---:|---|
+| SW-T1 | 0.0082 → **0.4901** → 0.4894 | 0.0080 | 2.689% / **24.355%** / 25.351% |
+| SW-T2 | 0.0106 → **0.5243** → 0.5240 | 0.0150 | 2.132% / **23.339%** / 23.365% |
+| SW-S3 | 0.0021 → **0.0039** → 0.0651 | 0.0010 | 4.354% / **5.267%** / 18.744% |
+
+**SW-T1 and SW-T2 confirm the prediction completely.** Changing one parameter — the slip-weakening
+exponent, 1.4 → 1.0 — moves the control onto its Mohr–Coulomb pair to three decimal places in
+stage-5 slip (0.4901 vs 0.4894; 0.5243 vs 0.5240) and reproduces essentially all of the accuracy
+gap: 24.355% against the pair's 25.351%, from a parent at 2.689%. On the tensile fractures the
+entire Barton–Bandis advantage in this comparison is carried by the weakening exponent, and none
+of it by the shape of the strength envelope.
+
+**SW-S3 triggers the registered falsifier.** Its control holds through stage 5 — 0.0039 mm against
+the parent's 0.0021 and the pair's 0.0651 — and its mean nRMSE moves only 4.354% → 5.267%, a fifth
+of the way to the pair's 18.744%. The exponent is *not* the mechanism on SW-S3. The falsifier named
+the next suspect in advance, and it is the one this document already flags: SW-S3's best case is
+the zero-normal-unloading-retention deck, and the MC material has no normal-unloading path at all
+(see "The normal-unloading gap" and the SW-S3 matching qualification above). That gap, not the
+weakening exponent, is what the SW-S3 comparison is measuring.
+
+The honest summary is therefore **specimen-dependent rather than general**: the same 5× aggregate
+performance gap has two different causes in two different specimens. This is a weaker claim than
+the prediction anticipated, and it is the one the manuscript should make. It also means SW-S3
+should not be pooled with the tensile pair as evidence for the exponent.
+
 ## SW-S3 matching qualification
 
 The nominal best SW-S3 BBFast case, `100_06_sw3_resc1p30_unld0p00_ppfix`, combines a residual
@@ -351,16 +383,23 @@ same residual, so the error is generated entirely by the path between them.
 
 The largest MC errors arose because SW-T1, SW-T2 and SW-S3 weakened one injection stage before the
 measured slip event; near agreement in their final displacements therefore masked an incorrect
-loading path. The mechanism is the weakening exponent. A single-state Coulomb law decays
-exponentially in slip, whereas the calibrated Barton–Bandis weakening carries an exponent of 1.4,
-and at the sub-micrometre plastic slips where the yield decision is made the two differ by an order
-of magnitude in strength shed per unit slip — against a pre-yield margin of only 1 to 2 MPa. SW-S4,
-whose calibrated exponent is already 1.10, is correspondingly the one specimen on which the two
-formulations do not separate outside the normal-displacement channel (1.09×), and should be
-reported as an internal control rather than as a fourth vote.
+loading path. **On the two tensile fractures the mechanism is the weakening exponent**, and the
+103-series controls demonstrate this causally rather than by correlation. A single-state Coulomb
+law decays exponentially in slip, whereas the calibrated Barton–Bandis weakening carries an
+exponent of 1.4, and at the sub-micrometre plastic slips where the yield decision is made the two
+differ by an order of magnitude in strength shed per unit slip — against a pre-yield margin of only
+1 to 2 MPa. SW-S4, whose calibrated exponent is already 1.10, is correspondingly the one specimen
+on which the two formulations do not separate outside the normal-displacement channel (1.09×), and
+should be reported as an internal control rather than as a fourth vote.
+
+**On SW-S3 the mechanism is different, and the control proves it is not the exponent**: setting the
+exponent to 1 leaves SW-S3 holding through stage 5 and recovers only a fifth of the accuracy gap.
+What separates the arms there is the normal-unloading path, which the MC material does not
+implement at all. The aggregate 5× performance gap is therefore real but not monocausal, and the
+manuscript should attribute it per specimen rather than to a single constitutive term.
 
 Because the models share the same normal-closure law and their strength envelopes agree at both
-endpoints, this result supports the BBFast weakening formulation — specifically its exponent —
-rather than uniquely identifying envelope curvature. The completed scalar refinements did not
-improve MC, so no further monotonic tuning run is warranted; the 103-series exponent control is a
-control, not a tuning case.
+endpoints, this result supports the BBFast weakening formulation — on the tensile pair specifically
+its exponent — rather than uniquely identifying envelope curvature. The completed scalar
+refinements did not improve MC, so no further monotonic tuning run is warranted; the 103-series
+exponent control is a control, not a tuning case.

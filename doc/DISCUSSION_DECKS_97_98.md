@@ -1,5 +1,32 @@
 # The 97 (cyclic) and 98 (shut-in) discussion decks
 
+> **SUPERSEDED 2026-08-22 by the 101-series** (`DISCUSSION_101_RESULTS.md`), and
+> then extended by the 104-series (`DISCUSSION_104_RESULTS.md`). Two independent
+> problems retire this batch's numbers; the deck design and the reasoning below
+> are still the right ones and were inherited by the 101 build.
+>
+> **1. Truncation.** Three of the four 97-series runs were killed by their
+> wall-clock allocation — SW-T1 at 9088 s of 10 375, SW-T2 at 10 960 of 13 882,
+> SW-S3 at 6214 of 15 793 — so SW-S3 contributed one cycle and could not test
+> outcome 3 at all. Root cause: `scripts/make_hpc_nochk_jobs.py` rewrites only
+> `--time` when it regenerates a job script, leaving `--ntasks` and the
+> `srun -n` line at whatever the template carried. **That script is still
+> unfixed and will silently under-resource any future batch generated through
+> it.** The 101 and 104 SLURM scripts bypass it (`build_101_decks.py` emits 32
+> ranks directly), which is why that batch completed 16 of 16.
+>
+> **2. A metric bug in the retained-permeability column.** The "retained $k$ at
+> matched $\sigma'_n$" values reported for the 98-series — and carried into
+> Table 12 of the manuscript as 5.52 / 4.03 / 1.50 / 0.91 — are wrong on both
+> tensile specimens. Recomputing the same four runs with the corrected reader
+> gives **1.605 / 1.450 / 1.497 / 0.893**. The matched state was found by
+> nearest-neighbour search over a window in which $\sigma'_n$ is *not monotonic*
+> (the confining preload ramps it up before injection brings it back down), so
+> the reference could be drawn from the preload ramp instead of the injection
+> branch. No committed script produced those numbers — they were computed ad
+> hoc, which is why the error survived review. See `DISCUSSION_104_RESULTS.md`
+> §0. The fix is in `scripts/analyze_101.py::interpolate_at_sigma`.
+
 2026-08-18. Branch `orca_v6`, repo `orca_4.0`. Built by
 `scripts/build_cyclic_shutin_decks.py`. Companion to `MC_BASELINE_94_SERIES.md`
 and `HPC_90_91_92_TABLE2_ERROR_ANALYSIS.md`.
