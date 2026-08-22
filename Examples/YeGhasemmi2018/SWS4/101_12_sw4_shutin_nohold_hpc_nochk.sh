@@ -18,7 +18,7 @@ unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
 mkdir -p results_csv_hpc_rorqual results_exodus_hpc_rorqual logs
 
 # ---------------------------------------------------------------------------
-# 101-series discussion deck: shut-in, hold = 0
+# 101-series discussion deck: shut-in, no pre-shut-in hold
 #
 # RESOURCES ARE SIZED FROM THE STEP COUNT, NOT THE SIMULATED DURATION.  This
 # deck runs 5519 s at dtmax = 1.5 s, i.e. >= 3680 steps.  At the

@@ -18,7 +18,7 @@ unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
 mkdir -p results_csv_hpc_rorqual results_exodus_hpc_rorqual logs
 
 # ---------------------------------------------------------------------------
-# 101-series discussion deck: frame 2x stiffer, 2-cycle
+# 101-series discussion deck: frame bracket, 2x STIFFER
 #
 # RESOURCES ARE SIZED FROM THE STEP COUNT, NOT THE SIMULATED DURATION.  This
 # deck runs 7127 s at dtmax = 0.75 s, i.e. >= 9503 steps.  At the

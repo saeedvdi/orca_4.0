@@ -559,95 +559,108 @@ WHY_FRAME = [
 ]
 
 
-def main():
-    made = []
+# SW-T1's parent values, needed by the group E rescaling.  Checked:
+# 7.5187969924812e-05 * 412300000000 = 31.0 MPa = sigma_zz0, so axial_pres_* really
+# are commanded displacements of -sigma/penalty and the 1/g rescaling is exact.
+FRAME_BASE = dict(penalty=412300000000.0,
+                  initial=-7.5187969924812e-05,
+                  final=-0.000731213888696882)
 
-    def note(stem, kind):
-        return f"101-series discussion deck: {kind}"
+
+def plan():
+    """The 101 inventory: one entry per deck, carrying everything the builder
+    writes AND everything the reader needs.
+
+    This is the single source of truth for the probe instants and the shut-in
+    instants.  scripts/analyze_101.py imports it rather than hard-coding times,
+    so the reader cannot drift away from the decks it reads.  Writes nothing.
+    """
+    out = []
+
+    def cyc(sample, stem, grp, peaks, title, why, extra=()):
+        p_amb, p_peak, t_peak = SPECS[sample][1:]
+        rate = (p_peak - p_amb) / (t_peak - 2.0)
+        _, _, end_time, probes = cyclic_schedule(p_amb, peaks, rate, T_SETTLE[sample])
+        out.append(dict(kind="cyclic", sample=sample, stem=stem, group=grp,
+                        title=title, peaks=list(peaks), rate=rate,
+                        end_time=end_time, probes=probes, why=why, extra=extra))
+
+    def sht(sample, stem, grp, hold, tau, observe, title, why):
+        p_amb, p_peak, t_peak = SPECS[sample][1:]
+        _, t_shut, end_time = shutin_expression(
+            p_amb, p_peak, t_peak - 2.0, T_SETTLE[sample], hold, tau, observe)
+        out.append(dict(kind="shutin", sample=sample, stem=stem, group=grp,
+                        title=title, hold=hold, tau=tau, observe=observe,
+                        t_shut=t_shut, end_time=end_time, why=why, extra=()))
 
     # --- A: equal-peak 3-cycle, all four specimens --------------------------
     for sample, stem in (("SWT1", "101_01_swt1_cyclic3_eq"),
                          ("SWT2", "101_02_swt2_cyclic3_eq"),
                          ("SWS3", "101_03_sw3_cyclic3_eq"),
                          ("SWS4", "101_04_sw4_cyclic3_eq")):
-        p_peak = SPECS[sample][2]
-        peaks = [p_peak] * 3
-        rate = (p_peak - SPECS[sample][1]) / (SPECS[sample][3] - 2.0)
-        _, _, et, _ = cyclic_schedule(SPECS[sample][1], peaks, rate, T_SETTLE[sample])
-        _, dtmax = cyclic_deck(sample, stem, peaks, "equal-peak 3-cycle", WHY_EQ)
-        made.append((sample, stem, et, dtmax, "A", "equal-peak 3-cycle"))
+        cyc(sample, stem, "A", [SPECS[sample][2]] * 3, "equal-peak 3-cycle", WHY_EQ)
 
-    # --- B: escalating-peak 3-cycle, all four specimens ---------------------
+    # --- B: escalating-peak 3-cycle, equal 2 MPa steps ----------------------
     for sample, stem in (("SWT1", "101_05_swt1_cyclic3_esc"),
                          ("SWT2", "101_06_swt2_cyclic3_esc"),
                          ("SWS3", "101_07_sw3_cyclic3_esc"),
                          ("SWS4", "101_08_sw4_cyclic3_esc")):
-        p_peak = SPECS[sample][2]
-        peaks = [p_peak - 4.0, p_peak - 2.0, p_peak]
-        rate = (p_peak - SPECS[sample][1]) / (SPECS[sample][3] - 2.0)
-        _, _, et, _ = cyclic_schedule(SPECS[sample][1], peaks, rate, T_SETTLE[sample])
-        _, dtmax = cyclic_deck(sample, stem, peaks, "escalating-peak 3-cycle", WHY_ESC)
-        made.append((sample, stem, et, dtmax, "B", "escalating-peak 3-cycle"))
+        pk = SPECS[sample][2]
+        cyc(sample, stem, "B", [pk - 4.0, pk - 2.0, pk],
+            "escalating-peak 3-cycle", WHY_ESC)
 
     # --- C: shut-in with no pre-shut-in hold --------------------------------
     for sample, stem in (("SWT1", "101_09_swt1_shutin_nohold"),
                          ("SWT2", "101_10_swt2_shutin_nohold"),
                          ("SWS3", "101_11_sw3_shutin_nohold"),
                          ("SWS4", "101_12_sw4_shutin_nohold")):
-        _, _, _, t_peak = SPECS[sample]
-        _, _, et = shutin_expression(SPECS[sample][1], SPECS[sample][2], t_peak - 2.0,
-                                     T_SETTLE[sample], 0.0, SHUTIN_TAU_FAST,
-                                     SHUTIN_OBSERVE)
-        _, dtmax = shutin_deck(sample, stem, 0.0, SHUTIN_TAU_FAST, SHUTIN_OBSERVE,
-                               "shut-in, no pre-shut-in hold", WHY_NOHOLD)
-        made.append((sample, stem, et, dtmax, "C", "shut-in, hold = 0"))
+        sht(sample, stem, "C", 0.0, SHUTIN_TAU_FAST, SHUTIN_OBSERVE,
+            "shut-in, no pre-shut-in hold", WHY_NOHOLD)
 
     # --- D: slow shut-in on the two most slip-prone specimens ---------------
     for sample, stem in (("SWT1", "101_13_swt1_shutin_slowtau"),
                          ("SWS4", "101_14_sw4_shutin_slowtau")):
-        _, _, _, t_peak = SPECS[sample]
-        _, _, et = shutin_expression(SPECS[sample][1], SPECS[sample][2], t_peak - 2.0,
-                                     T_SETTLE[sample], 200.0, SHUTIN_TAU_SLOW,
-                                     SHUTIN_OBSERVE_SLOW)
-        _, dtmax = shutin_deck(sample, stem, 200.0, SHUTIN_TAU_SLOW,
-                               SHUTIN_OBSERVE_SLOW, "shut-in, slow bleed-off", WHY_SLOW)
-        made.append((sample, stem, et, dtmax, "D", "shut-in, tau = 1500 s"))
+        sht(sample, stem, "D", 200.0, SHUTIN_TAU_SLOW, SHUTIN_OBSERVE_SLOW,
+            "shut-in, slow bleed-off", WHY_SLOW)
 
     # --- E: loading-frame stiffness bracket on SW-T1 ------------------------
     # axial_pres_* are COMMANDED DISPLACEMENTS equal to -sigma/penalty, so scaling
-    # the penalty by g and the displacements by 1/g holds the commanded stress
-    # fixed and moves only the series stiffness.  (Check: SW-T1's
-    # axial_pres_initial 7.5188e-5 x penalty 4.123e11 = 31.0 MPa = sigma_zz0.)
-    base_pen = 412300000000.0
-    base_ini = -7.5187969924812e-05
-    base_fin = -0.000731213888696882
+    # the penalty by g and the displacements by 1/g holds the commanded STRESS
+    # fixed and moves only the series stiffness.
     for stem, g, label in (("101_15_swt1_cyclic2_frame2x", 2.0, "2x STIFFER"),
                            ("101_16_swt1_cyclic2_frame0p5x", 0.5, "2x SOFTER")):
-        p_peak = SPECS["SWT1"][2]
-        peaks = [p_peak] * 2
-        rate = (p_peak - SPECS["SWT1"][1]) / (SPECS["SWT1"][3] - 2.0)
-        _, _, et, _ = cyclic_schedule(SPECS["SWT1"][1], peaks, rate, 2.0)
         why = WHY_FRAME + [
             "  #",
             f"  # THIS ARM: axial_bc_penalty x {g} ({label}).  Commanded stress unchanged.",
         ]
-        _, dtmax = cyclic_deck(
-            "SWT1", stem, peaks, f"frame bracket, {label}", why,
-            extra_scalars=(
-                ("axial_bc_penalty", base_pen * g,
-                 f"frame bracket arm: k_machine x {g}"),
-                ("axial_pres_initial", base_ini / g,
-                 f"rescaled by 1/{g} so the commanded stress is unchanged"),
-                ("axial_pres_final", base_fin / g,
-                 f"rescaled by 1/{g} so the commanded stress is unchanged"),
-            ))
-        made.append(("SWT1", stem, et, dtmax, "E", f"frame {label.lower()}, 2-cycle"))
+        cyc("SWT1", stem, "E", [SPECS["SWT1"][2]] * 2, f"frame bracket, {label}", why,
+            extra=(("axial_bc_penalty", FRAME_BASE["penalty"] * g,
+                    f"frame bracket arm: k_machine x {g}"),
+                   ("axial_pres_initial", FRAME_BASE["initial"] / g,
+                    f"rescaled by 1/{g} so the commanded stress is unchanged"),
+                   ("axial_pres_final", FRAME_BASE["final"] / g,
+                    f"rescaled by 1/{g} so the commanded stress is unchanged")))
+    return out
+
+
+def main():
+    made = []
+    for d in plan():
+        if d["kind"] == "cyclic":
+            _, dtmax = cyclic_deck(d["sample"], d["stem"], d["peaks"], d["title"],
+                                   d["why"], d["extra"])
+        else:
+            _, dtmax = shutin_deck(d["sample"], d["stem"], d["hold"], d["tau"],
+                                   d["observe"], d["title"], d["why"])
+        made.append((d["sample"], d["stem"], d["end_time"], dtmax,
+                     d["group"], d["title"]))
 
     # --- SLURM ---------------------------------------------------------------
     print(f"{'deck':34s} {'grp':4s} {'end_time':>9s} {'dtmax':>6s} {'steps':>7s} "
           f"{'est h':>6s} {'wall':>9s}")
     for sample, stem, et, dtmax, grp, kind in made:
-        wall, steps, est_h = write_slurm(sample, stem, et, dtmax, note(stem, kind))
+        wall, steps, est_h = write_slurm(
+            sample, stem, et, dtmax, f"101-series discussion deck: {kind}")
         print(f"{stem:34s} {grp:4s} {et:9.1f} {dtmax:6.2f} {steps:7d} "
               f"{est_h:6.1f} {wall:>9s}")
 

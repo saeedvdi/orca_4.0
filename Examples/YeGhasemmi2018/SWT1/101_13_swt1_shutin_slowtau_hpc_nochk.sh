@@ -18,7 +18,7 @@ unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
 mkdir -p results_csv_hpc_rorqual results_exodus_hpc_rorqual logs
 
 # ---------------------------------------------------------------------------
-# 101-series discussion deck: shut-in, tau = 1500 s
+# 101-series discussion deck: shut-in, slow bleed-off
 #
 # RESOURCES ARE SIZED FROM THE STEP COUNT, NOT THE SIMULATED DURATION.  This
 # deck runs 7840 s at dtmax = 0.75 s, i.e. >= 10454 steps.  At the
