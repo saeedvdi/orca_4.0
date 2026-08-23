@@ -1784,20 +1784,24 @@ estimate of the improvement.
 **Mass balance.** Injected and produced mass fluxes, recovered from the tagged residual vector,
 balance to 4.3 % at steady state during the first hold stage. `[Measured on SW-T1.]`
 
-**Mesh convergence.** The four reported runs use the 5 mm mesh. Refined 3 mm siblings — roughly an
-order of magnitude more elements — were built for all four. One pair is complete over the full
+**Mesh convergence.** The two discretisations are labelled by the Cubit auto-size factor used to
+generate them, 5 for the reported runs and 3 for the refined siblings; the factor is a coarseness
+index, not an element length. At factor 5 the SW-S3 fracture carries 457 interface nodes over
+$4.0\times10^{-3}$ m², an areal node spacing near 3 mm, and the SW-T1 fracture-line node pitch is
+4.33 mm. The factor-3 siblings hold roughly an order of magnitude more elements, i.e. element
+edges shorter by about a factor of two. Refined siblings were built for all four. One pair is complete over the full
 eleven-stage schedule, and it is the informative one: SW-S4 is the specimen whose slip is
 progressive rather than a single burst (§6.4), so its pair spans the slip event rather than
 stopping short of it, and it is the only specimen for which both constitutive laws also have a
 complete pair.
 
-| Specimen | law | stages | 5 mm mesh | 3 mm mesh | change |
+| Specimen | law | stages | factor-5 mesh | factor-3 mesh | change |
 |---|---|---:|---:|---:|---:|
 | SW-S4 | Barton–Bandis | 11/11 | 6.14 % | 6.37 % | $+0.23$ |
 | SW-S4 | Mohr–Coulomb | 11/11 | 8.97 % | 8.84 % | $-0.14$ |
 
-Both changes are a small fraction of the difference between the two laws (2.83 points on the 5 mm
-mesh), and they fall on opposite sides of zero, so the comparison of §5.5 is not an artefact of
+Both changes are a small fraction of the difference between the two laws (2.83 points on the
+factor-5 mesh), and they fall on opposite sides of zero, so the comparison of §5.5 is not an artefact of
 discretisation. Within the Barton–Bandis pair the channels do not move together: refinement improves
 $Q$ (5.01 % → 4.88 %) and $\sigma'_n$ (3.87 % → 3.86 %) and worsens both displacement channels
 (4.63 % → 4.80 % and 7.08 % → 8.17 %), with $\tau$ essentially unchanged. The largest systematic

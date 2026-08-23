@@ -157,8 +157,13 @@ paragraph, and is flagged as an open editorial item, not silently dropped.
 | SW-S4 | BBFast | `93_07_..._ppfix` | `93_08_..._ppfix_mesh3` |
 | SW-S4 | MC | `94_07_sw4_mc_final` | `94_08_sw4_mc_final_mesh3` |
 
-Note the direction: **mesh 3 is the FINE mesh** (3 mm elements, roughly ten times the
-count); mesh 5 is what the paper reports.
+Note the direction: **mesh 3 is the FINE mesh** — roughly ten times the element
+count; mesh 5 is what the paper reports. "3" and "5" are the **Cubit auto-size
+factor** in the journals (`vol all size auto factor N`), a coarseness index, not
+an element length in millimetres. Measured instead: at factor 5 the SW-S3
+fracture carries 457 interface nodes over 4.0e-3 m² (areal spacing near 3 mm) and
+the SW-T1 fracture-line node pitch is 4.33 mm, so factor-5 edges are 3–4 mm and
+factor-3 edges are about half that.
 
 All eight mesh-3 decks already existed. Each was diffed against its mesh-5 parent
 with comments stripped, and the only surviving differences are the mesh file, the
