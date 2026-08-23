@@ -47,13 +47,28 @@ is set generously below for that reason.
 import os
 import re
 import stat
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from set_hpc_resources import retarget  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EX = os.path.join(ROOT, "Examples", "YeGhasemmi2018")
 TEMPLATE = os.path.join(EX, "SWT1", "87_01_swt1_bbfast_injfix_kernel_SV_biot0p6.sh")
 TEMPLATE_DECK = "87_01_swt1_bbfast_injfix_kernel_SV_biot0p6"
 
+# THE RESOURCING BUG THIS ONCE HAD, kept in the record because the failure was
+# invisible in the output. Until 2026-08-22 the loop below rewrote --time and
+# nothing else, so every job silently inherited the template's rank count and
+# memory. The 97/98 decks were intended to run at 32 ranks for 24 h and ran at
+# 16 for 12; they were killed mid-schedule and their partial CSVs were analysed
+# as if they were complete. Rank count and memory are now explicit constants and
+# are applied through set_hpc_resources.retarget, which rewrites --ntasks, --mem,
+# --time and the srun -n argument together and refuses to return a script whose
+# allocated and launched rank counts disagree.
 WALLTIME = "24:00:00"
+NTASKS = 32
+MEM_GB = 32
 
 JOBS = [
     ("SWT2", "87_02_swt2_bbfast_injfix_kernel_SV_biot0p6",
@@ -74,8 +89,7 @@ def main():
     for sample, deck, note in JOBS:
         text = template.replace(TEMPLATE_DECK, deck).replace("/SWT1", f"/{sample}")
 
-        text = re.sub(r"^#SBATCH --time=.*$", f"#SBATCH --time={WALLTIME}",
-                      text, flags=re.M)
+        text = retarget(text, NTASKS, MEM_GB, WALLTIME)
 
         # results_checkpoint is never written now; do not create it either.
         text = text.replace("mkdir -p results_csv results_exodus results_checkpoint",

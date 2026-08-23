@@ -295,9 +295,13 @@ paper_flow_width_over_length = 0.814323680496
 mesh_flow_width_over_length = 0.814323680496
 ml_per_m3_per_min = 6.0e7
 
-exodus_file_base = results_exodus_hpc_rorqual/91_02_swt1_bbfast_c26p9_resc9p19_kernel_SV_biot0p6_hpc
-csv_file_base    = results_csv_hpc_rorqual/91_02_swt1_bbfast_c26p9_resc9p19_kernel_SV_biot0p6_hpc
-checkpoint_file_base = results_checkpoint_hpc_rorqual/91_02_swt1_bbfast_c26p9_resc9p19_kernel_SV_biot0p6_hpc
+# CORRECTED 2026-08-22: these three named 91_02, a BBFast mesh-5 deck, because the MC
+# build inherited them from its BBFast parent 93_02 -- which was itself stale.  Two
+# separate errors landed on the same three lines: wrong mesh, and wrong constitutive
+# law.  See the matching note in 93_02.
+exodus_file_base = results_exodus_hpc_rorqual/94_02_swt1_mc_final_mesh3_hpc
+csv_file_base    = results_csv_hpc_rorqual/94_02_swt1_mc_final_mesh3_hpc
+checkpoint_file_base = results_checkpoint_hpc_rorqual/94_02_swt1_mc_final_mesh3_hpc
 
 [GlobalParams]
   displacements = 'disp_x disp_y disp_z'

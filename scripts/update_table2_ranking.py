@@ -166,6 +166,89 @@ NEW_CASES = [
         "source_csv": "Examples/YeGhasemmi2018/SWS3/results_csv_hpc_rorqual/100_06_sw3_resc1p30_unld0p00_ppfix_hpc.csv",
         "notes": "combines residual cohesion 1.30 MPa with zero unload retention; nominal SWS3 minimum but only 0.097 points below 99_06",
     },
+    # --- 102 series: the Mohr-Coulomb baseline rebuilt on the best BBFast
+    # calibration of each specimen.  The question these answer is whether the
+    # MC/BBFast accuracy gap is calibration or constitutive form: each 102 deck
+    # transplants the scalar refinement that won the BBFast ranking onto the
+    # matched MC envelope.  Every one lands within 0.28 points of its 94-series
+    # sibling, so the gap does not move -- which is the result, not a failure.
+    {
+        "sample": "SWT1",
+        "case": "102_01_swt1_mc_vm55um_ppfix",
+        "series": "102",
+        "model_family": "Mohr-Coulomb",
+        "mesh": "mesh5",
+        "selection_status": "best_case_constitutive_baseline",
+        "source_csv": "Examples/YeGhasemmi2018/SWT1/results_csv_hpc_rorqual/102_01_swt1_mc_vm55um_ppfix_hpc.csv",
+        "notes": "MC on 100_01's 55 um maximum closure; 0.078 points WORSE than 94_01, so the BBFast gain does not transfer",
+    },
+    {
+        "sample": "SWT2",
+        "case": "102_02_swt2_mc_apscale0p0177_ppfix",
+        "series": "102",
+        "model_family": "Mohr-Coulomb",
+        "mesh": "mesh5",
+        "selection_status": "best_case_constitutive_baseline",
+        "source_csv": "Examples/YeGhasemmi2018/SWT2/results_csv_hpc_rorqual/102_02_swt2_mc_apscale0p0177_ppfix_hpc.csv",
+        "notes": "MC on 100_04's aperture scale 0.0177; 0.220 points worse than 94_03",
+    },
+    {
+        "sample": "SWS3",
+        "case": "102_03_sw3_mc_resc1p30_ppfix",
+        "series": "102",
+        "model_family": "Mohr-Coulomb",
+        "mesh": "mesh5",
+        "selection_status": "best_case_constitutive_baseline",
+        "source_csv": "Examples/YeGhasemmi2018/SWS3/results_csv_hpc_rorqual/102_03_sw3_mc_resc1p30_ppfix_hpc.csv",
+        "notes": "MC on 99_06's residual cohesion 1.30 MPa; 0.273 points worse than 94_05",
+    },
+    {
+        "sample": "SWS4",
+        "case": "102_04_sw4_mc_theta30_jrc5_ppfix",
+        "series": "102",
+        "model_family": "Mohr-Coulomb",
+        "mesh": "mesh5",
+        "selection_status": "best_case_constitutive_baseline",
+        "source_csv": "Examples/YeGhasemmi2018/SWS4/results_csv_hpc_rorqual/102_04_sw4_mc_theta30_jrc5_ppfix_hpc.csv",
+        "notes": "MC on the 93_07 calibration; 0.004 points from 94_07, i.e. the same run to within the reproducibility floor",
+    },
+    # --- 103 series: the single-parameter mechanism control.  These are BBFast
+    # decks with the slip-weakening exponent dropped 1.4 -> 1.0, the exponent MC
+    # uses, and nothing else changed.  They are NOT calibration candidates and
+    # must not compete with the BBFast decks for a family rank, so they carry
+    # their own model_family.  Reading them as "bad BBFast runs" inverts their
+    # meaning: on the tensile pair the whole MC/BBFast gap is supposed to open
+    # up, and it does.
+    {
+        "sample": "SWT1",
+        "case": "103_01_swt1_weakexp1p0_ppfix",
+        "series": "103",
+        "model_family": "BBFast linear-weakening control",
+        "mesh": "mesh5",
+        "selection_status": "mechanism_control",
+        "source_csv": "Examples/YeGhasemmi2018/SWT1/results_csv_hpc_rorqual/103_01_swt1_weakexp1p0_ppfix_hpc.csv",
+        "notes": "exponent 1.4->1.0 alone moves 93_01 from 4.435 to 24.354, i.e. onto its MC pair at 25.272; prediction confirmed",
+    },
+    {
+        "sample": "SWT2",
+        "case": "103_02_swt2_weakexp1p0_ppfix",
+        "series": "103",
+        "model_family": "BBFast linear-weakening control",
+        "mesh": "mesh5",
+        "selection_status": "mechanism_control",
+        "source_csv": "Examples/YeGhasemmi2018/SWT2/results_csv_hpc_rorqual/103_02_swt2_weakexp1p0_ppfix_hpc.csv",
+        "notes": "exponent 1.4->1.0 alone moves 93_03 from 2.428 to 23.339, i.e. onto its MC pair at 23.144; prediction confirmed",
+    },
+    {
+        "sample": "SWS3",
+        "case": "103_03_sw3_weakexp1p0_ppfix",
+        "series": "103",
+        "model_family": "BBFast linear-weakening control",
+        "mesh": "mesh5",
+        "selection_status": "mechanism_control",
+        "source_csv": "Examples/YeGhasemmi2018/SWS3/results_csv_hpc_rorqual/103_03_sw3_weakexp1p0_ppfix_hpc.csv",
+        "notes": "exponent 1.4->1.0 moves 93_05 only 4.574->5.267 against an MC pair at 18.470; the preregistered falsifier fires here",
+    },
 ]
 
 SCORE_COLUMNS = {

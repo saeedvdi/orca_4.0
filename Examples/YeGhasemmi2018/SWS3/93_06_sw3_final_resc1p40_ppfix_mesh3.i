@@ -1248,9 +1248,14 @@ mesh_flow_width_over_length_sw_s3 = 0.674   # diagnostic only: prior estimate ba
 ml_per_m3_per_min = 6.0e7
 
 # --- output ---
-exodus_file_base = results_exodus_hpc_rorqual/92_03_sw3_final_paperjrc_resc1p40_hpc
-csv_file_base    = results_csv_hpc_rorqual/92_03_sw3_final_paperjrc_resc1p40_hpc
-checkpoint_file_base = results_checkpoint_hpc_rorqual/92_03_sw3_final_paperjrc_resc1p40_hpc
+# CORRECTED 2026-08-22: these three still named the 92_03 mesh-5 grandparent, inherited
+# when this deck was cut.  94_06, the MC twin, named the same three files, so the two
+# mesh-3 SW-S3 runs would have overwritten each other.  The HPC scripts override
+# csv_file_base and exodus_file_base on the command line, so no result on disk is
+# affected; checkpoint_file_base was never overridden.
+exodus_file_base = results_exodus_hpc_rorqual/93_06_sw3_final_resc1p40_ppfix_mesh3_hpc
+csv_file_base    = results_csv_hpc_rorqual/93_06_sw3_final_resc1p40_ppfix_mesh3_hpc
+checkpoint_file_base = results_checkpoint_hpc_rorqual/93_06_sw3_final_resc1p40_ppfix_mesh3_hpc
 
 ######################################################################################
 [GlobalParams]

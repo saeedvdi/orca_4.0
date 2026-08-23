@@ -260,9 +260,16 @@ paper_flow_width_over_length = 0.814323680496
 mesh_flow_width_over_length = 0.814323680496
 ml_per_m3_per_min = 6.0e7
 
-exodus_file_base = results_exodus_hpc_rorqual/91_02_swt1_bbfast_c26p9_resc9p19_kernel_SV_biot0p6_hpc
-csv_file_base    = results_csv_hpc_rorqual/91_02_swt1_bbfast_c26p9_resc9p19_kernel_SV_biot0p6_hpc
-checkpoint_file_base = results_checkpoint_hpc_rorqual/91_02_swt1_bbfast_c26p9_resc9p19_kernel_SV_biot0p6_hpc
+# CORRECTED 2026-08-22: these three still named the 91_02 mesh-5 grandparent, which
+# this deck inherited when it was cut from 92_07.  94_02, the MC twin, named the same
+# three files, so the two mesh-3 SW-T1 runs would have overwritten each other -- and
+# a BBFast run would have overwritten a Mohr-Coulomb one.  The HPC scripts happened to
+# override csv_file_base and exodus_file_base on the command line, so no result on disk
+# is affected; checkpoint_file_base was never overridden, and any local run would have
+# collided outright.
+exodus_file_base = results_exodus_hpc_rorqual/93_02_swt1_final_c26p9_resc9p19_ppfix_mesh3_hpc
+csv_file_base    = results_csv_hpc_rorqual/93_02_swt1_final_c26p9_resc9p19_ppfix_mesh3_hpc
+checkpoint_file_base = results_checkpoint_hpc_rorqual/93_02_swt1_final_c26p9_resc9p19_ppfix_mesh3_hpc
 
 [GlobalParams]
   displacements = 'disp_x disp_y disp_z'

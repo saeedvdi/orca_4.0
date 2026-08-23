@@ -1283,9 +1283,12 @@ mesh_flow_width_over_length_sw_s3 = 0.674   # diagnostic only: prior estimate ba
 ml_per_m3_per_min = 6.0e7
 
 # --- output ---
-exodus_file_base = results_exodus_hpc_rorqual/92_03_sw3_final_paperjrc_resc1p40_hpc
-csv_file_base    = results_csv_hpc_rorqual/92_03_sw3_final_paperjrc_resc1p40_hpc
-checkpoint_file_base = results_checkpoint_hpc_rorqual/92_03_sw3_final_paperjrc_resc1p40_hpc
+# CORRECTED 2026-08-22: these three named 92_03, a BBFast mesh-5 deck, inherited through
+# the MC build from its BBFast parent 93_06 -- which was itself stale.  Wrong mesh and
+# wrong constitutive law on the same three lines.  See the matching note in 93_06.
+exodus_file_base = results_exodus_hpc_rorqual/94_06_sw3_mc_final_mesh3_hpc
+csv_file_base    = results_csv_hpc_rorqual/94_06_sw3_mc_final_mesh3_hpc
+checkpoint_file_base = results_checkpoint_hpc_rorqual/94_06_sw3_mc_final_mesh3_hpc
 
 ######################################################################################
 [GlobalParams]

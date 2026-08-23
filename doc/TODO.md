@@ -8,7 +8,7 @@
 > test inputs (174 repository `.i` files total). All 111 available result CSVs are classified in
 > `independent_analysis/INPUT_DECK_ANALYSIS_COVERAGE.csv` and
 > `independent_analysis/RESULT_FILE_ANALYSIS_COVERAGE.csv`. The authoritative monotonic ranking has
-> 64 complete/ranked and 15 partial/unranked cases. The dated task record below is retained as
+> 71 complete/ranked and 15 partial/unranked cases. The dated task record below is retained as
 > campaign history; its “running”, “queued”, branch, and deck-count statements are not the current
 > analysis status.
 >
@@ -23,18 +23,39 @@
 > **The one open simulation item is mesh convergence** (task #81). The 3 mm refined siblings are
 > complete only for SW-S4, on both constitutive laws; SW-T2 reaches stage 4 of 11, SW-S3 stage 6,
 > and SW-T1 dies during preload at t = 70.5 s of 3500. §5.1 now states this honestly rather than
-> quoting the stale partial-stage table it carried before. Closing it properly means rerunning the
-> three refined decks with a much larger allocation, and the SW-T1 case may not be affordable.
+> quoting the stale partial-stage table it carried before.
 >
-> **Two defects found on 2026-08-22, one fixed and one still live.**
-> 1. *Fixed.* The matched-state metric behind every "retained permeability" number searched a
+> **2026-08-22 (later) — the finals are decided and the mesh-3 batch is ready to submit.**
+> See `FINAL_DECK_SELECTION.md`. The ranking CSV is complete at 86 rows (71 ranked, 15 partial)
+> after adding the 102-series best-case MC runs and the 103-series exponent controls. Finals are
+> the **93-series** for Barton–Bandis and the **94-series** for Mohr–Coulomb, on all four
+> specimens. MC is uncontested — every 102 deck is equal to or worse than its 94 sibling, so the
+> MC/BBFast gap is constitutive, not calibration. BBFast needed an argument: the 99/100 refinement
+> probes beat the 93-series on three specimens, but SW-T1's winning knob (`maximum_closure`) is on
+> an unclosed sweep that provably cannot reach the measured unloading stiffness at any value, and
+> promoting the probes would decouple the finals from the 101/103/104 discussion decks cut from
+> the 93-series parents. The eight mesh-3 twins are verified and re-resourced to **128 ranks,
+> 128 G, 2 days** by `scripts/make_mesh3_convergence_jobs.py`; Saeed submits them.
+>
+> **Open editorial item:** the 99/100 result is not in the manuscript. It localises SW-T1's
+> residual to joint normal compliance and prices that knob — better content than the 1.7-point
+> score gain it was rejected for. It wants a sensitivity paragraph in §5 or §6.
+>
+> **Three defects found on 2026-08-22, all fixed.**
+> 1. The matched-state metric behind every "retained permeability" number searched a
 >    window in which σ'ₙ is not monotonic, so it could match the confining preload ramp instead of
 >    the injection branch. It put two wrong values (5.52 ×, 4.03 ×) into manuscript Table 12 and a
 >    third into a §6.9 argument whose ordering claim was consequently false. Corrected in
 >    `scripts/analyze_101.py::interpolate_at_sigma`; all affected text rewritten.
-> 2. *Still live.* `scripts/make_hpc_nochk_jobs.py` rewrites only `--time`, leaving `--ntasks` and
->    the `srun -n` line stale. This truncated the 97/98 batch. Any future batch generated through
->    it will be silently under-resourced.
+> 2. `scripts/make_hpc_nochk_jobs.py` rewrote only `--time`, leaving `--ntasks` and the `srun -n`
+>    line stale — the cause of the 97/98 truncation. Both job generators now go through
+>    `scripts/set_hpc_resources.retarget`, which rewrites rank count, memory and wall time together
+>    and refuses to emit a script whose allocated and launched rank counts disagree.
+> 3. Four mesh-3 decks (`93_02`, `94_02`, `93_06`, `94_06`) wrote to another deck's `file_base` —
+>    within each specimen the BBFast and MC twins named the *same* three files. The SLURM scripts
+>    override the CSV and Exodus names on the command line so no result on disk is affected, but
+>    `checkpoint_file_base` was never overridden and a local run would have collided. All four now
+>    name themselves and re-pass `--check-input`.
 
 `orca_4.0` is the consolidation repo. It supersedes `orca_3.0` (R&D) and `orca_3.0_full`
 (previous "final"/paper repo, branch `orca_edit_v27`).
