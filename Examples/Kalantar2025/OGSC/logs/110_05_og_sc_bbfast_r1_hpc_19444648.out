@@ -1,0 +1,97 @@
+
+[33m
+*** Deprecation Warning ***
+/lustre09/project/6039333/saeedvdi/projects/orca_4.0/Examples/Kalantar2025/OGSC/110_05_og_sc_bbfast_r1.i:2230.5:
+Materials/rockHM/fluid_properties_model: The parameter 'fluid_properties_model' is deprecated.
+OrcaTHMaterial now computes fluid properties directly from its local input parameters; remove fluid_properties_model from the input file.
+
+/lustre09/project/6039333/saeedvdi/projects/orca_4.0/Examples/Kalantar2025/OGSC/110_05_og_sc_bbfast_r1.i:2236.5:
+Materials/rockHM/fluid_thermal_expansion_model: The parameter 'fluid_thermal_expansion_model' is deprecated.
+OrcaTHMaterial now uses volumetric_fluid_thermal_expansion directly; remove fluid_thermal_expansion_model from the input file.
+
+[39m
+Setting Up......                                                                         [[33m 43.47 s[39m] [[33m  330 MB[39m]
+Framework Information:
+MOOSE Version:           git commit 846a5c4c on 2026-07-31
+LibMesh Version:         ab36c007ae608290e097bdfbc2766a46d8192b70
+PETSc Version:           3.23.4
+SLEPc Version:           3.23.2
+Current Time:            Sat Aug 22 23:58:58 2026
+Executable Timestamp:    Sun Aug 16 20:33:46 2026
+
+Input File(s):
+  /lustre09/project/6039333/saeedvdi/projects/orca_4.0/Examples/Kalantar2025/OGSC/110_05_og_sc_bbfast_r1.i
+
+Command Line Input Argument(s):
+  Outputs/chk/enable=false
+  csv_file_base=results_csv_hpc/110_05_og_sc_bbfast_r1_hpc
+  exodus_file_base=results_exodus_hpc/110_05_og_sc_bbfast_r1_hpc
+
+Checkpoint:
+  Wall Time Interval:      Every 3600 s
+  Checkpoint:              Outputs/chk
+  # Checkpoints Kept:      4
+  Execute On:              TIMESTEP_END 
+
+Parallelism:
+  Num Processors:          64
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          3
+  Spatial Dimension:       3
+  Nodes:                   
+    Total:                 74290
+    Local:                 1429
+    Min/Max/Avg:           765/1580/1160
+  Elems:                   
+    Total:                 70224
+    Local:                 1054
+    Min/Max/Avg:           1040/1217/1097
+  Num Subdomains:          3
+  Num Partitions:          64
+  Partitioner:             metis
+
+Nonlinear System:
+  Num DOFs:                297160
+  Num Local DOFs:          5716
+  Variables:               { "disp_x" "disp_y" "disp_z" "pore_pressure" } 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Auxiliary System:
+  Num DOFs:                899574
+  Num Local DOFs:          13773
+  Variables:               { "inj_flux_aux" "react_disp_z" "react_pore_pressure" } { "stress_xx" "stress_yy" 
+                             "stress_zz" "stress_xy" "stress_xz" "stress_yz" "darcy_vel_x" "darcy_vel_y" 
+                             "darcy_vel_z" } { "traction_x" "traction_y" "traction_z" "normal_traction" 
+                             "tangent_traction" ... "friction_coefficient_effective" "cohesion_effective" 
+                             "fracture_darcy_vel_x" "fracture_darcy_vel_y" "fracture_darcy_vel_z" } 
+  Finite Element Types:    "LAGRANGE" "MONOMIAL" "MONOMIAL" 
+  Approximation Orders:    "FIRST" "CONSTANT" "CONSTANT" 
+
+Execution Information:
+  Executioner:             Transient
+  TimeStepper:             IterationAdaptiveDT
+  TimeIntegrator(s):       ImplicitEuler
+  Solver Mode:             NEWTON 
+  MOOSE Preconditioner:    SMP 
+
+
+Time Step 0, time = 0
+
+Time Step 1, time = 0.75, dt = 0.75
+ 0 Nonlinear |R| = [32m9.316812e+02[39m
+      0 Linear |R| = [32m9.316812e+02[39m
+      1 Linear |R| = [32m1.281344e-11[39m
+ 1 Nonlinear |R| = [32m2.872227e+00[39m
+      0 Linear |R| = [32m2.872227e+00[39m
+      1 Linear |R| = [32m9.906811e-12[39m
+ 2 Nonlinear |R| = [32m7.717377e-03[39m
+      0 Linear |R| = [32m7.717377e-03[39m
+      1 Linear |R| = [32m1.963080e-11[39m
+ 3 Nonlinear |R| = [32m5.260569e-09[39m
+  Finished Solving                                                                       [[33m 22.90 s[39m] [[33m  430 MB[39m]
+[32m Solve Converged![39m
+

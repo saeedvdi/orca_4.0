@@ -155,10 +155,28 @@ Table 2 prints six quantities per stage. It does not contain six measurements.
 - `σ'ₙ` and `τ` are both affine in σ₁ once θ and σ₃ are fixed. **One channel.**
   Step 0 *is* the proof: two constants regenerate the whole σ'ₙ column from τ.
 
-So there are **three independent observables per stage**: a flow rate, a slip, a
-stress. Reporting six error percentages would count the same defect three times —
-the same correction the Ye2018 campaign had to make when it found `Q` was not
-independent of aperture.
+- `ΔL_s` is **not** a third channel either. **CORRECTED 2026-08-23.** The rig runs
+  at constant piston displacement, so eq (6) with `ΔL = 0` plus eq (4) gives an
+  algebraic identity, not a correlation:
+
+      ΔL_s = −A·Δτ / (K_sys sinθ cosθ)
+
+  Checked against Table 2 (predicted vs fitted slope): OG-T 0.9999 at r = −1.0000,
+  OG-SC 0.9962, OG-SH 1.0416 — the last inside its own 1 µm print resolution. So
+  the slip column is a readout of the same force. **One channel.**
+
+So there are **two independent observables per stage**: a flow rate and a force.
+Reporting six error percentages would count the same defect three times — the same
+correction the Ye2018 campaign had to make when it found `Q` was not independent of
+aperture. `scripts/kalantar_gate.py` scores one force channel and one flow channel
+and prints the rest as diagnostics.
+
+`ΔL_s` in particular is a **frame** check, not a physics check: with
+`axial_bc_penalty` set to `K_sys/A`, any deck that gets τ(t) right gets `ΔL_s(t)`
+free. The expected slope is 0.1720 / 0.1682 / 0.1757 MPa/µm; a deviation there means
+the penalty is wrong, not the joint law. And `ΔL_s` is axial *shortening*
+(`= δ cosθ`), so comparing it to an in-plane slip carries 1/cosθ = 1.1434 / 1.1326 /
+1.1547.
 
 Note what is *missing* relative to Ye2018: **there is no normal-displacement
 column.** Ye2018's `d_n` was the only direct mechanical constraint on the aperture

@@ -3,7 +3,7 @@
 #SBATCH --job-name=110_03_og_t_bbfast_r1_hpc
 #SBATCH --chdir=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/Kalantar2025/OGT
 #SBATCH --account=def-biaoli66
-#SBATCH --time=2-00:00:00
+#SBATCH --time=3-00:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=64
 #SBATCH --cpus-per-task=1

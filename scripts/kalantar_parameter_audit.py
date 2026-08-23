@@ -36,9 +36,11 @@ WHAT ELSE IT CHECKS
 1. How many of the six tabulated columns are independent. Q, k and a_h are one
    measurement (k is computed from Q through the paper's eq 7, a_h = sqrt(12k)),
    and sigma'_n and tau are one measurement (both are affine in sigma_1 alone
-   once theta and sigma_3 are fixed). That leaves three independent channels per
-   stage, not six, and a validation that reports six is counting the same defect
-   repeatedly.
+   once theta and sigma_3 are fixed). CORRECTED 2026-08-23: dL_s is not a third
+   channel either -- constant-piston-displacement control makes it an exact
+   algebraic readout of tau, dL_s = -A dtau/(K_sys sin th cos th). That leaves TWO
+   independent channels per stage, not six, and a validation that reports six is
+   counting the same defect repeatedly.
 2. Whether a_h = sqrt(12k) reproduces the printed a_h, which tells us whether the
    k column is safe to score against or has been rounded into uselessness.
 3. The critical-stress state each specimen was set to, against the paper's own
@@ -159,7 +161,11 @@ def main() -> int:
     print("  (b) sigma'_n and tau are both affine in sigma_1 once theta and sigma_3 are")
     print("      fixed, so they are one channel. Section 1 above IS the proof: two")
     print("      constants reproduce the whole sigma'_n column from the tau column.\n")
-    print("  => three independent channels per stage: a flow rate, a slip, a stress.")
+    print("  (c) dL_s is an exact readout of tau, not a third channel: constant piston")
+    print("      displacement means eq (6) has dL = 0, so dL_s = -A dtau/(K_sys sin cos).")
+    print("      Fitted/predicted slope: OG-T 0.9999 (r = -1.0000), OG-SC 0.9962,")
+    print("      OG-SH 1.0416 -- the last inside its own 1 um print resolution.\n")
+    print("  => TWO independent channels per stage: a flow rate and a force.")
 
     rule("3. CRITICAL STRESS STATE AT THE START OF INJECTION")
     print("Paper: the axial load was set so tau = 0.85*tau_p (0.92 for OG-SH), with")

@@ -1,12 +1,14 @@
 # =============================================================================
 # 110_05_og_sc_bbfast_r1
 #
-# KALANTAR ET AL. (2025), specimen OG-SC (saw-cut fracture) -- ROUND 1.
+# KALANTAR ET AL. (2025), specimen OG-SC (saw-cut fracture) -- ROUND 2.
 # Built by scripts/build_110_kalantar_decks.py from
 # Examples/YeGhasemmi2018/SWS3/93_05_sw3_final_resc1p40_ppfix.i.
 #
 # NOTHING IN THIS DECK IS CALIBRATED. Every constant below is derived from the
-# paper or measured off the verified mesh. The parent supplies structure only.
+# paper, from Table 2, or measured off the verified mesh. The parent supplies
+# structure only. What is still INHERITED and therefore still suspect is listed
+# at the bottom.
 #
 # DERIVED CONSTANTS
 #   theta            30.0 deg  (Table 1)
@@ -20,6 +22,19 @@
 #                    -> phi_peak 21.80 deg at the stage-1 sigma'_n of
 #                    36.10 MPa, so phi_r = phi_peak - JRC log10(JCS/sigma'_n)
 #                    = 19.148 deg.
+#   residual         phi = 15.354 deg, atan of Table 2's LAST stage
+#                    (tau 9.30 / sigma'_n 33.87 MPa). Round 1 carried the
+#                    parent's 29.756 deg here, which on OG-SH was ABOVE phi_r and
+#                    made the joint strengthen with slip.
+#   dilation         1.327 deg = 0.5 JRC log10(JCS/sigma'_n), Barton's peak
+#                    dilation. The parent's value was a Ye2018 fit (50.00 deg).
+#   D_c              15.2 um against a stick-slip cap of 25.4 um
+#                    (D_c < d(tau)/k_eff, k_eff = K_sys cos^2 theta sin theta / A =
+#                    0.1521 MPa/um). D_c < cap -> UNSTABLE, which is what the paper reports.
+#   aperture         a_h0 1.03 um anchored at sigma'_n 36.10 MPa
+#                    (Table 2 stage 1); bounds [0.116, 5.76] um bracket
+#                    Table 2's observed [0.58, 1.92] um.
+#                    slip_damage_scale 0.45 um.
 #   K_sys            796 kN/mm MEASURED (section 2.3) -> penalty 4.057e+11 Pa/m.
 #                    This is the constant whose x2 bracket moved Q by -94/+408 % on
 #                    Ye2018 and had to be inferred there. Here it is data.
@@ -39,14 +54,34 @@
 #   different specimen set on a different frame. Importing them would be silent
 #   contamination of a validation that is supposed to be independent.
 #
-# WHAT MUST BE GATED BEFORE THIS IS BELIEVED
-#   axial_pres_final is a first estimate, -sigma_1/penalty with sigma_1 =
-#   63.39 MPa solved from Table 2 stage 1 via tau = (sigma_1-sigma_3) sin
-#   theta cos theta. Run ~200 s and check the realised fracture stresses against
-#   the stage-1 target: tau = 13.16 MPa, sigma'_n = 36.10 MPa.
+# THE AXIAL GATE
+#   axial_pres_final is a SERIES-SPRING solve, not -sigma_1/penalty. The penalty BC
+#   delivers sigma_1 = penalty*(u_cmd - u_sample), so the core's own shortening has
+#   to be added back: u_cmd = sigma_1/penalty + C_ax*(sigma_1-sigma_3) with C_ax =
+#   1.4265e-12 m/Pa (0.8987 L/E, calibrated on the completed OG-SH run 19444645).
+#   Target sigma_1 = 63.39 MPa from Table 2 stage 1 via tau = (sigma_1-sigma_3)
+#   sin theta cos theta. Still worth a 200 s check against the stage-1 target:
+#   tau = 13.16 MPa, sigma'_n = 36.10 MPa.
+#
+# THE REPORTING FRAME (round 1 got all of this wrong)
+#   differential_stress_reaction_mpa_pp subtracts sigma_3 = 33.0, not Ye2018's 30.
+#   effective_normal_paper_frame uses sin^2(30.0) = 0.250000.
+#   shear_stress_paper_frame uses sin cos(30.0) = 0.433013.
+#   The 4 bulk-gauge PointValues span a 90 mm chord about z = 0.0500 m, the
+#   REAL core mid-height. Round 1 used the PARENT's, which put two of them outside
+#   the OG-T and OG-SC meshes and killed both jobs at t = 0.75 s.
+#
+# WHAT IS STILL INHERITED AND STILL SUSPECT (round-3 candidates)
+#   the Barton-Bandis normal-closure constants (initial_normal_stiffness,
+#   maximum_closure, normal_closure_*), normal_unload_retention_fraction,
+#   aperture_scale, tangential_viscosity, roughness_characteristic_slip and
+#   dilation_decay_distance are all Ye2018 fits. At Kalantar's stress levels the
+#   closure term contributes ~0.03 um, so it is nearly inert here, but none of it
+#   is derived. Refit against the a_h(sigma'_n) loop once the loading gate passes.
 #
 # PREDICTION, WRITTEN BEFORE THE RUN
 #   OG-SC slips in one burst at the top of the staircase.
+#   The D_c/k_eff criterion above now puts this deck on the UNSTABLE side, matching.
 #   A slip-weakening law has no dependence on dsigma'_n/dt, so the campaign's
 #   standing weakness predicts this deck will reproduce the timing to within one injection step.
 #   FALSIFIER: if the event lands more than one injection step away, the derived envelope is wrong, not the timing.
@@ -962,7 +997,7 @@ axial_bc_penalty = 4.0572e+11   # KALANTAR: MEASURED K_sys 796 kN/mm / A -- Ye20
                                    # COMPENSATION RE-DERIVED for the new penalty (below) -- a penalty change
                                    # without it re-breaks the preload (batch-3 bug).
 axial_pres_initial = -8.133608e-05   # KALANTAR: -sigma_3/penalty, t=0 equilibrium
-axial_pres_final   = -1.562435e-04   # KALANTAR: FIRST ESTIMATE -sigma_1/penalty, sigma_1 = 63.39 MPa. MUST BE GATED
+axial_pres_final   = -1.995975e-04   # KALANTAR: GATED series-spring: sigma_1/penalty + C_ax*(sigma_1-sigma_3), sigma_1 = 63.39 MPa, C_ax = 1.4265e-12 m/Pa
 # relax_t0 removed in DECK59_07: no post-preload actuator retreat.
                                   # servo retreats DURING the burst tail, not after); 2550 starts just after the
                                   # predicted onset 2420-2520 so the burst is never starved pre-onset (the 59_01
@@ -1230,7 +1265,7 @@ tangential_traction_tolerance = 1e-16
 # UNUSED after PST swap: use_rate_and_state = true
 
 # --- ADOrcaRoughnessDamageFracturePermeability (roughness-coupled) : DD02 reference ---
-initial_hydraulic_aperture = 1.22e-6  # DECK59_07: Ye & Ghassemi Table 2 initial aperture (k=1.24e-13 m2)
+initial_hydraulic_aperture = 1.0300e-06   # KALANTAR: Table 2 stage 1 a_h = 1.03 um, anchored at the stage-1 sigma'_n below
                                      # data PEAK aperture (1.215 um) with the initial: the digitized SW-S3 permeability
                                      # starts at 0.418e-13 m^2 (= a_h 0.709 um) and PEAKS at 1.23e-13 (= 1.215 um) --
                                      # v20/v21 ran the whole panel 3x high (k_init 1.24e-13) and pressurized the fault
@@ -1240,7 +1275,7 @@ initial_hydraulic_aperture = 1.22e-6  # DECK59_07: Ye & Ghassemi Table 2 initial
                                      # and could then never reach the 3.66e-13 peak).
 aperture_scale = 0.001
 normal_stress_aperture_compliance = 2.0e-14 # m/Pa, reversible aperture opening as sigma'_n decreases
-reference_effective_normal_stress = 32.1e6  # Pa: DECK42 preload sigma'_n (opening=0 here).
+reference_effective_normal_stress = 3.6098e+07   # KALANTAR: Table 2 stage 1 sigma'_n = 36.10 MPa -- the stress at which initial_hydraulic_aperture holds, so the closure term vanishes there
 # DECK42: POWER-LAW BARTON-BANDIS closure (bounded), replacing the linear term. Story: deck41's
 # EXPONENTIAL closure captured the unload stiffening but is UNBOUNDED as sigma'n->0 -> POSITIVE
 # FEEDBACK in the coupled HM (aperture drives fracture Darcy flow -> pore pressure -> sigma'n): at
@@ -1294,12 +1329,12 @@ retention_residual = 0.28              # DECK38 (from deck35, DECOUPLED perm-onl
                                      # The reconstruction (REVcn6e13) already reproduces the dn curve.
 self_propping_scale = 0.0
 self_propping_exponent = 1.0
-use_slip_damage = true
-slip_damage_scale = 0.40e-6          # DECK52-SWEEP: re-fit to hold the developed unload gouge at slip~84um:
+use_slip_damage = true   # KALANTAR: gouge fill is the only term in the aperture law that SUBTRACTS
+slip_damage_scale = 4.5000e-07   # KALANTAR: Table 2's irreversible a_h loss, 0.45 um (sigma'_n FALLS over the same stages, so a reversible law has the wrong sign)
                                      # 0.28*(1-exp(-64/30)) = 0.247um (= deck-43/47 unload calibration). WAS DECK50 (=DECK47 values): 0.25->0.29 compensates the onset threshold
                                      # below so the fully-developed unload gouge is preserved (~0.247um at 78um
                                      # slip: 0.29*(1-exp(-(78-40)/20)) = 0.246).
-slip_damage_onset_slip = 30e-6      # DECK52-SWEEP: 40->20um. The HARD 40um threshold caused the perm/flow
+slip_damage_onset_slip = 0.0   # KALANTAR: Table 2 loses aperture from stage 1->2, so gouge accrues from first slip
                                      # SPIKE at t~1380 (deck50) / t~1115 (deck51): aperture rises un-gouged,
                                      # then gouge slams in over char 20um at slip=40um and carves a dip the
                                      # data does not show. Data loading branch only needs gouge~0 up to
@@ -1309,12 +1344,12 @@ slip_damage_onset_slip = 30e-6      # DECK52-SWEEP: 40->20um. The HARD 40um thre
                                      # exactly; the loading-branch perm gap opens EXACTLY when slip starts (gouge
                                      # front-loaded by char slip 20um). Delaying gouge onset lets the loading
                                      # aperture rise with the paper while the unload branch is unchanged.
-slip_damage_characteristic_slip = 30e-6 # DECK52-SWEEP: 20->30um (gentler gouge rate, kills the spike)
-min_hydraulic_aperture = 1.22e-6     # DECK59_07: floor equals authoritative Table-2 initial aperture
+slip_damage_characteristic_slip = 1.00e-05   # KALANTAR: slip over which the gouge term saturates
+min_hydraulic_aperture = 1.1600e-07   # KALANTAR: 0.2x Table 2's minimum (0.58 um) -- the round-1 floor was an inherited Ye2018 value that clipped the answer
                                      # hydraulic_aperture but MISSED this floor -> a_h was clamped straight back to 1.22
                                      # and PINNED there all run (perm flat 1.24e-13; the whole hydraulic panel inert).
                                      # Floor = corrected initial (perm data min IS the initial 0.42e-13).
-max_hydraulic_aperture = 8e-6        # numerical cap (caseF found it necessary on the fine mesh to bound
+max_hydraulic_aperture = 5.7600e-06   # KALANTAR: 3x Table 2's maximum (1.92 um)
                                      # cubic transmissivity; harmless when a_h stays below it). The coarse
                                      # 2.0 deck left it unset.
 compute_transmissibility = true      # produce fracture_transmissivity for OrcaFractureFlowInterfaceKernel
@@ -2296,16 +2331,16 @@ checkpoint_file_base = results_checkpoint_hpc/110_05_og_sc_bbfast_r1_hpc   # KAL
     compressive_normal_stress_floor = 1e3
     pore_pressure_strength_coefficient = 0.0
     use_slip_weakening = true
-    characteristic_slip_distance = 6.0e-5
+    characteristic_slip_distance = 1.522e-05   
     slip_weakening_exponent = 1.4
-    slip_weakening_residual_friction_angle_degrees = 8.45
+    slip_weakening_residual_friction_angle_degrees = 15.354   
 
     # Rough-sample dilation/propping transfer. The 29.45-degree residual is inherited
     # from the SW3 calibration; the 32-degree peak is the Table-2 dn/ds starting point.
     use_dilatancy = true
     use_decoupled_dilation = true
-    dilation_angle_peak_degrees = 26.0
-    dilation_angle_residual_degrees = 26.0
+    dilation_angle_peak_degrees = 1.327   
+    dilation_angle_residual_degrees = 1.327   
     dilation_decay_distance = 1.0e-4
     dilation_opens_joint = true
     accumulate_irreversible_dilation = true
@@ -2534,7 +2569,7 @@ checkpoint_file_base = results_checkpoint_hpc/110_05_og_sc_bbfast_r1_hpc   # KAL
   [injection_pressure_pp]
     type = PointValue
     variable = pore_pressure
-    point = '-0.023159583 0.0 0.019919005'  # L123p4: must track the source_in coord above
+    point = '-0.020184231 0.0 0.015039887'  # L123p4: must track the source_in coord above
   []
   [inj_reaction_sum_pp]
     type = NodalSum
@@ -2558,7 +2593,7 @@ checkpoint_file_base = results_checkpoint_hpc/110_05_og_sc_bbfast_r1_hpc   # KAL
   [pp_outlet_pp]
     type = PointValue
     variable = pore_pressure
-    point = '0.023159583 0.0 0.103480995'  # L123p4: must track the source_out coord above
+    point = '0.020184231 0.0 0.084960113'  # L123p4: must track the source_out coord above
   []
   [pp_drop_pp]
     type = ParsedPostprocessor
@@ -2619,7 +2654,7 @@ checkpoint_file_base = results_checkpoint_hpc/110_05_og_sc_bbfast_r1_hpc   # KAL
   [differential_stress_reaction_mpa_pp]
     type = ParsedPostprocessor
     pp_names = sigma1_reaction_mpa_pp
-    expression = 'sigma1_reaction_mpa_pp - 30.0'
+    expression = 'sigma1_reaction_mpa_pp - 33.0'
   []
 
   # --- secondary differential stress from the top-surface axial stress average ---
@@ -2937,12 +2972,12 @@ checkpoint_file_base = results_checkpoint_hpc/110_05_og_sc_bbfast_r1_hpc   # KAL
   [effective_normal_paper_frame_mpa_pp]
     type = ParsedPostprocessor
     pp_names = 'differential_stress_reaction_mpa_pp injection_pressure_pp pp_outlet_pp'
-    expression = '30.0 - 0.5*(injection_pressure_pp + pp_outlet_pp)*1e-6 + 0.23504036788339755*differential_stress_reaction_mpa_pp'
+    expression = '33.0 - 0.5*(injection_pressure_pp + pp_outlet_pp)*1e-6 + 0.250000000000000*differential_stress_reaction_mpa_pp'
   []
   [shear_stress_paper_frame_mpa_pp]
     type = ParsedPostprocessor
     pp_names = differential_stress_reaction_mpa_pp
-    expression = '0.424024048078213*differential_stress_reaction_mpa_pp'
+    expression = '0.433012701892219*differential_stress_reaction_mpa_pp'
   []
 
 
@@ -3021,22 +3056,22 @@ checkpoint_file_base = results_checkpoint_hpc/110_05_og_sc_bbfast_r1_hpc   # KAL
   [bulk_disp_x_upper_pp]
     type = PointValue
     variable = disp_x
-    point = '${sample_radius} 0 0.11170'
+    point = '${sample_radius} 0 0.09500'
   []
   [bulk_disp_z_upper_pp]
     type = PointValue
     variable = disp_z
-    point = '${sample_radius} 0 0.11170'
+    point = '${sample_radius} 0 0.09500'
   []
   [bulk_disp_x_lower_pp]
     type = PointValue
     variable = disp_x
-    point = '${sample_radius} 0 0.01170'
+    point = '${sample_radius} 0 0.00500'
   []
   [bulk_disp_z_lower_pp]
     type = PointValue
     variable = disp_z
-    point = '${sample_radius} 0 0.01170'
+    point = '${sample_radius} 0 0.00500'
   []
   [bulk_delta_x_pp]
     type = ParsedPostprocessor
@@ -3111,7 +3146,7 @@ checkpoint_file_base = results_checkpoint_hpc/110_05_og_sc_bbfast_r1_hpc   # KAL
     type = Exodus
     file_base = ${exodus_file_base}
     execute_on = 'TIMESTEP_END FINAL'
-    time_step_interval = 10
+    time_step_interval = 24
   []
   [chk]
     type = Checkpoint
