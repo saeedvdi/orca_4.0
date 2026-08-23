@@ -29,7 +29,10 @@ own 104-series predicted from the other direction.
 | Cubit journal, OG-T tensile, θ = 26° (sensitivity arm) | `Examples/Kalantar2025/OGT/mesh/kalantar2025_og_t_theta26.jou` | done |
 | Cubit journal, OG-SC saw-cut, θ = 30° | `Examples/Kalantar2025/OGSC/mesh/kalantar2025_og_sc_theta30.jou` | done |
 | Meshes (`.e`) | `Examples/Kalantar2025/*/mesh/*.e` | **built and verified 2026-08-23** |
-| Decks, scorer, SLURM | — | next; unblocked for OG-SC and OG-T, see below |
+| 110-series BBFast decks, round 1 | `Examples/Kalantar2025/*/110_0*.i` | **built, `--check-input` clean** |
+| SLURM jobs, 64 ranks / 64 GB / 48 h | `Examples/Kalantar2025/*/110_0*_hpc.sh` | done |
+| Gate | `scripts/kalantar_gate.py` | done |
+| 111-series MC siblings | — | after round 1 lands |
 
 ### 1.1 Mesh verification, 2026-08-23
 
@@ -59,11 +62,23 @@ reproduce the bad mesh.
 
 **Snapped coordinates are now in each journal header and must be what the decks
 use.** The snap displaces the modelled borehole from the 5 mm design inset, which
-lengthens the borehole separation `ℓ` and therefore biases `Q` through eq (7)'s
-`ln(2ℓ/T − 1)`: +0.224 % (OG-SC), +0.002 % (OG-SH factor 3), +0.421 % (OG-T 28°),
-+0.414 % (OG-T 26°). All are below anything this campaign ranks on, but the deck's
-flow postprocessor must carry the snapped `ℓ`, not the design value — that is the
-same class of error as the 132× flow bug, just three orders of magnitude smaller.
+lengthens the borehole separation `L`. *(The bias figures first written here were
+computed through eq (7)'s log term with the borehole diameter; §3.1 later showed
+eq (7) is the wrong reduction and that the argument uses the radius. Under the
+cubic law that replaced it, `Q ∝ W/L`, so the bias is just the length change.)*
+
+| mesh | L design → snapped | bias on Q |
+|---|---|---:|
+| OG-SC | 79.9600 → 80.7369 mm | −0.96 % |
+| OG-SH factor 3 | 82.4654 → 82.4736 mm | −0.01 % |
+| OG-T 28° | 85.1596 → 86.7453 mm | −1.83 % |
+| OG-T 26° | 92.8995 → 92.8995 mm | −1.83 % |
+
+All are below anything this campaign ranks on, but the deck's flow postprocessor
+must carry the snapped `L`, not the design value — that is the same class of error
+as the 132× flow bug, just two orders of magnitude smaller. Both values are in
+every 110-series deck as `paper_flow_width_over_length_*` and
+`mesh_flow_width_over_length_*`.
 Note the displacements are also smaller than the paper's own hole-centre/hole-edge
 ambiguity (1.000 mm), which remains the dominant uncertainty on the flow path.
 
@@ -236,9 +251,9 @@ Ye2018 93–104 series. Use **110-series** for Kalantar.
 | **A** | Build 6 meshes in Cubit: 3 specimens × factors 5 and 3. Export under the names in each journal. | you |
 | **B** | Run `scripts/check_source_nodes.py` on each; write the exact interface-node coordinates back into the journals' header blocks. | A |
 | **C** | ~~Derive the flow geometry factor for eq (7)~~ — **done 2026-08-23, and it inverted: see §3.1. Eq (7) as printed is wrong; the Ye2018 cubic form transfers unchanged.** | done |
-| **D** | Port the injection schedule: 3 MPa → max in 3 MPa steps at 0.03 MPa/s, holds of 300 s (OG-SH, OG-T) / 600 s (OG-SC), then back down to 6 MPa. Max P_i is 18 / 30 / 24 MPa. | — |
-| **E** | Build a `kalantar_gate.py` scoring the three independent channels at 39 hold stages, reusing `table2_gate.py`'s stage-walking logic. | D |
-| **F** | 110-series BBFast decks (3), calibrated. 111-series Mohr–Coulomb siblings (3), built by the envelope-transfer recipe in `envelope-transfer-between-constitutive-laws`. | B, C, E |
+| **D** | ~~Port the injection schedule~~ — **done**, generated in `scripts/build_110_kalantar_decks.py` and asserted against Table 2's stage counts (5/4, 9/8, 7/6). | done |
+| **E** | ~~Build a `kalantar_gate.py`~~ — **done**, `scripts/kalantar_gate.py`. Reuses `table2_gate`'s stage walking; scores σ'ₙ, τ, a_h, ΔL_s always and Q only where Table 2 resolves it; re-reduces OG-T to 28°. | done |
+| **F** | 110-series BBFast decks — **round 1 built and `--check-input` clean** (`110_01` OG-SH, `110_03` OG-T, `110_05` OG-SC) with SLURM at 64 ranks / 64 GB / 48 h. Uncalibrated by design. 111-series MC siblings still to come, after round 1 lands. | partly |
 | **G** | Mechanism decks, chosen after F lands. The obvious first one is the gouge arm on OG-SH — see §4. | F |
 
 ### 3.1 Step C, resolved — and it inverted
