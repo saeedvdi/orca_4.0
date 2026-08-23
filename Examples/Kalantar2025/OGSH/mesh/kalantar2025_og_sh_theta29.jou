@@ -1,0 +1,153 @@
+# Kalantar et al. (2025), JGR Solid Earth, 10.1029/2025JB031938.
+# Specimen OG-SH -- SHEAR fracture in Odenwald granodiorite.
+#
+# Units: m.
+# Geometry (paper Table 1): length = 0.12000, diameter = 0.04998,
+# fracture angle = 29 degrees, measured from the specimen's long/vertical axis to
+# the fracture plane.
+#
+# WHY 29 DEGREES IS TRUSTED HERE
+# ---------------------------------------------------------------------------------
+# Not because Table 1 prints it. The paper's own equations (3), (4) and (5),
+#
+#     sigma'_n = (sigma_3 - P_p) + (sigma_1 - sigma_3) sin^2(theta)
+#     tau      =                   (sigma_1 - sigma_3) sin(theta)cos(theta)
+#     P_p      = (P_i + P_o)/2,     P_o = 3 MPa throughout
+#
+# give the identity   tan(theta) = (sigma'_n - sigma_3 + P_p) / tau,  in which every
+# term is tabulated. Regressing Table 2's nine OG-SH hold stages on that identity
+# returns theta = 29.006 deg and sigma_3 = 32.996 MPa with a maximum residual of
+# 0.004 MPa. Two constants reproduce the entire stress table, so this is a
+# recovery, not a fit. See scripts/kalantar_parameter_audit.py section 1.
+#
+# The same audit shows sigma_3 = 33.00 MPa for all three specimens, which is the
+# effective confining pressure of 30 MPa quoted in section 2.3 plus the 3 MPa pore
+# pressure at the start of injection. That is the number the deck's confining
+# boundary condition must carry -- NOT 30 MPa.
+#
+# This matters because the Ye & Ghassemi (2018) campaign found one specimen
+# (SW-T2) whose printed angle its own data table contradicts, and that error was
+# built into a mesh and run for months before anyone divided (3) by (4). OG-SH is
+# clean. OG-T is not -- see OGT/mesh/, where the recovery returns 26.0 against a
+# printed 28.0.
+#
+# Plane, centred at z = L/2 = 0.060, at x = +/- r = 0.02499:
+#     z = L/2 +/- r cot(29 deg) = 0.060 +/- 0.045083153
+#     z_high = 0.105083153      z_low = 0.014916847
+# The elliptical fracture spans 90.17 mm of the 120.00 mm core, clearing each end
+# face by 14.92 mm.
+#
+# Expected fracture_interface area after the split: pi r^2 / sin(29 deg)
+#     = 4.046795e-3 m^2.
+#
+# AFTER REGENERATING, pin the injection/production coordinates onto real interface
+# nodes. Section 2.3 places two 2 mm boreholes 5 mm from the sidewall, one at each
+# end, so the intended source points are at x = +/- (r - 0.005) = +/- 0.019990:
+#     source_in   coord = '-0.019990 0 0.023937085'
+#     source_out  coord = ' 0.019990 0 0.096062915'
+# These are where the boreholes SHOULD be. ExtraNodesetGenerator with
+# use_closest_node = true will silently snap them to the nearest node, which may be
+# several mm away or -- worse -- a bulk node off the fracture entirely. Run
+# scripts/check_source_nodes.py against the exported mesh and write the exact node
+# coordinates back into the deck before any production run.
+#
+# ============================================================================
+# CHECKED 2026-08-23 -- THE FACTOR-4 MESH FAILS THIS TEST. USE FACTOR 3.
+# ============================================================================
+# This is the exact failure mode the warning above describes, and it is the only
+# one of the four Kalantar meshes to hit it.
+#
+#   kalantar2025_og_sh_theta29_size4.e   30,600 elements,  937 interface nodes,
+#                                        interface pitch 1.504 mm
+#       Both sources snap to a BULK node 950.7 / 933.5 um away. The nearest node
+#       that is actually on the fracture is 1217.0 um away -- FURTHER than the
+#       bulk node -- so use_closest_node loses the fracture and the injection
+#       drives the matrix. The run would complete and be wrong.
+#
+#   kalantar2025_og_sh_theta29_size3.e  100,048 elements, 1977 interface nodes,
+#                                        interface pitch 1.035 mm
+#       Both sources land ON the fracture, 4.1 um from the design point. This is
+#       the production mesh for OG-SH.
+#
+# VERIFIED SOURCE COORDINATES for the factor-3 mesh. USE THESE IN THE DECK:
+#     source_in   coord = '-0.019992000 0 0.023933478'
+#     source_out  coord = ' 0.019992000 0 0.096066522'
+# Borehole 4.998 mm from the sidewall against a 5.000 mm design; separation
+# 82.4736 mm, +0.010 %, a +0.002 % bias on Q. Effectively exact.
+#
+# IF THE FACTOR-4 MESH IS USED ANYWAY (it is 3.3x cheaper), the sources MUST be
+# moved onto the interface by hand:
+#     source_in   coord = '-0.020580000 0 0.022872698'
+#     source_out  coord = ' 0.020580000 0 0.097127302'
+# That puts the borehole 4.410 mm from the sidewall and the separation at 84.8993
+# mm, +2.951 %, a +0.669 % bias on Q. The bias is small and correctable. The reason
+# to prefer factor 3 anyway is not the bias: OG-SH carries the smallest slip signal
+# in the paper -- 42.0 um total, largest single step 11.0 um -- distributed across
+# five holds, and it is the specimen the campaign's rate-independence weakness will
+# be tested on. Resolving the smallest observable on the coarsest fracture is the
+# wrong trade even when the flow error is negligible.
+#
+# Geometry of both meshes is exact: L = 120.00 mm, D = 49.98 mm, theta = 29.000 deg,
+# plane-fit residual 0.00 um, fracture_interface area 4.046794e-3 m^2 against the
+# 4.046795e-3 derived above.
+#
+# NOTE ON THE 5 mm INSET: the paper says the holes are "5 mm from the sidewall" for
+# a 2 mm diameter hole, which is ambiguous between the hole centre and its near
+# edge. This journal takes it as the centre. If it is the edge, x becomes
+# +/- 0.018990 and the source z values shift by 1.804 mm; the flow path length
+# changes by 5 %, and Q enters the comparison through the pressure drop, so this is
+# a first-order ambiguity worth resolving from the data release before calibrating.
+#
+# MESH SIZE. "auto factor" is a Cubit coarseness index, not a length. Factor 5 is
+# the production discretisation used by every reported Ye2018 run; factor 3 is the
+# convergence sibling, about an order of magnitude more elements. Set the factor,
+# then export under the matching name.
+
+reset
+create Cylinder height 0.12000 radius 0.02499
+move Volume 1  z 0.060 include_merged
+
+create vertex location 0.02499 0.02499 0.105083153
+create vertex location 0.02499 -0.02499 0.105083153
+create vertex location -0.02499 -0.02499 0.014916847
+webcut volume 1 with plane vertex 3 vertex 4 vertex 5
+delete vertex 3 4 5
+webcut volume all with plane xplane imprint merge
+webcut volume all with plane yplane imprint merge
+imprint all
+merge all
+
+# FACTOR 3, NOT 4. Factor 4 builds a mesh whose interface pitch (1.504 mm) is coarse
+# enough that both borehole coordinates snap to BULK nodes -- see the block at the
+# top of this header. Do not lower this without re-running
+# scripts/check_source_nodes.py.
+vol all size auto factor 3   # 4 -> _size4.e (FAILS source pinning) ; 3 -> _size3.e
+volume all scheme polyhedron
+mesh volume all
+
+block 1 add volume 2 4 8 6
+block 1 name "top_block"
+
+block 2 add volume 1 3 5 7
+block 2 name "bottom_block"
+
+# The surface and vertex IDs below are the ones Cubit assigns to this exact
+# construction order, and are shared verbatim by all four Ye2018 journals. They are
+# the one thing in this file that cannot be checked without running Cubit: if the
+# version in use numbers differently, the nodesets will be silently wrong rather
+# than error. Confirm "fracture_interface" has the area quoted in the header before
+# exporting.
+nodeset 1 add surface 36 56 63 42
+nodeset 1 name "top_nodeset"
+nodeset 2 add surface 28 30 50 48
+nodeset 2 name "bottom_nodeset"
+nodeset 3 add surface 33 43 61 51 25 35 57 47
+nodeset 3 name "sides_nodeset"
+nodeset 4 add surface 26 46 53 32
+nodeset 4 name "fracture_interface"
+nodeset 5 add vertex 27 34 41 48
+nodeset 5 name "no_disp_x"
+nodeset 6 add vertex 10 11 18 19
+nodeset 6 name "no_disp_y"
+
+export mesh "kalantar2025_og_sh_theta29_size3.e" overwrite

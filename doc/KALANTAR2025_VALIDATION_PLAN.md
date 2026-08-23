@@ -28,8 +28,50 @@ own 104-series predicted from the other direction.
 | Cubit journal, OG-T tensile, θ = 28° (primary) | `Examples/Kalantar2025/OGT/mesh/kalantar2025_og_t_theta28.jou` | done |
 | Cubit journal, OG-T tensile, θ = 26° (sensitivity arm) | `Examples/Kalantar2025/OGT/mesh/kalantar2025_og_t_theta26.jou` | done |
 | Cubit journal, OG-SC saw-cut, θ = 30° | `Examples/Kalantar2025/OGSC/mesh/kalantar2025_og_sc_theta30.jou` | done |
-| Meshes (`.e`) | — | **yours to build in Cubit** |
-| Decks, scorer, SLURM | — | next, and blocked on the meshes |
+| Meshes (`.e`) | `Examples/Kalantar2025/*/mesh/*.e` | **built and verified 2026-08-23** |
+| Decks, scorer, SLURM | — | next; unblocked for OG-SC and OG-T, see below |
+
+### 1.1 Mesh verification, 2026-08-23
+
+Built in Cubit, checked with `scripts/check_mesh_geometry.py` and
+`scripts/check_source_nodes.py` under the `moose` conda environment.
+
+| mesh | elements | ifc nodes | ifc pitch | L / D / θ | area vs derived | source pinning |
+|---|---:|---:|---:|---|---|---|
+| `og_sc_theta30_size3` | 68,096 | 2185 | 1.004 mm | 100.00 / 49.98 / 30.000 | 3.923850e-3, exact | OK, 388.5 µm |
+| `og_sh_theta29_size3` | 100,048 | 1977 | 1.035 mm | 120.00 / 49.98 / 29.000 | 4.046794e-3, exact | OK, 4.1 µm |
+| `og_sh_theta29_size4` | 30,600 | 937 | 1.504 mm | 120.00 / 49.98 / 29.000 | 4.046794e-3, exact | **FAILS — bulk node** |
+| `og_t_theta28_size3` | 53,760 | 2297 | 0.980 mm | 100.00 / 49.98 / 28.000 | 4.179007e-3, exact | OK, 792.9 µm |
+| `og_t_theta26_size3` | 35,840 | 2297 | 0.992 mm | 104.48 / 49.98 / 26.000 | 4.475488e-3, exact | OK, 849.1 µm |
+
+Every mesh reproduces its journal's derived geometry: plane-fit residual 0.00 µm on
+all five, and `fracture_interface` area matching the closed-form `πr²/sin θ` to six
+significant figures. All six nodesets present and populated on each.
+
+**The one failure is `og_sh_theta29_size4`.** At 1.504 mm interface pitch, both
+borehole coordinates find a *bulk* node 951 µm away while the nearest node actually
+on the fracture is 1217 µm away. `use_closest_node = true` would take the bulk node
+and inject into the matrix, and the run would complete and be wrong — the exact
+failure `source-node-pinning-rule` exists to catch, now caught for the second time.
+`og_sh_theta29_size3` pins to 4.1 µm and is the OG-SH production mesh; the journal's
+size and export lines have been switched to factor 3 so regenerating cannot
+reproduce the bad mesh.
+
+**Snapped coordinates are now in each journal header and must be what the decks
+use.** The snap displaces the modelled borehole from the 5 mm design inset, which
+lengthens the borehole separation `ℓ` and therefore biases `Q` through eq (7)'s
+`ln(2ℓ/T − 1)`: +0.224 % (OG-SC), +0.002 % (OG-SH factor 3), +0.421 % (OG-T 28°),
++0.414 % (OG-T 26°). All are below anything this campaign ranks on, but the deck's
+flow postprocessor must carry the snapped `ℓ`, not the design value — that is the
+same class of error as the 132× flow bug, just three orders of magnitude smaller.
+Note the displacements are also smaller than the paper's own hole-centre/hole-edge
+ambiguity (1.000 mm), which remains the dominant uncertainty on the flow path.
+
+**Stale duplicate:** `og_sc_theta30_size5.e` has the same node count, element count
+and interface pitch as `size3.e` — it is a pre-rename export, not a factor-5 mesh.
+Scoring the two against each other would return perfect "mesh convergence" from a
+no-op. Rebuild or delete it before any convergence claim. (`og_sc_theta30_size_3.e`
+was renamed to `_size3.e` to match the journal's export line.)
 
 ---
 

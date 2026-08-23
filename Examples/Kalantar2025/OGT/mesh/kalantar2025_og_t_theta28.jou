@@ -1,0 +1,146 @@
+# Kalantar et al. (2025), JGR Solid Earth, 10.1029/2025JB031938.
+# Specimen OG-T -- TENSILE fracture in Odenwald granodiorite.
+#
+# Units: m.
+# Geometry (paper Table 1): length = 0.10000, diameter = 0.04998,
+# fracture angle = 28 degrees, measured from the specimen's long/vertical axis to
+# the fracture plane.
+#
+# ============================================================================
+# READ THIS BEFORE USING THE MESH: TABLE 1 AND TABLE 2 DISAGREE BY 2.00 DEGREES
+# ============================================================================
+# The paper's own equations (3), (4) and (5) give an identity in which every term
+# is tabulated:
+#
+#     tan(theta) = (sigma'_n - sigma_3 + P_p) / tau,     P_p = (P_i + 3)/2 MPa
+#
+# Regressing it over Table 2's stages returns, per specimen:
+#
+#     OG-SH   printed 29.0   recovered 29.006   sigma_3 = 32.996   max resid 0.004 MPa
+#     OG-SC   printed 30.0   recovered 29.998   sigma_3 = 33.002   max resid 0.006 MPa
+#     OG-T    printed 28.0   recovered 25.999   sigma_3 = 33.001   max resid 0.007 MPa
+#
+# Two of the three reproduce their printed angle to 0.006 degrees, so the method is
+# sound and it is OG-T that is anomalous. The recovery is not a loose fit either:
+# a residual of 0.007 MPa across seventeen stages whose tau spans 19.4 to 63.2 MPa
+# means two constants regenerate the entire stress table. Forcing theta = 28 leaves
+# a systematic residual of (tan28 - tan26)*tau = 0.85 to 2.78 MPa, which no
+# constant sigma_3 and no constant P_o can absorb -- both were tested.
+#
+# WHICH ONE IS WRONG, AND WHY THIS JOURNAL USES 28
+# ------------------------------------------------
+# Geometry settles it. A through-going elliptical fracture at angle theta needs an
+# axial extent of 2r*cot(theta):
+#
+#     at 28 deg   93.999 mm   fits the 100.00 mm core, clearing each end by 3.00 mm
+#     at 26 deg  102.474 mm   DOES NOT FIT -- it overruns each end face by 1.24 mm
+#
+# So 26 degrees is impossible for a specimen that is 100.00 mm long and 49.98 mm in
+# diameter, and Table 1 is internally consistent while Table 2's reduction is not.
+# The reading is that OG-T's stress columns were reduced with the wrong angle.
+# 28 degrees is therefore the PHYSICAL angle and is what this journal cuts.
+#
+# WHAT THAT COSTS WHEN COMPARING WITH TABLE 2
+# -------------------------------------------
+# The published sigma'_n and tau columns for OG-T are in a 26-degree frame, so they
+# cannot be compared directly with a 28-degree model. Recover the differential
+# stress the experiment actually measured and re-resolve it:
+#
+#     sigma_d      = tau_published / (sin26 cos26)   = tau_published / 0.393996
+#     tau_28       = sigma_d sin28 cos28             = tau_published * 1.052088
+#     sigma'_n,28  = (sigma_3 - P_p) + sigma_d sin^2(28)
+#                  = (33 - P_p) + tau_published * 0.559407
+#
+# scripts/kalantar_parameter_audit.py section 6 prints the re-reduced OG-T table.
+# Score against THAT, not against the printed columns. Note the size of it: the
+# peak shear stress moves from 63.21 to 66.50 MPa, and the fitted strength
+# criterion tau = 1.1 sigma'_n was itself fitted in the 26-degree frame, so it must
+# be re-fitted before it is used to set the critical stress state.
+#
+# The alternative -- meshing at 26 degrees -- is kept in
+# kalantar2025_og_t_theta26.jou, but it cannot be built without contradicting one of
+# Table 1's measured dimensions. Use it only as a sensitivity arm.
+#
+# Plane, centred at z = L/2 = 0.050, at x = +/- r = 0.02499:
+#     z = L/2 +/- r cot(28 deg) = 0.050 +/- 0.046999354
+#     z_high = 0.096999354      z_low = 0.003000646
+#
+# Expected fracture_interface area after the split: pi r^2 / sin(28 deg)
+#     = 4.179007e-3 m^2.
+#
+# THE TIP CLEARANCE IS ONLY 3.00 mm. That is smaller than one factor-5 element, so
+# the fracture tip will sit within a single element of the end face and the loading
+# platen. Check the meshed result at both tips before trusting a stress
+# concentration there, and expect this specimen to want the factor-3 mesh for
+# production rather than as a convergence check.
+#
+# AFTER REGENERATING, pin the source coordinates onto real interface nodes.
+# Boreholes are 2 mm across, 5 mm from the sidewall, one at each end (section 2.3),
+# so the intended points are x = +/- (r - 0.005) = +/- 0.019990:
+#     source_in   coord = '-0.019990 0 0.012404278'
+#     source_out  coord = ' 0.019990 0 0.087595722'
+# use_closest_node = true snaps silently, including onto bulk nodes off the
+# fracture. Run scripts/check_source_nodes.py and write the exact node coordinates
+# back into the deck. The 5 mm inset is ambiguous between hole centre and hole edge;
+# see the note in the OG-SH journal.
+#
+# VERIFIED 2026-08-23 against kalantar2025_og_t_theta28_size3.e (53,760 elements,
+# 2297 interface nodes, median interface pitch 0.980 mm). Both sources land ON the
+# fracture, 792.9 um from the design point. USE THESE IN THE DECK:
+#     source_in   coord = '-0.020362222 0 0.011704230'
+#     source_out  coord = ' 0.020362222 0 0.088295770'
+# Modelled borehole sits 4.628 mm from the sidewall (design 5.000); borehole
+# separation 86.7453 mm, +1.862 %, which is a +0.421 % bias on Q through the
+# ln(2*l/T - 1) factor of eq (7). Note this displacement is SMALLER than the
+# hole-centre/hole-edge ambiguity in the paper's own 5 mm statement (1.000 mm), so
+# it is not the dominant uncertainty on the flow path -- but the deck must still
+# carry the snapped separation, not the design one.
+#
+# The mesh also confirms the tip-clearance warning above: L and theta come out
+# exactly as designed (100.00 mm, 28.000 deg, plane-fit residual 0.00 um) and the
+# fracture_interface area is 4.179007e-3 m^2, matching the derivation to 6 digits.
+#
+# MESH SIZE. "auto factor" is a Cubit coarseness index, not a length. Factor 5 is
+# the production discretisation; factor 3 is the convergence sibling.
+
+reset
+create Cylinder height 0.10000 radius 0.02499
+move Volume 1  z 0.050 include_merged
+
+create vertex location 0.02499 0.02499 0.096999354
+create vertex location 0.02499 -0.02499 0.096999354
+create vertex location -0.02499 -0.02499 0.003000646
+webcut volume 1 with plane vertex 3 vertex 4 vertex 5
+delete vertex 3 4 5
+webcut volume all with plane xplane imprint merge
+webcut volume all with plane yplane imprint merge
+imprint all
+merge all
+
+vol all size auto factor 3  # 5 -> kalantar2025_og_t_theta28_size5.e ; 3 -> _size3.e
+volume all scheme polyhedron
+mesh volume all
+
+block 1 add volume 2 4 8 6
+block 1 name "top_block"
+
+block 2 add volume 1 3 5 7
+block 2 name "bottom_block"
+
+# Surface and vertex IDs follow this exact construction order and are shared by all
+# four Ye2018 journals. Confirm "fracture_interface" reports the area quoted in the
+# header before exporting -- a mis-numbered nodeset fails silently, not loudly.
+nodeset 1 add surface 36 56 63 42
+nodeset 1 name "top_nodeset"
+nodeset 2 add surface 28 30 50 48
+nodeset 2 name "bottom_nodeset"
+nodeset 3 add surface 33 43 61 51 25 35 57 47
+nodeset 3 name "sides_nodeset"
+nodeset 4 add surface 26 46 53 32
+nodeset 4 name "fracture_interface"
+nodeset 5 add vertex 27 34 41 48
+nodeset 5 name "no_disp_x"
+nodeset 6 add vertex 10 11 18 19
+nodeset 6 name "no_disp_y"
+
+export mesh "kalantar2025_og_t_theta28_size3.e" overwrite

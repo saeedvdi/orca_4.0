@@ -1,0 +1,112 @@
+# Kalantar et al. (2025), JGR Solid Earth, 10.1029/2025JB031938.
+# Specimen OG-SC -- SAW-CUT fracture in Odenwald granodiorite.
+#
+# Units: m.
+# Geometry (paper Table 1): length = 0.10000, diameter = 0.04998,
+# fracture angle = 30 degrees, measured from the specimen's long/vertical axis to
+# the fracture plane.
+#
+# WHY 30 DEGREES IS TRUSTED HERE
+# ---------------------------------------------------------------------------------
+# Recovered independently from the paper's own Table 2, not taken from Table 1.
+# Dividing equation (3) by equation (4) removes the differential stress:
+#
+#     tan(theta) = (sigma'_n - sigma_3 + P_p) / tau,     P_p = (P_i + 3)/2 MPa
+#
+# Regressing the thirteen OG-SC hold stages on that identity returns
+# theta = 29.998 deg and sigma_3 = 33.002 MPa, maximum residual 0.006 MPa. Two
+# constants reproduce the whole stress table. See
+# scripts/kalantar_parameter_audit.py section 1.
+#
+# sigma_3 = 33.00 MPa is the confining stress the deck must apply: it is the
+# 30 MPa EFFECTIVE confining pressure of section 2.3 plus the 3 MPa pore pressure
+# that both pumps hold at the start of injection.
+#
+# Plane, centred at z = L/2 = 0.050, at x = +/- r = 0.02499:
+#     z = L/2 +/- r cot(30 deg) = 0.050 +/- 0.043283950
+#     z_high = 0.093283950      z_low = 0.006716050
+# The elliptical fracture spans 86.57 mm of the 100.00 mm core, clearing each end
+# face by 6.72 mm.
+#
+# Expected fracture_interface area after the split: pi r^2 / sin(30 deg)
+#     = 3.923850e-3 m^2.
+#
+# THE ONE SPECIMEN WHOSE ROUGHNESS CHANGE IS MEASURABLE. The paper propagates the
+# scanner's 0.012 mm resolution to +/-2.10 in JRC and concludes that the OG-SH and
+# OG-T roughness changes (-0.39 and -0.29) are not statistically significant.
+# OG-SC's is: JRC 4.23 -> 1.36, a change of -2.87. So this is the only specimen in
+# the paper where a JRC-degradation model has an observable to fit, and the change
+# is a SMOOTHING of an already smooth saw cut. Worth remembering when choosing
+# which fracture to test a roughness-evolution law on.
+#
+# AFTER REGENERATING, pin the source coordinates onto real interface nodes.
+# Section 2.3 places two 2 mm boreholes 5 mm from the sidewall, one at each end, so
+# the intended points are at x = +/- (r - 0.005) = +/- 0.019990:
+#     source_in   coord = '-0.019990 0 0.015376304'
+#     source_out  coord = ' 0.019990 0 0.084623696'
+# use_closest_node = true snaps silently, including onto bulk nodes off the
+# fracture. Run scripts/check_source_nodes.py and write the exact node coordinates
+# back into the deck. See the note on the 5 mm inset ambiguity in the OG-SH
+# journal; it applies identically here.
+#
+# VERIFIED 2026-08-23 against kalantar2025_og_sc_theta30_size_3.e (68,096 elements,
+# 2185 interface nodes, median interface pitch 1.004 mm). Both sources land ON the
+# fracture, 388.5 um from the design point. USE THESE IN THE DECK:
+#     source_in   coord = '-0.020184231 0 0.015039887'
+#     source_out  coord = ' 0.020184231 0 0.084960113'
+# The snap moves the modelled borehole to 4.806 mm from the sidewall (design 5.000)
+# and lengthens the borehole separation to 80.7369 mm, +0.972 %. Through the
+# ln(2*l/T - 1) factor of eq (7) that is a +0.224 % bias on Q -- below the level at
+# which this campaign ranks anything, but it must be the value the deck's flow
+# postprocessor uses, not the design value.
+#
+# MESH SIZE. "auto factor" is a Cubit coarseness index, not a length. Factor 5 is
+# the production discretisation; factor 3 is the convergence sibling.
+#
+# WARNING: kalantar2025_og_sc_theta30_size5.e in this directory is byte-identical in
+# content to size_3.e -- same 72,105 nodes, same 68,096 elements, same interface
+# pitch. It is a stale export made before the size line was edited, NOT a factor-5
+# mesh. Scoring the two against each other would be a no-op that looks like perfect
+# mesh convergence. Delete it or rebuild it before any convergence claim.
+
+reset
+create Cylinder height 0.10000 radius 0.02499
+move Volume 1  z 0.050 include_merged
+
+create vertex location 0.02499 0.02499 0.093283950
+create vertex location 0.02499 -0.02499 0.093283950
+create vertex location -0.02499 -0.02499 0.006716050
+webcut volume 1 with plane vertex 3 vertex 4 vertex 5
+delete vertex 3 4 5
+webcut volume all with plane xplane imprint merge
+webcut volume all with plane yplane imprint merge
+imprint all
+merge all
+
+vol all size auto factor 3   # 5 -> kalantar2025_og_sc_theta30_size5.e ; 3 -> _size3.e
+volume all scheme polyhedron
+mesh volume all
+
+block 1 add volume 2 4 8 6
+block 1 name "top_block"
+
+block 2 add volume 1 3 5 7
+block 2 name "bottom_block"
+
+# Surface and vertex IDs follow this exact construction order and are shared by all
+# four Ye2018 journals. Confirm "fracture_interface" reports the area quoted in the
+# header before exporting -- a mis-numbered nodeset fails silently, not loudly.
+nodeset 1 add surface 36 56 63 42
+nodeset 1 name "top_nodeset"
+nodeset 2 add surface 28 30 50 48
+nodeset 2 name "bottom_nodeset"
+nodeset 3 add surface 33 43 61 51 25 35 57 47
+nodeset 3 name "sides_nodeset"
+nodeset 4 add surface 26 46 53 32
+nodeset 4 name "fracture_interface"
+nodeset 5 add vertex 27 34 41 48
+nodeset 5 name "no_disp_x"
+nodeset 6 add vertex 10 11 18 19
+nodeset 6 name "no_disp_y"
+
+export mesh "kalantar2025_og_sc_theta30_size3.e" overwrite

@@ -1,0 +1,33 @@
+# Kalantar et al. (2025) Figure 8 -- Pedrosa (1986) fits k = k0 exp(-alpha * sigma'_n).
+#
+# Figure 8 fits this two-parameter law twice per specimen: once to the PRE-SLIP
+# pressurization branch (green in the figure) and once to the POST-SLIP
+# depressurization branch (orange). Panels (a) and (d) are Kalantar's own OG-T and
+# OG-SC; panels (b), (c), (e) and (f) are a REANALYSIS OF YE & GHASSEMI (2018)'s
+# SW-T1, SW-T2, SW-S3 and SW-S4 -- i.e. of the same four specimens this repository
+# calibrates. That makes them an independent, published, two-number summary of the
+# data our own decks are fitted to, produced by a different group with a different
+# method. OG-SH has no entry: it never slipped in a single event, so the pre/post
+# split does not apply to it.
+#
+# k0 is in Darcy, alpha in 1/MPa, sigma'_n in MPa.
+#
+# CONFIDENCE. k0 and alpha are quoted in the body text of section 4.2 as well as
+# printed on the figure, and the two agree, so those are solid. r_squared is read
+# off the figure only. The OG-T post-slip value in particular reads as 0.06, which
+# is implausibly low for a fitted line and may be 0.96 misread; it is recorded as
+# read and flagged rather than silently corrected. Do not build an argument on the
+# r_squared column without checking it against the figure.
+source,sample,fracture_type,branch,k0_darcy,alpha_per_MPa,r_squared,r_squared_confidence
+Kalantar2025,OG-T,tensile,pre_slip_pressurization,1.91,0.08,0.91,read_from_figure
+Kalantar2025,OG-T,tensile,post_slip_depressurization,4.73,0.16,0.06,suspect_may_be_0.96
+Kalantar2025,OG-SC,saw-cut,pre_slip_pressurization,0.82,0.05,0.88,read_from_figure
+Kalantar2025,OG-SC,saw-cut,post_slip_depressurization,5.25,0.11,1.00,read_from_figure
+Ye2018,SW-T1,tensile,pre_slip_pressurization,0.37,0.01,0.39,read_from_figure
+Ye2018,SW-T1,tensile,post_slip_depressurization,3.47,0.03,0.95,read_from_figure
+Ye2018,SW-T2,tensile,pre_slip_pressurization,0.83,0.01,1.00,read_from_figure
+Ye2018,SW-T2,tensile,post_slip_depressurization,3.04,0.02,0.93,read_from_figure
+Ye2018,SW-S3,saw-cut,pre_slip_pressurization,0.16,0.01,0.50,read_from_figure
+Ye2018,SW-S3,saw-cut,post_slip_depressurization,0.41,0.02,0.87,read_from_figure
+Ye2018,SW-S4,saw-cut,pre_slip_pressurization,0.12,0.03,0.97,read_from_figure
+Ye2018,SW-S4,saw-cut,post_slip_depressurization,0.20,0.06,0.95,read_from_figure

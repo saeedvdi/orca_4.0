@@ -1,0 +1,111 @@
+# Kalantar et al. (2025), specimen OG-T -- SENSITIVITY ARM, NOT THE SPECIMEN.
+#
+# Units: m.
+#
+# WHAT THIS IS FOR
+# ================
+# kalantar2025_og_t_theta28.jou is the primary OG-T mesh and its header carries the
+# full argument. In short: the paper's Table 1 says 28 degrees, its Table 2 reduces
+# at 25.999, and 26 degrees cannot be realised in a 100.00 mm x 49.98 mm core
+# because a through-going fracture at that angle needs 102.474 mm of axial extent.
+#
+# This journal exists so the alternative reading can be tested rather than argued
+# about: if OG-T really is a 26-degree fracture, then one of Table 1's measured
+# dimensions must be wrong, and this file assumes it is the length.
+#
+# THE THREE MUTUALLY EXCLUSIVE WAYS TO REALISE 26 DEGREES
+# =======================================================
+#   1. Lengthen the core.   L >= 102.474 mm instead of the printed 100.00 mm.
+#   2. Narrow the core.     D <= 48.773 mm instead of the printed 49.98 mm.
+#   3. Let the fracture daylight on both end faces, keeping L and D.
+#
+# Option 3 is rejected outright: the fracture would intersect the loading platens,
+# so the axial boundary condition would be applied partly to the fracture itself and
+# the top/bottom nodesets would no longer be the surfaces the experiment loaded.
+# Option 2 changes the fracture area and every stress the deck resolves onto it.
+# Option 1 is implemented here because length is the dimension whose change leaves
+# the fracture plane's own geometry -- its area, its normal, its aperture field --
+# untouched; it only adds intact rock above and below.
+#
+# L = 0.10448 m. That is 102.474 mm of fracture plus 1.00 mm of clearance at each
+# tip, so the tip does not land exactly on the end face where a mesh node would
+# straddle it. It is 4.5 % longer than the printed specimen, and the axial
+# compliance of the modelled column is therefore 4.5 % higher. Given how much the
+# loading-frame stiffness dominates magnitudes in this class of experiment, that is
+# NOT a negligible difference; it is a second reason to treat this as an arm rather
+# than a candidate.
+#
+# IF YOU RUN THIS ARM, the Table 2 stress columns can be used as published, because
+# they were reduced at this angle. That is the whole point of the comparison: the
+# 28-degree mesh needs the re-reduction in
+# scripts/kalantar_parameter_audit.py section 6, and this one does not. If the two
+# arms land on materially different calibrations, the angle discrepancy is a
+# first-order problem for anyone using this dataset and is worth reporting.
+#
+# Plane, centred at z = L/2 = 0.05224, at x = +/- r = 0.02499:
+#     z = L/2 +/- r cot(26 deg) = 0.05224 +/- 0.051237093
+#     z_high = 0.103477093      z_low = 0.001002907
+#
+# Expected fracture_interface area after the split: pi r^2 / sin(26 deg)
+#     = 4.475488e-3 m^2, which is 7.1 % larger than the 28-degree mesh's.
+#
+# Source coordinates, boreholes 5 mm in from the sidewall (x = +/- 0.019990):
+#     source_in   coord = '-0.019990 0 0.011254426'
+#     source_out  coord = ' 0.019990 0 0.093225574'
+# Re-pin them against the exported mesh with scripts/check_source_nodes.py.
+#
+# VERIFIED 2026-08-23 against kalantar2025_og_t_theta26_size3.e (35,840 elements,
+# 2297 interface nodes, median interface pitch 0.992 mm). Both sources land ON the
+# fracture, 849.1 um from the design point. USE THESE IN THE DECK:
+#     source_in   coord = '-0.020362222 0 0.010491258'
+#     source_out  coord = ' 0.020362222 0 0.093988742'
+# Borehole 4.628 mm from the sidewall; separation 92.8995 mm, +1.862 %, a +0.414 %
+# bias on Q. Geometry confirms the arm as designed: L = 104.48 mm, theta = 26.000
+# deg, plane-fit residual 0.00 um, fracture_interface area 4.475488e-3 m^2 -- 7.1 %
+# larger than the 28-degree mesh's, exactly as the derivation above predicts.
+#
+# NOTE ON COMPARING THE TWO ARMS. This mesh has 35,840 elements against the
+# 28-degree mesh's 53,760 at the same auto factor, because the same factor over a
+# longer core with a shallower cut produces a different element budget. The
+# interface pitch is within 1 % (0.992 vs 0.980 mm), so the fracture itself is
+# resolved equivalently and the arms remain comparable where it matters; do not
+# read the bulk element-count difference as a resolution difference on the joint.
+
+reset
+create Cylinder height 0.10448 radius 0.02499
+move Volume 1  z 0.05224 include_merged
+
+create vertex location 0.02499 0.02499 0.103477093
+create vertex location 0.02499 -0.02499 0.103477093
+create vertex location -0.02499 -0.02499 0.001002907
+webcut volume 1 with plane vertex 3 vertex 4 vertex 5
+delete vertex 3 4 5
+webcut volume all with plane xplane imprint merge
+webcut volume all with plane yplane imprint merge
+imprint all
+merge all
+
+vol all size auto factor 3   # 5 -> kalantar2025_og_t_theta26_size5.e ; 3 -> _size3.e
+volume all scheme polyhedron
+mesh volume all
+
+block 1 add volume 2 4 8 6
+block 1 name "top_block"
+
+block 2 add volume 1 3 5 7
+block 2 name "bottom_block"
+
+nodeset 1 add surface 36 56 63 42
+nodeset 1 name "top_nodeset"
+nodeset 2 add surface 28 30 50 48
+nodeset 2 name "bottom_nodeset"
+nodeset 3 add surface 33 43 61 51 25 35 57 47
+nodeset 3 name "sides_nodeset"
+nodeset 4 add surface 26 46 53 32
+nodeset 4 name "fracture_interface"
+nodeset 5 add vertex 27 34 41 48
+nodeset 5 name "no_disp_x"
+nodeset 6 add vertex 10 11 18 19
+nodeset 6 name "no_disp_y"
+
+export mesh "kalantar2025_og_t_theta26_size3.e" overwrite
