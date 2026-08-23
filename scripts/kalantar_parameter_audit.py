@@ -85,6 +85,14 @@ ROUGHNESS = {
 }
 JRC_UNCERTAINTY = 2.10  # section 3.2 error propagation from the 0.012 mm scanner resolution
 
+# Section 2.3: two 2 mm boreholes, one per end, inset 5 mm from the sidewall, drilled
+# until they meet the fracture. The in-plane distance between those two intersection
+# points is the flow path length. Computed from the same design coordinates the Cubit
+# journals use, so this stays consistent with the meshes.
+BOREHOLE_RADIUS_M = 1.0e-3
+BOREHOLE_SEPARATION_M = {"OG-SH": 0.0824654, "OG-T": 0.0851596, "OG-SC": 0.0799600}
+FLUID_VISCOSITY = 1.0e-3    # Pa s, stated in the section 2.3 text under eq (7)
+
 
 def rule(title: str) -> None:
     print(f"\n{'=' * 78}\n{title}\n{'=' * 78}")
@@ -240,7 +248,88 @@ def main() -> int:
     print(f"  machines, so this is not a calibration -- but it is the first independent")
     print(f"  check that the inferred value sits in the right decade, and it lands within")
     print(f"  a factor of {0.94 / (k_sys_n_per_m / area / 1e12):.2f}.")
+
+    flow_reduction(table)
     return 0
+
+
+def flow_reduction(table2: pd.DataFrame) -> None:
+    """Does eq (7) reproduce the paper's own Q -> a_h reduction?  It does not.
+
+    Eq (7), read off page 6 of the PDF, is
+
+        k = cbrt( [ (Q eta / dP) * ln(2L/r - 1) / (B pi) ]^2 ) / 12,
+        B = 2 / (pi * atan(2n)),   n = b/a = sin(theta),
+
+    and a_h = sqrt(12 k), so the whole thing collapses to
+
+        a_h^3 = (Q eta / dP) * ln(2L/r - 1) * atan(2n) / 2.                  (A)
+
+    Dimensionally that is fine: [Q eta / dP] = m^3, B is dimensionless, k comes out
+    in m^2. But Table 2 prints Q and a_h for the same 39 stages, so the reduction is
+    checkable against itself -- and it fails by an order of magnitude, uniformly.
+
+    The alternative tested here is the plain cubic law this project already uses for
+    Ye & Ghassemi (2018),
+
+        a_h^3 = (Q eta / dP) * 12 * L / W,                                    (B)
+
+    with W the fracture's SHORT axis (= the core diameter, the width transverse to
+    the borehole-to-borehole flow direction) and L the in-plane borehole separation.
+    No fitted constant: both numbers come from Table 1 and section 2.3.
+
+    WHY THE PRECISION FILTER. OG-SH's flow rates span 0.46-3.61 mL/min and are
+    printed to three decimals, so every stage carries 3+ significant figures. OG-T
+    and OG-SC ran 1-2 orders of magnitude slower -- OG-T's Table 2 contains 0.000,
+    0.001 and 0.002 mL/min -- so most of their stages are at the printing floor,
+    where a_h ~ Q^(1/3) inherits a several-per-cent error from rounding alone. Those
+    stages are shown but excluded from the verdict; OG-SH is the specimen that can
+    actually decide this, and it decides it cleanly.
+    """
+    rule("8. THE FLOW REDUCTION -- EQ (7) DOES NOT REPRODUCE THE PAPER'S OWN TABLE 2")
+    print("Testing both readings against the printed Q and a_h columns.\n")
+    print("  (A) eq (7) as printed:  a_h^3 = (Q eta/dP) * ln(2L/r-1) * atan(2n) / 2")
+    print("  (B) plain cubic law:    a_h^3 = (Q eta/dP) * 12 * L / W,  W = 49.98 mm\n")
+    print(f"  {'sample':<8}{'stages':>7}{'(A) pred/printed':>22}{'(B) pred/printed':>22}")
+
+    verdicts = {}
+    for sample, frame in table2.groupby("sample"):
+        theta = math.radians(TABLE1[sample]["theta_deg"])
+        width = TABLE1[sample]["diameter_mm"] / 1000.0
+        sep = BOREHOLE_SEPARATION_M[sample]
+        c_a = math.log(2 * sep / BOREHOLE_RADIUS_M - 1) * math.atan(2 * math.sin(theta)) / 2.0
+        c_b = 12.0 * sep / width
+
+        usable = frame[(frame.P_i_MPa > P_OUTLET_MPA) & (frame.Q_ml_min >= 0.010)
+                       & (frame.a_h_um > 0)]
+        q_over_dp = ((usable.Q_ml_min * 1e-6 / 60.0) * FLUID_VISCOSITY
+                     / ((usable.P_i_MPa - P_OUTLET_MPA) * 1e6)).to_numpy()
+        printed = usable.a_h_um.to_numpy()
+        ratio_a = (q_over_dp * c_a) ** (1 / 3) * 1e6 / printed
+        ratio_b = (q_over_dp * c_b) ** (1 / 3) * 1e6 / printed
+        verdicts[sample] = (ratio_a, ratio_b)
+        print(f"  {sample:<8}{len(usable):>7}"
+              f"{ratio_a.mean():>13.4f} +/-{ratio_a.std():<6.4f}"
+              f"{ratio_b.mean():>13.4f} +/-{ratio_b.std():<6.4f}")
+
+    ra, rb = verdicts["OG-SH"]
+    print(f"\n  OG-SH is the deciding specimen -- all nine stages carry 3+ significant")
+    print(f"  figures in Q. Eq (7) misses its own table by a factor of {1/ra.mean():.2f} in a_h,")
+    print(f"  i.e. {(1/ra.mean())**3:.1f} in a_h^3, with only {100*ra.std()/ra.mean():.2f} % scatter -- a CONSTANT offset, so")
+    print(f"  the functional form (a_h^3 proportional to Q/dP) is right and a numerical")
+    print(f"  factor is wrong. No admissible value of n rescues it: matching Table 2")
+    print(f"  would need B = {2/(math.pi*math.atan(2*math.sin(math.radians(29.0))))/((1/ra.mean())**3):.4f}, and B = 2/(pi atan(2n)) has a floor of")
+    print(f"  {2/(math.pi*math.atan(2*1.0)):.4f} at n = 1. The plain cubic law reproduces the same nine")
+    print(f"  stages to {100*abs(1-rb.mean()):.2f} % with {100*rb.std()/rb.mean():.2f} % scatter, using no fitted constant.")
+    print(f"\n  CONSEQUENCE FOR THE DECKS. The flow operator DOES transfer from Ye2018")
+    print(f"  after all: keep the (W/L)/12 cubic form and set W/L per specimen. The")
+    print(f"  paper-frame values, from Table 1 and the design borehole coordinates:")
+    for sample in ("OG-SH", "OG-T", "OG-SC"):
+        w = TABLE1[sample]["diameter_mm"] / 1000.0
+        print(f"      {sample:<6} W/L = {w/BOREHOLE_SEPARATION_M[sample]:.5f}"
+              f"   (W = {w*1e3:.2f} mm, L = {BOREHOLE_SEPARATION_M[sample]*1e3:.4f} mm)")
+    print(f"\n  Report the discrepancy rather than adopting either number silently: anyone")
+    print(f"  reducing new data with eq (7) as printed will be an order of magnitude out.")
 
 
 if __name__ == "__main__":

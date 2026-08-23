@@ -235,23 +235,71 @@ Ye2018 93–104 series. Use **110-series** for Kalantar.
 |---|---|---|
 | **A** | Build 6 meshes in Cubit: 3 specimens × factors 5 and 3. Export under the names in each journal. | you |
 | **B** | Run `scripts/check_source_nodes.py` on each; write the exact interface-node coordinates back into the journals' header blocks. | A |
-| **C** | Derive the flow geometry factor for eq (7) — see §5, this is the one piece of physics that does *not* transfer from Ye2018. | A |
+| **C** | ~~Derive the flow geometry factor for eq (7)~~ — **done 2026-08-23, and it inverted: see §3.1. Eq (7) as printed is wrong; the Ye2018 cubic form transfers unchanged.** | done |
 | **D** | Port the injection schedule: 3 MPa → max in 3 MPa steps at 0.03 MPa/s, holds of 300 s (OG-SH, OG-T) / 600 s (OG-SC), then back down to 6 MPa. Max P_i is 18 / 30 / 24 MPa. | — |
 | **E** | Build a `kalantar_gate.py` scoring the three independent channels at 39 hold stages, reusing `table2_gate.py`'s stage-walking logic. | D |
 | **F** | 110-series BBFast decks (3), calibrated. 111-series Mohr–Coulomb siblings (3), built by the envelope-transfer recipe in `envelope-transfer-between-constitutive-laws`. | B, C, E |
 | **G** | Mechanism decks, chosen after F lands. The obvious first one is the gouge arm on OG-SH — see §4. | F |
 
-**Do not skip C.** Ye2018 reduces `Q` through a cubic law with a width/length
-geometry factor; Kalantar reduces it through an "electrical analog" two-borehole
-solution, eq (7). Algebraically it is still a cubic law — the equation rearranges to
-`a_h³ = Qη·ln(2ℓ/T − 1)/(ΔP·B·π)` with `k = a_h²/12` — but `B` is a different
-geometry constant and the deck's `flow_rate_validation` operator must carry *that*
-one. The pieces are identifiable (`n = b/a = sin θ`, `T` = the 2 mm borehole
-diameter, `ℓ` the borehole separation), but the printed definition of `B` did not
-survive my read of the PDF cleanly; check it against the published text or the GFZ
-release before wiring it in. Getting this wrong biases every `Q` by a constant
-factor, which is exactly the 132× flow-measurement bug this project already
-survived once.
+### 3.1 Step C, resolved — and it inverted
+
+Read off page 6 of the PDF, eq (7) is
+
+```
+k = ∛{ [ (Qη/ΔP) · ln(2L/r − 1) / (Bπ) ]² } / 12,    B = 2/(π·tan⁻¹(2n)),  n = b/a
+```
+
+with `a_h = √(12k)`, which collapses to **`a_h³ = (Qη/ΔP)·ln(2L/r − 1)·tan⁻¹(2n)/2`**.
+Note `r` is the borehole *radius*, not the 2 mm diameter — an earlier note in this
+file had that wrong, worth 16 % in `a_h³`.
+
+Dimensionally the equation is sound. **It does not reproduce the paper's own Table 2.**
+Table 2 prints `Q` and `a_h` for the same 39 stages, so the reduction is checkable
+against itself, and eq (7) misses by a **constant factor of 2.17 in `a_h`, 10.3 in
+`a_h³`**, with 0.12 % scatter across OG-SH's nine stages. The constancy is the whole
+argument: the functional form (`a_h³ ∝ Q/ΔP`) is right and a numerical factor is
+wrong. It cannot be rescued through `n` — matching Table 2 would need `B = 0.0807`,
+and `B = 2/(π·tan⁻¹(2n))` has a floor of 0.5750 at `n = 1`.
+
+What *does* reproduce Table 2 is the plain cubic law this project already uses:
+
+```
+a_h³ = (Qη/ΔP) · 12 · L / W
+```
+
+with `W` the fracture's short axis (the core diameter, transverse to the flow) and
+`L` the in-plane borehole separation — **no fitted constant, both from Table 1 and
+§2.3**. It lands within 0.54 % with 0.12 % scatter on OG-SH.
+
+| specimen | eq (7) pred/printed | cubic pred/printed | stages |
+|---|---|---|---:|
+| OG-SH | 0.4603 ± 0.0005 | **0.9946 ± 0.0012** | 9 |
+| OG-T | 0.4459 ± 0.0131 | 0.9786 ± 0.0287 | 8 |
+| OG-SC | 0.4901 ± 0.0306 | 1.0434 ± 0.0651 | 12 |
+
+OG-SH decides it. Its flow rates span 0.46–3.61 mL/min printed to three decimals,
+so every stage carries 3+ significant figures. OG-T and OG-SC ran one to two orders
+of magnitude slower — OG-T's Table 2 contains 0.000, 0.001 and 0.002 mL/min — so
+most of their stages sit at the printing floor, where `a_h ∝ Q^⅓` inherits several
+per cent from rounding alone. Stages below 0.010 mL/min are excluded above. **This
+also reorders the channels: on OG-T and OG-SC, `a_h` is the highest-precision
+column and `Q` and `k` are the degraded ones — the opposite of Ye2018.**
+
+**So the flow operator transfers.** Keep `(W/L)/12` and set `W/L` per specimen:
+
+| specimen | W (mm) | L (mm) | paper-frame W/L | mesh-frame W/L (snapped) |
+|---|---:|---:|---:|---:|
+| OG-SH | 49.98 | 82.4654 | 0.60607 | 0.60602 |
+| OG-T 28° | 49.98 | 85.1596 | 0.58690 | 0.57616 |
+| OG-T 26° | 49.98 | 92.8995 | 0.53800 | 0.53800 |
+| OG-SC | 49.98 | 79.9600 | 0.62506 | 0.61905 |
+
+Both go in each deck, exactly as the 93-series carries
+`paper_flow_width_over_length_*` and `mesh_flow_width_over_length_*`.
+
+This is the third defect the audit-first rule has found in this paper, after the
+OG-T angle and the σ₃ = 33 MPa prose. It is worth reporting: anyone reducing new
+data with eq (7) as printed will be an order of magnitude out.
 
 **Resourcing.** These specimens are smaller than the Ye2018 ones (49.98 mm × 100–120
 mm vs 50.5 mm × 118–132 mm) and OG-SH has the longest schedule. Start at the
