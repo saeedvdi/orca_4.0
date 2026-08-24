@@ -1,0 +1,105 @@
+# ============================================================================
+# PROBE ONLY -- BUILDS NO MESH, EXPORTS NOTHING, OVERWRITES NOTHING.
+# ============================================================================
+# Purpose: print the IDs of the two "major-axis" curves on the fracture plane
+# for each Kalantar2025 specimen, so they can be pasted into the three
+# production journals, which need them to put a node exactly at each borehole.
+#
+# WHY THOSE TWO CURVES MATTER
+# ---------------------------
+# Both boreholes sit at y = 0 on the fracture plane. That is not the interior of
+# a surface -- it is exactly the line where the `webcut ... yplane` cut the
+# fracture ellipse, i.e. the ellipse's MAJOR AXIS, and it is a geometric curve.
+# Cubit divides that curve into N equal intervals, so the only node positions
+# available to the source are k/N along it. The design borehole sits at
+# x/r = (24.99 - 5)/24.99 = 0.799920, so the pinning error is integer
+# arithmetic: round(0.79992 N)/N - 0.79992.
+#
+# Measured on the six meshes already built (scripts/check_axis_intervals.py):
+#
+#     mesh              N    nearest fraction     pinning error
+#     _size3  OG-SH     25   20/25 = 0.800000         4.1 um   <-- N divisible by 5
+#     _size3  OG-T      27   22/27 = 0.814815       792.9 um
+#     _size3  OG-SC     26   21/26 = 0.807692       388.5 um
+#     graded  OG-SH     28   22/28 = 0.785714       732.2 um
+#     graded  OG-T      29   23/29 = 0.793103       362.8 um
+#     graded  OG-SC     27   22/27 = 0.814815       744.4 um
+#
+# All six reproduce the independently measured check_source_nodes.py distance to
+# 0.1 um. OG-SH pinned at 4.1 um because 25 divides by 5, not because its mesh
+# was better.
+#
+# HOW TO USE
+# ----------
+#   1. Run this journal in Cubit. It builds each geometry, stops before meshing,
+#      and lists the curves lying in the four fracture surfaces.
+#   2. In each listing find the TWO curves whose length equals the half-major-axis
+#      quoted below. That length is unique in the model -- the minor-axis halves
+#      are 24.99 mm, the sidewall arcs are elliptical quarters, and the axial
+#      edges are the specimen length -- so there is no ambiguity.
+#   3. Paste the two IDs into the matching production journal, at the lines
+#      marked  c_pos / c_neg .
+#
+#      c_pos is the one running to POSITIVE x (towards z_high),
+#      c_neg the one running to NEGATIVE x (towards z_low).
+#      `list curve <id>` prints its end vertices, which is how to tell them apart.
+#
+# Curve IDs are deterministic for a given construction order, exactly like the
+# surface and vertex IDs already hardcoded in the production journals. They only
+# need to be recovered once, and only re-checked if the construction order above
+# `imprint all` ever changes.
+# ============================================================================
+
+
+# ---------------------------------------------------------------- OG-SH, 29 deg
+# half-major-axis = r / sin(29) = 51.5460 mm
+reset
+create Cylinder height 0.12000 radius 0.02499
+move Volume 1  z 0.060 include_merged
+create vertex location 0.02499 0.02499 0.105083153
+create vertex location 0.02499 -0.02499 0.105083153
+create vertex location -0.02499 -0.02499 0.014916847
+webcut volume 1 with plane vertex 3 vertex 4 vertex 5
+delete vertex 3 4 5
+webcut volume all with plane xplane imprint merge
+webcut volume all with plane yplane imprint merge
+imprint all
+merge all
+echo "=== OG-SH: look for the two curves of length 0.0515460 m ==="
+list curve in surface 26 46 53 32
+
+
+# ----------------------------------------------------------------- OG-T, 28 deg
+# half-major-axis = r / sin(28) = 53.2301 mm
+reset
+create Cylinder height 0.10000 radius 0.02499
+move Volume 1  z 0.050 include_merged
+create vertex location 0.02499 0.02499 0.096999354
+create vertex location 0.02499 -0.02499 0.096999354
+create vertex location -0.02499 -0.02499 0.003000646
+webcut volume 1 with plane vertex 3 vertex 4 vertex 5
+delete vertex 3 4 5
+webcut volume all with plane xplane imprint merge
+webcut volume all with plane yplane imprint merge
+imprint all
+merge all
+echo "=== OG-T: look for the two curves of length 0.0532301 m ==="
+list curve in surface 26 46 53 32
+
+
+# ---------------------------------------------------------------- OG-SC, 30 deg
+# half-major-axis = r / sin(30) = 49.9800 mm
+reset
+create Cylinder height 0.10000 radius 0.02499
+move Volume 1  z 0.050 include_merged
+create vertex location 0.02499 0.02499 0.093283950
+create vertex location 0.02499 -0.02499 0.093283950
+create vertex location -0.02499 -0.02499 0.006716050
+webcut volume 1 with plane vertex 3 vertex 4 vertex 5
+delete vertex 3 4 5
+webcut volume all with plane xplane imprint merge
+webcut volume all with plane yplane imprint merge
+imprint all
+merge all
+echo "=== OG-SC: look for the two curves of length 0.0499800 m ==="
+list curve in surface 26 46 53 32

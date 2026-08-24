@@ -1783,43 +1783,81 @@ estimate of the improvement.
 
 **Mass balance.** Injected and produced mass fluxes, recovered from the tagged residual vector,
 balance to 4.3 % at steady state during the first hold stage. `[Measured on SW-T1.]`
+`[TO RE-MEASURE before submission — task #123. This number comes from the 2026-08-06 deck`
+`generation, in which the two NodalSum postprocessors were repointed at react_pore_pressure. That`
+`repoint was never carried into the 93/94-series finals, which still sum inj_flux_aux and report`
+`16.8 % here. Nothing in Table 5 depends on it — the scored flow channel is the cubic-law`
+`evaluation, which does not touch the reaction vector — but this sentence and the §5.4 table must`
+`be regenerated from a corrected run before submission.]`
 
 **Mesh convergence.** The two discretisations are labelled by the Cubit auto-size factor used to
 generate them, 5 for the reported runs and 3 for the refined siblings; the factor is a coarseness
 index, not an element length. At factor 5 the SW-S3 fracture carries 457 interface nodes over
 $4.0\times10^{-3}$ m², an areal node spacing near 3 mm, and the SW-T1 fracture-line node pitch is
 4.33 mm. The factor-3 siblings hold roughly an order of magnitude more elements, i.e. element
-edges shorter by about a factor of two. Refined siblings were built for all four. One pair is complete over the full
-eleven-stage schedule, and it is the informative one: SW-S4 is the specimen whose slip is
-progressive rather than a single burst (§6.4), so its pair spans the slip event rather than
-stopping short of it, and it is the only specimen for which both constitutive laws also have a
-complete pair.
+edges shorter by about a factor of two. Refined siblings were built for all four.
+
+Two pairs carry evidence, and they are complementary. SW-S4's pair is complete over the full
+eleven-stage schedule; SW-S4 is the specimen whose slip is progressive rather than a single burst
+(§6.4), and it is the only specimen for which both constitutive laws also have a complete pair.
+SW-S3's pair reaches stage 6, which is peak injection — so it covers every loading stage and, with
+them, the slip event itself, missing only the five unloading stages. SW-S3 slips as a burst, so
+between them the two pairs cover both failure styles.
 
 | Specimen | law | stages | factor-5 mesh | factor-3 mesh | change |
 |---|---|---:|---:|---:|---:|
 | SW-S4 | Barton–Bandis | 11/11 | 6.14 % | 6.37 % | $+0.23$ |
 | SW-S4 | Mohr–Coulomb | 11/11 | 8.97 % | 8.84 % | $-0.14$ |
+| SW-S3 | Barton–Bandis | 6/11 | 4.36 % | 5.26 % | $+0.90$ |
+| SW-S3 | Mohr–Coulomb | 6/11 | 24.39 % | 24.89 % | $+0.50$ |
 
-Both changes are a small fraction of the difference between the two laws (2.83 points on the
-factor-5 mesh), and they fall on opposite sides of zero, so the comparison of §5.5 is not an artefact of
-discretisation. Within the Barton–Bandis pair the channels do not move together: refinement improves
-$Q$ (5.01 % → 4.88 %) and $\sigma'_n$ (3.87 % → 3.86 %) and worsens both displacement channels
-(4.63 % → 4.80 % and 7.08 % → 8.17 %), with $\tau$ essentially unchanged. The largest systematic
-shift through unloading is about 0.0018 mm in shear slip.
+The two SW-S3 rows are scored over stages 1–6 with the Table 2 range renormalised over the same
+six stages, so that the two meshes are directly comparable to each other. They are **not**
+comparable to the eleven-stage errors of Table 5, and only the change is quoted.
 
-The remaining three refined runs are incomplete — SW-T2 reaches stage 4 of 11, SW-S3 stage 6, and
-SW-T1 terminates during the preload before any scored stage — so no matched full-schedule
-comparison exists for the three burst specimens, and none is quoted. The cost is the reason: the
-refined meshes are far more expensive precisely on the specimens whose slip arrives as a single
-burst, which is the hardest event for the solver. This is a genuine limitation of the verification
-rather than a formatting gap. The claim supported here is that the reported result is
-mesh-insensitive *on the one specimen that resolves the weakening path*, not that it has been shown
-mesh-insensitive on all four.
-SW-T1 reached no Table 2 stage on the coarse mesh and supplies no evidence; separately, its two
-meshes differ by 3.1 % in injection–production separation, so that pair would not be a pure
-discretisation comparison even when complete. We therefore claim mesh-insensitivity of the pre-slip
-state, and note that SW-S4's stage-4 residual (§5.3) persists under refinement, which is what
-identifies it as constitutive rather than an artefact of discretisation.
+On both specimens the change under refinement is a small fraction of the difference between the two
+constitutive laws — 2.83 points on SW-S4, 20.0 points on SW-S3 over its loading branch — so the
+comparison of §5.5 is not an artefact of discretisation. On SW-S4 the two changes fall on opposite
+sides of zero. Within SW-S4's Barton–Bandis pair the channels do not move together: refinement
+improves $Q$ (5.01 % → 4.88 %) and $\sigma'_n$ (3.87 % → 3.86 %) and worsens both displacement
+channels (4.63 % → 4.80 % and 7.08 % → 8.17 %), with $\tau$ essentially unchanged. The largest
+systematic shift through unloading is about 0.0018 mm in shear slip.
+
+The two tensile pairs supply no evidence and none is quoted. SW-T1's refined run terminates during
+the preload before any scored stage; SW-T2's reaches stage 4 of 11. Percentage of elapsed time
+flatters the latter — SW-T2's refined run covers 78 % of the pressurisation branch but only 6.6 %
+of the flow range, because a tensile fracture stays shut until it opens and the entire flow
+response lives in the last fifth of the loading. Over that pre-burst window the Barton–Bandis and
+Mohr–Coulomb runs agree with each other to 0.00 % in $Q$, which is the direct statement that
+nothing constitutive has yet engaged. The cost is the reason for both: the refined meshes are far
+more expensive precisely on the specimens whose slip arrives as a single burst, which is the
+hardest event for the solver. This is a genuine limitation of the verification rather than a
+formatting gap.
+
+The claim supported here is therefore mesh-insensitivity over the full schedule on the specimen
+that resolves the weakening path progressively, and over the full loading branch — slip event
+included — on a burst specimen; not mesh-insensitivity demonstrated on all four. SW-S4's stage-4
+residual (§5.3) persists under refinement, which is what identifies it as constitutive rather than
+an artefact of discretisation.
+
+**A geometry difference within each pair, and why it does not confound the comparison.** The
+injection and production nodes are placed by snapping to the nearest existing node on the fracture
+major axis, so their separation is quantised by the number of intervals $N$ on that curve. Neither
+coarse mesh has $N$ divisible by five, so none can place a node at the design position, and the
+separation differs between the two meshes of a pair by $-4.00$, $-2.22$, $-3.24$ and $-4.35$ % for
+SW-S3, SW-S4, SW-T1 and SW-T2 respectively. No pair is a pure discretisation comparison in the
+strict sense.
+
+The confound does not reach the scored channels, for a structural reason and then an empirical
+one. Structurally, the reported flow rate is $C\,a_h^3\,\Delta p$ in which $C = W/L$ is a constant
+fitted from Table 2 and identical across a pair, and $\Delta p$ is the difference of two prescribed
+boundary pressures; over every output row of all four specimens this identity holds with
+$r = 1.00000000$ and a maximum departure from a single constant of $0.0000$ %. The separation
+therefore cannot enter $Q$ directly, only through the mechanical solution and thence the aperture.
+Empirically it barely does: separation changes of $-4.00$, $-2.22$ and $-4.35$ % produce aperture
+changes of $+1.10$, $+0.51$ and $0.00$ %, the largest separation change producing no aperture
+response at all. With no ordering between the two, the separation is not what distinguishes the
+meshes.
 
 ### 5.2 Stress and displacement histories
 
@@ -1940,10 +1978,24 @@ the first hold stage of SW-T1, with the pressure drop at exactly 3.000 MPa:
 | cubic law evaluated on the simulated aperture | 0.0508 |
 | Ye & Ghassemi Table 2 | 0.053 |
 
+`[TO REGENERATE before submission — task #123. The first two rows come from the 2026-08-06 deck`
+`generation, in which the flux postprocessors were repointed at react_pore_pressure; the finalized`
+`93/94-series decks still sum inj_flux_aux and give 0.000191 and 0.000223 at this point, a factor`
+`of 145 lower. The cubic-law row reproduces (0.0528). The argument of this subsection is unchanged`
+`in kind — both solved measures still fall below the reported value — but the factor must be`
+`re-measured from a corrected run before the numbers are quoted.]`
+
 The two independent simulated measures agree with each other to 7 %, and both fall to about half
 the reported value. The cubic-law evaluation, by contrast, reproduces the reported value to 4 % —
 but that agreement is circular, since the reported $Q$ and the cubic law are related by the same
 equation used to obtain the reported $a_h$.
+
+The circularity is exact rather than approximate, and it is worth stating in that form. The
+reported flow rate is $C\,a_h^3\,\Delta p$ with $C = W/L$ fitted from Table 2 and $\Delta p$ the
+difference of two prescribed boundary pressures, so across all four specimens and every output row
+it is a single constant times $a_h^3\Delta p$ to $r = 1.00000000$, with a maximum departure of
+$0.0000$ %. The $Q$ column of Table 5 is therefore an aperture comparison in different units, and
+the fluid transport the model actually solves is not scored anywhere in this study.
 
 The interpretation is a flow-geometry difference. The published reduction replaces the elliptical
 fracture with an equivalent rectangle of width $W$ and length $L$, giving $W/L = 0.814$
@@ -2842,10 +2894,17 @@ polished joints in general.
     parameterisations' envelopes differ by about 3 % in slope over the range injection sweeps.
     Reported JRC, JCS and $c$ values should be read as one calibrated combination, not three
     independently constrained properties.
-14. Post-slip mesh comparison is complete only for SW-S4 (§5.1): BBFast changes from 6.14 % on
-    mesh 5 to 6.37 % on mesh 3, and Mohr–Coulomb from 8.97 % to 8.84 %. The other three fine-mesh
-    runs are incomplete, and SW-T1's mesh-5/mesh-3 pair differs by 3.1 % in source-node separation,
-    which is a geometry difference rather than a discretisation one.
+14. Mesh comparison over the full eleven stages exists only for SW-S4 (§5.1): BBFast changes from
+    6.14 % on mesh 5 to 6.37 % on mesh 3, and Mohr–Coulomb from 8.97 % to 8.84 %. SW-S3's pair
+    reaches stage 6, i.e. peak injection, and so covers the whole loading branch including its slip
+    event, changing by $+0.90$ and $+0.50$ points on a six-stage renormalisation. The two tensile
+    pairs supply no evidence. Separately, *every* pair differs in injection–production separation —
+    by 4.00, 2.22, 3.24 and 4.35 % for SW-S3, SW-S4, SW-T1 and SW-T2 — because the source nodes are
+    snapped to a mesh whose axis interval count is not divisible by five; on the same count every
+    factor-5 mesh, and hence every reported run, sits 2.0–3.9 % long against the design separation.
+    This does not confound the comparison: the reported $Q$ is an exact algebraic function of the
+    aperture (§5.1), and the largest separation change of the three measurable pairs produces no
+    aperture response at all.
 15. Repeat runs of an identical deck on different machines agree to seven digits in $Q$,
     $\sigma'_n$ and $\tau$ but differ by up to 10.8 % in the normal-displacement error metric, giving
     a floor of about 0.08 percentage points on mean nRMSE. Differences below roughly 0.1 points

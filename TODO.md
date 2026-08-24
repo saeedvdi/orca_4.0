@@ -204,28 +204,166 @@ now computes this rather than taking a literal, and asserts the result.
 | **8** | Add a completeness guard to `kalantar_gate.py`, mirroring the notebook's | stops a truncated run being ranked; the notebook guards, the gate still does not |
 | **9** | Only then touch `roughness_characteristic_slip` (§7 of the Kalantar memory) | it is a free knob with no measurement behind it; **do not tune it to compensate for changes 2 or 3**, which do |
 
-**Do not coarsen the mesh to buy speed.** It is the wrong lever twice over: the cost is the
-LU/MUMPS factorisation on ramp steps, which step 1 cuts 2.3× for free; and OG-SH's factor-4
-mesh moves both injection nodes off the fracture onto **bulk** nodes 0.59 / 1.06 mm away
-(`OGSH/mesh/kalantar2025_og_sh_theta29.jou` lines 55–81 — the source-pinning test that
-already failed once), lengthening the flow path **2.94 %** on the one channel that already
-carries a 1.342× bug. Changing discretisation in the same round as the physics fixes makes
-the result unattributable. Coarsen later, deliberately, as a convergence check.
+### 1.6 Round-4 meshes — TRIED, MEASURED, REJECTED 2026-08-24
 
-**Prediction for round 3**, written now, one number per specimen:
+**The premise was wrong.** I claimed the meshes were over-refined in the *bulk* and that
+~45,000 elements could be recovered from OG-SH without touching the fracture. Saeed built
+the graded meshes. They were measured. **There is no over-refined bulk.**
 
-* **OG-SC** — `τ_limit(σ'ₙ = 31.55) > 13.08 MPa`, i.e. it holds through stage 6 and bursts
-  at stage 7. This is the whole claim; if it bursts early *or* never, step 2 is wrong.
-* **OG-SH** — `τ_limit` at stage 1 equals the measured **26.14 MPa**. If JRC still does not
-  mobilise once that passes, the cause is `roughness_characteristic_slip`, not the envelope.
-* **OG-T** — no prediction is legitimate until §1.4.2 is closed. Writing one would be
-  preregistering a proxy for a confound, the mistake logged in the round-2 write-up.
+Median node spacing [mm] against distance from the fracture plane, OG-SH:
 
-*(Round 2's own prediction is scored in `Examples/Kalantar2025/MEMORY.md` §9.1 — it was
-half right, and its falsifier was mis-specified in a way worth reading before writing
-another one.)*
+| | 0–1 | 1–2 | 2–4 | 4–8 | 8–16 | 16–32 | 32–100 mm |
+|---|---|---|---|---|---|---|---|
+| `_size3.e` | 0.968 | 0.988 | 0.986 | 1.004 | 0.977 | 0.955 | 0.978 |
+| graded | 0.918 | 0.906 | 0.931 | 0.926 | 0.872 | 0.846 | 0.877 |
 
-### 1.6 Kalantar items not on the critical path
+**Both profiles are flat.** The mesh was already uniform at ~0.98 mm everywhere out to
+100 mm from the fracture, and `volume all size 0.00180` had no effect at all — the 1.00 mm
+*surface* size propagated through the whole volume and made everything finer. Same on the
+other two. The cause is the element type: `scheme polyhedron` yields **HEX8** here, and a
+hex mesher propagates surface intervals along the mapped directions through the entire
+volume. It cannot grade away from an interior surface the way a tet mesher can.
+
+**Measured outcome of the three graded meshes:**
+
+| | elements | interface nodes | pitch | source pinning | re-pinned W/L shift |
+|---|---|---|---|---|---|
+| OG-SH | 100,048 → **108,240 (+8.2 %)** | 1,977 → 2,521 | 1.035 → 0.942 mm | ❌ **BULK node**, 707.6 µm | **+1.82 %** |
+| OG-T | 53,760 → 51,600 (−4.0 %) | 2,297 → 2,641 | 0.980 → 0.916 mm | ✅ OK, and **improves** 792.9 → 362.8 µm | +2.74 % |
+| OG-SC | 68,096 → 65,744 (−3.5 %) | 2,185 → 2,407 | 1.004 → 0.941 mm | ❌ **BULK node**, 742.7 µm | −0.87 % |
+
+Geometry is exact on all six meshes — L, D, θ, plane-fit residual 0.00 µm, fracture area to
+6 digits. That part is clean.
+
+**Verdict: not adopted. All three journals reverted to `auto factor 3` and `_size3.e`**, with
+the measurement recorded in each header so it is not retried. OG-SH would have been **8 %
+slower** and needed a borehole 732 µm off design, moving a scored channel by 1.8 %.
+
+**Where the error came from, so it is not repeated.** I inferred an "implied bulk edge" as
+`(volume / n_elements)^(1/3)` = 1.33 mm and compared it against the interface pitch of
+1.035 mm, reading the 1.29 ratio as weak grading. Those two numbers are not commensurable —
+one is a 3D element-volume scale, the other a 2D in-plane node spacing — so the ratio was an
+artefact of the comparison, not a property of the mesh. **The spacing-versus-distance
+profile is the direct measurement, it costs one command, and it should have been run first.**
+
+**Worth keeping:** on **OG-T alone** the graded mesh is better on every axis — fewer
+elements, +15 % interface nodes, finer pitch, and source pinning that *improves* to 362.8 µm
+(from 792.9) with a flow path closer to the paper's (−0.85 % against +1.86 %). Not adopted
+now, because OG-T's open problem is the preload defect and changing its mesh underneath an
+unresolved model defect makes the diagnosis unattributable. Revisit after the probe closes;
+the commented sizing pair is in its journal.
+
+> **Amended 2026-08-24, later the same day — see §1.7.** The *pinning* column of the table
+> above has nothing to do with grading. Every one of those six distances is fixed by a single
+> integer, and §1.7 replaces the whole approach. The element-count and profile conclusions
+> above still stand; the pinning conclusions were reading luck as quality, including OG-T's
+> "improvement".
+
+**The speed lever is not the mesh.** With a uniform hex mesh you can only coarsen globally,
+and factor 4 already fails source pinning outright. What remains:
+
+1. **128 ranks** — proven config in this repo (mesh-3 jobs), ~1.4–1.7× expected, no
+   scientific risk. Use it on the next submission.
+2. The dt schedule already bought **4.2–5.0×**. That was the real win and it is banked.
+3. Beyond that would need a field-split preconditioner instead of LU/MUMPS — real work, and
+   the DIVERGED_ITS history says do not reach for hypre casually.
+
+**The durable fix, if mesh freedom is ever wanted:** imprint the two borehole vertices into
+the geometry so a node exists at each source *by construction*. That is now §1.7.
+
+### 1.7 Source pinning is one integer — imprint BUILT 2026-08-24, awaiting Cubit
+
+**Every pinning distance ever measured on these meshes is `round(0.79992·N)/N`.**
+
+Both boreholes sit at `y = 0` on the fracture plane. That is not the interior of a surface —
+it is exactly where `webcut … yplane` cut the fracture ellipse, i.e. the ellipse's **major
+axis**, and it is a *geometric curve*. Cubit divides that curve into `N` equal intervals
+(verified: min spacing == max spacing to machine precision on all six meshes), so the only
+node positions the source can reach are `k/N` along it. The design borehole sits at
+`x/r = (24.99 − 5)/24.99 = 0.799920`, so the error is integer arithmetic:
+
+| mesh | N | nearest fraction | pinning error | measured by `check_source_nodes.py` |
+|---|---|---|---|---|
+| `_size3` OG-SH | **25** | 20/25 = 0.800000 | 4.1 µm | 4.1 µm |
+| `_size3` OG-T | 27 | 22/27 = 0.814815 | 792.9 µm | 792.9 µm |
+| `_size3` OG-SC | 26 | 21/26 = 0.807692 | 388.5 µm | 388.5 µm |
+| graded OG-SH | 28 | 22/28 = 0.785714 | 732.2 µm | 732.2 µm |
+| graded OG-T | 29 | 23/29 = 0.793103 | 362.8 µm | 362.8 µm |
+| graded OG-SC | 27 | 22/27 = 0.814815 | 744.4 µm | 744.4 µm |
+
+All six agree to 0.1 µm. **OG-SH's much-quoted 4.1 µm pin was never mesh quality — it is 25
+being divisible by 5**, because the design borehole sits two microns off exactly 4/5 of the
+radius. The two graded "BULK node" failures and OG-T's graded "improvement" are the same
+arithmetic. Nothing about grading, sizing, or element count enters it.
+
+**Built (this repo, not yet run in Cubit):**
+
+* `scripts/check_axis_intervals.py` — infers L, r, θ and the fracture plane *from the mesh*,
+  reports `N`, the spacing uniformity, the nearest fraction, the pinning error and the
+  implied borehole separation, and names the fix. Verified: it reproduces all six rows above.
+* `Examples/Kalantar2025/mesh_probe_axis_curves.jou` — **probe only, exports nothing.** Builds
+  all three geometries and lists the curves in surfaces `26 46 53 32`. The two wanted are the
+  ones of length `r/sin θ` = 51.5460 / 53.2301 / 49.9800 mm, which is unique in each model.
+* All three production journals — a `split curve … location position` at the design borehole
+  after the webcuts and before `imprint all`, with the curve IDs left at `0` so an unfilled
+  journal fails loudly. Each exports to a **new** name `…_size3_pin.e`; `_size3.e` is
+  untouched because 110_02 and 110_06 are running on it.
+
+**Why the split and not a webcut:** it adds one vertex and replaces one curve with two. No
+new surfaces, no new volumes — the hardcoded block/nodeset surface IDs and the nodeset 5/6
+vertex IDs survive. A webcut would renumber all of them.
+
+**Fallback, in each journal, two commented lines:** `curve <ids> interval 25`. Forcing
+`N ≡ 0 (mod 5)` puts a node at exactly `0.8 r = 0.019992` — 4.0–4.3 µm from design — at *any*
+global coarseness, with no topology change at all. Strictly weaker than the imprint (4 µm vs
+0) but zero risk, and it is already enough to decouple pinning from mesh size.
+
+**Unverifiable here: there is no Cubit on this machine.** Two commands carry real risk and
+neither could be tested — `split curve` on already-merged geometry, and whether `scheme
+polyhedron` keeps good quality around the new vertex. That is what the new-export-name and
+the two checker scripts are for.
+
+**Sequence:**
+
+1. Run `mesh_probe_axis_curves.jou`, paste the six curve IDs into the three journals.
+2. Mesh and export the three `_pin.e`.
+3. `check_axis_intervals.py` → expect **0.0 µm**; `check_source_nodes.py` → sources **on the
+   interface**. If either fails, switch to the commented interval fallback and re-run.
+4. Only then re-point the decks, and **re-derive `mesh_flow_width_over_length_*` from the
+   design separations** — 82.4654 / 85.1596 / 79.9600 mm. This removes a scored-channel bias
+   of +0.010 % / **+1.862 %** / **+0.972 %**, and OG-T's design separation *is* the paper's.
+
+**This is what makes coarsening possible at all** — pinning stops depending on mesh size, so
+factor 4 and 5 become testable instead of automatically disqualified. It does not by itself
+make anything faster; **128 ranks is still the immediate lever** (§1.6).
+
+### 1.8 Round-3 results — mid-flight back-analysis 2026-08-24
+
+**Full write-up: [`doc/KALANTAR2025_ROUND3_BACKANALYSIS.md`](doc/KALANTAR2025_ROUND3_BACKANALYSIS.md).**
+Snapshots downloaded 16:15: OG-SH **50.0 %**, OG-SC **46.5 %**, OG-T **0.5 %**. Pressurization
+branch only — nothing is scoreable, and `kalantar_gate.py` must not be run on these files (still
+no completeness guard; it phantom-matches depressurization stages to pressurization times).
+
+* **OG-SH — the envelope fix worked.** `τ/τ_limit` reaches **1.0040** and holds 1.000 from stage 2;
+  round 2 peaked at 0.9900 and never reached the limit. Slip 0.054 mm at halfway against round 2's
+  0.0049 mm at the end. τ errors by stage: −1.9 / +1.5 / +3.9 / +7.1 / +8.6 %.
+  **Residual defect:** slips **+38 %** too much while weakening **−33 %** too little — 81 MPa/mm
+  against a measured 168. Attack the conversion, never the slip.
+* **OG-SC — best agreement in the campaign.** Stages 1–5 within 1.4 % on τ, 0.3 % on σ'ₙ. Burst
+  moved stage 4 → **stage 6**; measured is 7. **Bracket narrows to 22.660° < φ_r < 24.05°.** It
+  also over-weakens (post-burst τ 5.95 vs 9.73) — a *second* knob.
+* **OG-T — the defect is not constitutive.** `dσ'ₙ/dσ₁` is **−0.090** against a required
+  `+sin²28 = +0.220`, at 2.9 µm of slip: the fracture **opens under rising axial compression**
+  while OG-SH (+0.228/0.235) and OG-SC (+0.183/0.250) both close. Area-averaged channel, so not a
+  reporting artefact. σ₁ = 193.43 MPa is verified correct. Prime suspect is the 3.00 mm tip
+  clearance against the platen BC — warned about in the mesh journal on 2026-08-23, never checked.
+
+**Next, in order:** let 110_02/110_06 finish → cancel 110_04 → run the OG-T preload probe with a
+written falsifiable prediction (#120) → the tip test → **#121, why `bb_jrc_mobilized` has never
+moved in seven decks across both campaigns** → OG-SC's last φ_r step → OG-SH's weakening
+conversion.
+
+### 1.9 Kalantar items not on the critical path
 
 * **111-series Mohr–Coulomb siblings** — after round 3 lands.
 * **Step G mechanism decks**, the gouge arm on OG-SH first.
@@ -239,7 +377,7 @@ another one.)*
   carries the SW-S3 comment *"FULL SW-S3 cycle (11 stages)"*, and the
   `residual_friction_angle_degrees` comments still argue the Ye2018 case.
 
-### 1.7 Decisions that are Saeed's
+### 1.10 Decisions that are Saeed's
 
 1. **OG-T's angle** — 28° built as primary, 26° as a ready sensitivity arm. Recommendation
    is 28° with the published stress columns re-reduced; 26° cannot be realised without
@@ -279,15 +417,52 @@ another one.)*
 
 Full detail and history in `doc/TODO.md`; these are the items that are actually live.
 
+### 3.0 Back-analysis of the completed campaign — 2026-08-24
+
+Full write-up: **`doc/YE2018_FINAL_BACKANALYSIS_2026-08-24.md`**. Arithmetic:
+`scripts/mesh3_convergence.py` (new), `scripts/check_axis_intervals.py`.
+**Nothing here changes Table 5.** Three findings, in order of what they cost:
+
+1. **The completeness belief was wrong.** It is not only SW-T1's mesh-3 run that is
+   outstanding — **seven of ten** mesh-3 runs are truncated, plus `96_04/05/07/08` at
+   48–52 % and the `97`-series (superseded by the complete `101`s, so harmless).
+   Wall-clock percentage misleads in both directions: measure the cut against **peak
+   injection**, not `end_time`.
+2. **SW-S3's refined pair is usable and the draft threw it away.** Its stage 6 *is* peak
+   injection, so it covers every loading stage and the slip event with them. Matched
+   six-stage means: BB 4.36 → 5.26 (+0.90), MC 24.39 → 24.89 (+0.50). SW-S3 is a **burst**
+   specimen, which fills the draft's own stated gap. §5.1 rewritten — task **#124**.
+3. **The 2026-08-06 flow fix was never ported to the finals.** All 16 decks still
+   `NodalSum` on `inj_flux_aux`; `react_pore_pressure` is built with
+   `remove_variable_scaling = true` in every deck and never summed. §5.4's "solved
+   injection flux 0.0277" reads **0.000191** in `93_01` — 145× — and in *every* SW-T1 run
+   back to `87_01`. §5.1's "4.3 % mass balance" reads 16.8 %. Scores untouched (the scored
+   $Q$ is the cubic-law channel). Task **#123**; the fix needs a re-run only to $t=300$ s.
+
+Also established, and it is the reason the mesh comparison survives at all: **$Q$ is an
+exact algebraic function of the aperture** — $C\,a_h^3\Delta p$ with $C$ fitted and
+$\Delta p$ prescribed by two Dirichlet BCs, $r = 1.00000000$ and max departure 0.0000 % on
+all four specimens. So the borehole-separation defect (which the Kalantar tooling found on
+**all four** Ye2018 specimens: every mesh-5 run is 2.0–3.9 % long, pair differences 2.2–4.4 %)
+cannot reach $Q$ directly. Empirically the largest separation change produces *zero*
+aperture response. **Do not rebuild the Ye2018 meshes** — the null prices the fix at nothing.
+
+**On the SW-T1 mesh-3 run in flight:** its predecessor reached 2.0 % of the schedule, and
+SW-T1's flow response is 99.7 % concentrated after that point. If it does not reach stage 6,
+it adds no evidence — write §5.1 on SW-S4 + SW-S3 regardless rather than waiting on it.
+
 | # | item | state |
 |---|---|---|
-| **#81** | Score the mesh-3 convergence runs against their mesh-5 finals | 8 twins verified and re-resourced to 128 ranks / 128 G / 2 d; **Saeed submits** |
+| **#123** | Port the flow-measurement fix into the 93/94 finals; re-run SW-T1 to $t=300$ s | **new, do first** — only item that changes a stated result |
+| **#124** | Rewrite §5.1's mesh paragraph + footnote 14 with SW-S3 promoted | **applied 2026-08-24**, verify on read-through |
+| **#125** | Correct the separation claim to all four specimens; add the $Q\equiv a_h^3$ null | **applied 2026-08-24**, verify on read-through |
+| **#81** | Score the mesh-3 convergence runs against their mesh-5 finals | **done** — `scripts/mesh3_convergence.py`; reproduces the manuscript's SW-S4 numbers exactly |
 | **#105** | Rewrite §5.5/§6.3 and fold in the five 08-17/18 findings | in progress |
 | **#113** | Fold the Kalantar cross-checks into the manuscript | pending — see §1.5 |
 | **#59** | Rebuild `orca-opt`; runtime-verify the three compile-checked-only fixes; register the `alpha_eff_lagged` test and gold it | blocked on the campaign draining |
 | **#91** | Bracket SW-S4's unused cohesion-weakening channel (the stage-4 defect) | pending |
 | **#106** | Write a real README for the repository | pending |
-| **#13** | Make the flow measurement mesh-independent | pending |
+| **#13** | Make the flow measurement mesh-independent | pending — and note `flow_rate_mesh_geometry_ml_min_pp` is currently **identical** to the fitted channel on SW-S4/T1/T2 (the same $W/L$ copied), so the "independent" diagnostic only computes anything on SW-S3 |
 | **#65** | Unify rock-characteristic parameters across the four sample decks | pending |
 | **#50 / #51** | Stale split mass-balance kernel pair; `biot_coefficient = 1e-12` in SWS3/SWT1/SWT2 | pending |
 | **#76 / #78** | Why the SW-T1 87/88 lineage barely opens; SW-S3's Biot inversion before quoting `84_01` | pending |

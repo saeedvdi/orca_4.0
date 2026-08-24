@@ -117,9 +117,76 @@ webcut volume all with plane yplane imprint merge
 imprint all
 merge all
 
+# ==============================================================================
+# GRADED SIZING: TRIED 2026-08-24 AND MEASURED. REJECTED FOR THE CAMPAIGN -- but on
+# THIS specimen it came out better; see the note under "WHAT IT COST". Read before
+# trying it again. The premise was wrong, not the execution.
+# ==============================================================================
+# The idea was to size the fracture and the bulk independently -- fracture 0.95 mm,
+# bulk 1.70 mm -- on the theory that these meshes were over-refined in the BULK and a
+# large fraction of the elements sat in rock where nothing happens.
+#
+# THEY WERE NOT. Median node spacing [mm] against distance from the fracture plane,
+# measured on the exported meshes:
+#
+#     distance      0-1   1-2   2-4   4-8  8-16  16-32  32-100 mm
+#     _size3.e     0.957 0.939 0.969 0.944 0.895 0.885  0.926
+#     graded       0.905 0.941 0.903 0.882 0.832 0.824  0.862
+#
+# Both profiles are FLAT. The mesh was already uniform at ~0.93 mm everywhere out to
+# 100 mm from the fracture; there was no over-refined bulk to recover. And the
+# `volume all size` line had no effect at all -- the SURFACE size propagated through
+# the entire volume and made the whole mesh finer.
+#
+# The reason is the element type. `scheme polyhedron` produces HEX8 here, and a hex
+# mesher propagates surface intervals along the mapped directions through the whole
+# volume. It cannot grade away from an interior surface the way a tet mesher can.
+# Refining the fracture necessarily refines everything.
+#
+# WHAT IT COST ON THIS SPECIMEN, measured:
+#     elements        53,760 ->  51,600   (-4.0 %)
+#     interface nodes  2,297 ->   2,641   (+15.0 %)
+#     interface pitch  0.980 ->   0.916 mm
+#     source pinning   PASSES  ->  PASSES, and IMPROVES: the boreholes land 362.8 um
+#                                  from design against 792.9 um on _size3.e -- the
+#                                  only mesh of the three where the graded version
+#                                  pins BETTER
+#     re-pinned separation 86.7453 -> 84.4339 mm (paper value 85.1596), so the graded
+#     mesh is also CLOSER to the paper's flow path: -0.85 % against +1.86 %.
+#     mesh_flow_width_over_length_og_t would move +2.74 %, on a SCORED channel.
+#
+# SO: on OG-T alone the graded mesh is strictly better on every axis except that it
+# saves no meaningful time. It is NOT adopted now, because OG-T's open problem is a
+# preload defect (see the WARNING in 110_04_og_t_bbfast_r3.i) and changing the mesh
+# underneath an unresolved model defect makes the diagnosis unattributable. If OG-T
+# needs a rebuild AFTER the preload probe closes, use the graded pair below and
+# re-derive mesh_flow_width_over_length_og_t from the new separation.
+#
+# HOW THE WRONG PREMISE WAS REACHED, so it is not repeated: the "implied bulk edge"
+# was inferred as (volume/n_elements)^(1/3) and compared against the interface pitch,
+# and the ratio was read as weak grading. Those two numbers are not commensurable --
+# one is a 3D element-volume scale, the other a 2D in-plane node spacing -- so the
+# ratio was an artefact of the comparison, not a property of the mesh. The
+# spacing-versus-distance profile above is the direct measurement, it costs one
+# command, and it should have been run first.
+#
+# IF THIS MESH EVER NEEDS TO BE CHEAPER: it cannot be done by grading with this
+# scheme, only by coarsening globally. The lever is not the mesh -- use 128 ranks.
+# The durable fix would be to imprint the two borehole vertices into the geometry so
+# a node exists at each source BY CONSTRUCTION, making source pinning exact and
+# mesh-independent and allowing free coarsening. Not attempted.
+# ------------------------------------------------------------------------------
+# ACTIVE SIZING: the production mesh, uniform, factor 3. See the OG-T note above.
 vol all size auto factor 3  # 5 -> kalantar2025_og_t_theta28_size5.e ; 3 -> _size3.e
 volume all scheme polyhedron
 mesh volume all
+
+# The graded pair, kept so the measurement above can be reproduced. If you uncomment
+# these, change the export name at the bottom to _size3.e:
+#   volume all size 0.00170
+#   surface 26 46 53 32 size 0.00095
+
+list totals   # element count
 
 block 1 add volume 2 4 8 6
 block 1 name "top_block"
@@ -142,5 +209,9 @@ nodeset 5 add vertex 27 34 41 48
 nodeset 5 name "no_disp_x"
 nodeset 6 add vertex 10 11 18 19
 nodeset 6 name "no_disp_y"
+
+# VERIFY BEFORE EXPORTING, then ALWAYS run scripts/check_source_nodes.py.
+list nodeset 4                          # interface nodes, expect 2297
+list surface 26 46 53 32 geometry       # fracture area, expect 4.179007e-3 m^2
 
 export mesh "kalantar2025_og_t_theta28_size3.e" overwrite
