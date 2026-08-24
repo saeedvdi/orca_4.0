@@ -96,6 +96,32 @@ STEP = 3.0e6                # Pa per injection step
 # joint's own normal compliance plus the non-uniform stress_zz near the platens.
 C_AX_OVER_L_OVER_E = 0.8987
 
+# ---------------------------------------------------------------------------
+# ROUND 3 time stepping. See Examples/Kalantar2025/MEMORY.md section 6.10.
+#
+# Round 2 ran every deck at a flat `dtmax = 0.75`, which fixes the step count at
+# end_time/0.75 = 4800 / 9067 / 12133 BEFORE the solver is consulted. That, not the
+# mesh, is what truncated OG-T at 36 % and OG-SC at 77 %. Measured on OG-SH's own
+# round-1 log (35249.66 s = 9.79 h, 4800 steps, 64 ranks):
+#
+#     1206 steps actually solve, ~24.3 s each   -> 83 % of the wall time (the RAMPS)
+#     3594 steps converge at nonlinear iter 0   -> ~1.65 s each      (the HOLDS)
+#
+# and the holds are measurably dead: across every OG-SH hold a_h moves <= 0.09 %,
+# Q <= 0.32 %, slip <= 1.7 %, and three of the nine move NOTHING to seven digits.
+# So the limit is split by segment. The ramps keep a fine step because that is where
+# the load actually changes; the holds get a coarse one because nothing happens there.
+#
+# `dtmin` stays at 1e-6 and the adaptive cutback is untouched, because OG-T's round-2
+# run resolved its stick-slip event unaided by dropping to dt = 0.0166 s on its own.
+# 54 % of its steps went into that one event. That cost is the physics -- do not
+# optimise it away.
+DT_RAMP = 1.5               # s, during the 100 s pressure ramps  (was 0.75)
+DT_HOLD = 5.0               # s, during the 300/600 s holds       (was 0.75)
+DT_EDGE = 0.5               # s, transition width at each segment boundary
+
+DLS_PRINT_RESOLUTION = 0.001   # mm, Table 2's dL_s column is printed to 3 decimals
+
 SPECIMENS = {
     "OGSH": dict(
         tag="og_sh", label="OG-SH", kind="shear", theta=29.0, theta_printed=29.0,
@@ -104,13 +130,22 @@ SPECIMENS = {
         mesh="mesh/kalantar2025_og_sh_theta29_size3.e",
         src_in=(-0.019992000, 0.023933478), src_out=(0.019992000, 0.096066522),
         sep_paper=0.0824654, parent="SWT2/93_03_swt2_final_theta30_resc9p71_ppfix.i",
-        # Section 2.3: the Figure 3b criterion OVERESTIMATES this specimen's peak --
-        # the test ran at ~0.92 tau_p, not the 0.85 the figure implies. Backing tau_p
-        # out of the stated ratios and walking up the loading path (slope cot theta)
-        # gives 32.70 deg, not the 36.05 that mu = 0.7 / c = 1.2 MPa produces. The
-        # same check on OG-T (-1.4 %) and OG-SC (-3.3 %) confirms they need no
-        # override, exactly as the paper warns for the shear fracture alone.
-        phi_peak_override=32.70,
+        # ROUND 3. The envelope is no longer taken from Figure 3 at all on this
+        # specimen -- it is PINNED THROUGH TABLE 2 STAGE 1.
+        #
+        # This is legitimate here and nowhere else. Section 4.1 reports OG-SH creeping
+        # through EVERY hold (42 um total) and never producing an audible event, and
+        # Table 2 stage 1 already carries dL_s = 0.002 mm. A joint that is creeping is
+        # ON its envelope, so its stage-1 (sigma'_n, tau) pair IS a point of the peak
+        # envelope, not merely a point below it. OG-T and OG-SC are locked at stage 1
+        # (dL_s = 0.000) and the same pin would make them critical from the first step,
+        # so they do NOT get it.
+        #
+        # Round 2 ran the section-2.3 correction (32.70 deg, from backing tau_p out of
+        # the ~0.92 tau_p ratio) and the joint still stalled at tau/tau_limit = 0.9900
+        # with JRC pinned at its full 15.60 for the whole run -- the envelope was still
+        # 9.0 % too strong. The pin replaces a figure-read with a measurement.
+        pin_envelope_through_stage1=True,
         # Section 4.1: OG-SH creeps through every hold (42 um total, largest step
         # 11 um) and never produces an audible event -- the STABLE member.
         bursts=False,
@@ -147,10 +182,20 @@ SPECIMENS = {
         # Section 4.1: a single audible stick-slip at the 24 MPa step. The ROUND-1
         # deck could not have produced it: D_c = 60 um against a 25.4 um cap.
         bursts=True,
+        # ROUND 3. Round 2 fixed the burst CLASS but not its TIMING: the deck burst at
+        # stage 4 (P_i = 15 MPa) against a measured stage 7 (24 MPa), and it did so at
+        # tau/tau_limit = 1.0160 -- the envelope is too WEAK, the opposite sign to
+        # OG-SH's. Table 2's own dL_s column brackets phi_r from both sides (the joint
+        # must HOLD at the last locked stage and FAIL at the first slipped one); see
+        # phi_r_bracket(). Both ends are measurements, neither is a fit.
+        phi_r_from_slip_bracket=True,
     ),
 }
 
-DECK_NUMBER = {"OGSH": "110_01", "OGT": "110_03", "OGSC": "110_05"}
+# Round 3 gets its own deck numbers so the round-2 CSVs and Exodus files are not
+# overwritten -- the round-2 per-stage tables are the evidence for these changes.
+DECK_NUMBER = {"OGSH": "110_02", "OGT": "110_04", "OGSC": "110_06"}
+ROUND = 3
 
 
 def schedule(p_max: float, hold: float) -> tuple[list[float], list[float]]:
@@ -214,6 +259,75 @@ def reduce_stages(spec: dict, rows: list[dict]) -> list[dict]:
     return out
 
 
+def dt_schedule(xs: list[float]) -> tuple[list[float], list[float]]:
+    """A per-segment dt limit for IterationAdaptiveDT's `time_t`/`time_dt`.
+
+    The injection schedule alternates ramp, hold, ramp, hold, ... starting with a
+    ramp, so segment i of `xs` is a ramp when i is even. `time_t`/`time_dt` are
+    interpolated LINEARLY, so each segment is bounded by a point just inside either
+    end and the limit swings over a 2*DT_EDGE window at the boundary rather than
+    stepping. The result never exceeds DT_RAMP on a ramp or DT_HOLD in a hold.
+
+    Returns (times, dts), strictly increasing in time.
+    """
+    ts, dts = [0.0], [DT_RAMP]
+    for i in range(len(xs) - 1):
+        a, b = xs[i], xs[i + 1]
+        d = DT_RAMP if i % 2 == 0 else DT_HOLD
+        for t in (a + DT_EDGE, b - DT_EDGE):
+            if t > ts[-1] + 1e-9:
+                ts.append(t); dts.append(d)
+    ts.append(xs[-1]); dts.append(DT_RAMP)
+    assert all(y > x for x, y in zip(ts, ts[1:])), "dt schedule times not increasing"
+    assert max(dts) <= DT_HOLD + 1e-12
+    return ts, dts
+
+
+def phi_r_bracket(spec: dict, rows: list[dict]) -> tuple[float, float, int] | None:
+    """Two-sided bracket on Barton's phi_r, read straight off Table 2's dL_s column.
+
+    The stage at which dL_s jumps is a measurement of where the envelope is crossed.
+    The joint HELD at the stage before it and FAILED at the stage after, under a shear
+    stress that had barely changed, so:
+
+        hold at (sn_h, tau_h):  sn_h tan[phi_r + JRC log10(JCS/sn_h)] > tau_h
+        fail at (sn_f, tau_h):  sn_f tan[phi_r + JRC log10(JCS/sn_f)] < tau_h
+
+    sigma'_n FALLS as injection proceeds, so sn_f < sn_h and the two inequalities close
+    on phi_r from opposite sides. tau_h -- the last stress the joint carried while still
+    locked -- drives both; the tau printed at the failed stage is POST-drop and is not
+    the load that broke it.
+
+    Returns (lo_deg, hi_deg, fail_stage) or None if dL_s never jumps.
+    """
+    # The burst is the LARGEST single increment in dL_s, not the first nonzero one.
+    # Table 2 prints to 0.001 mm, so the 0.000 -> 0.001 steps of accumulating creep are
+    # at print resolution and a "first jump" test fires on one of those instead. On
+    # OG-SC that mistake picks stage 4 and returns a bracket 2.5 deg too low -- i.e. it
+    # reproduces the round-2 value it is supposed to correct.
+    ds = [r["dLs_mm"] for r in rows]
+    steps = [ds[i] - ds[i - 1] for i in range(1, len(ds))]
+    j = 1 + max(range(len(steps)), key=steps.__getitem__)
+    if steps[j - 1] < 5.0 * DLS_PRINT_RESOLUTION:
+        return None                       # creep only; no event to bracket against
+    hold, fail = rows[j - 1], rows[j]
+
+    # An audible stick-slip drops tau and jumps slip at the SAME stage. Two independent
+    # columns agreeing is what makes this an event rather than a digitisation wobble.
+    dtau = [rows[i - 1]["tau"] - rows[i]["tau"] for i in range(1, len(rows))]
+    assert j - 1 == max(range(len(dtau)), key=dtau.__getitem__), (
+        f"{spec['label']}: dL_s jumps at stage {int(fail['stage'])} but the largest tau "
+        f"drop is elsewhere -- these must be the same event")
+
+    tau_h = hold["tau"]
+
+    def phi_r_at(sn: float) -> float:
+        return (math.degrees(math.atan(tau_h / sn))
+                - spec["jrc"] * math.log10(UCS / (sn * 1e6)))
+
+    return phi_r_at(hold["sn"]), phi_r_at(fail["sn"]), int(fail["stage"])
+
+
 def derive(spec: dict, rows: list[dict]) -> dict:
     """Every constitutive constant the deck needs, from Table 2 and section 2-3.
 
@@ -226,11 +340,39 @@ def derive(spec: dict, rows: list[dict]) -> dict:
     first, last = rows[0], rows[-1]
 
     # Peak envelope, split into Barton-Bandis terms at the stage-1 normal stress so
-    # the deck reproduces Figure 3 at the stress the experiment actually starts from.
-    phi_peak = spec.get("phi_peak_override") or math.degrees(
-        math.atan((spec["mu_peak"] * first["sn"] * 1e6 + spec["c_peak"]) / (first["sn"] * 1e6)))
+    # the deck reproduces the envelope at the stress the experiment actually starts
+    # from. Three mutually exclusive sources, in decreasing order of evidence:
+    #
+    #   phi_r_from_slip_bracket  -- Table 2's dL_s column brackets phi_r from BOTH
+    #                               sides. Two measurements. OG-SC.
+    #   pin_envelope_through_stage1 -- the stage-1 (sigma'_n, tau) pair IS a point of
+    #                               the envelope, valid only where the joint is already
+    #                               creeping at stage 1. One measurement. OG-SH.
+    #   mu_peak / c_peak         -- Figure 3, read off a plot. OG-T.
+    #
+    # Round 2 ran the third everywhere (with a section-2.3 correction on OG-SH) and got
+    # an envelope 9.0 % too strong on OG-SH and too weak on OG-SC -- opposite signs, so
+    # no single global correction could have fixed both.
+    bracket = phi_r_bracket(spec, rows) if spec.get("phi_r_from_slip_bracket") else None
     jrc_term = spec["jrc"] * math.log10(UCS / (first["sn"] * 1e6))
-    phi_r = phi_peak - jrc_term
+
+    if bracket:
+        lo, hi, _ = bracket
+        phi_r = 0.5 * (lo + hi)
+        phi_peak = phi_r + jrc_term
+        envelope_source = f"Table 2 dL_s bracket [{lo:.3f}, {hi:.3f}] deg, midpoint"
+    elif spec.get("pin_envelope_through_stage1"):
+        # tau_limit(sigma'_n_1) = sigma'_n_1 tan(phi_peak) + c  ==  tau_1.
+        phi_peak = math.degrees(
+            math.atan((first["tau"] * 1e6 - spec["c_peak"]) / (first["sn"] * 1e6)))
+        phi_r = phi_peak - jrc_term
+        envelope_source = (f"pinned through Table 2 stage 1 "
+                           f"(sigma'_n {first['sn']:.2f}, tau {first['tau']:.2f} MPa)")
+    else:
+        phi_peak = spec.get("phi_peak_override") or math.degrees(math.atan(
+            (spec["mu_peak"] * first["sn"] * 1e6 + spec["c_peak"]) / (first["sn"] * 1e6)))
+        phi_r = phi_peak - jrc_term
+        envelope_source = f"Figure 3, mu {spec['mu_peak']} / c {spec['c_peak']/1e6:.1f} MPa"
 
     # Residual: Table 2's LAST stage is the fully-weakened state on every specimen
     # (tau has stopped moving on the depressurisation branch). This is a measured
@@ -262,6 +404,9 @@ def derive(spec: dict, rows: list[dict]) -> dict:
     loss = max(0.0, ah[0] - ah[-1])
 
     return dict(phi_peak=phi_peak, phi_r=phi_r, phi_residual=phi_residual,
+                bracket=bracket, envelope_source=envelope_source,
+                tau_limit1=first["sn"] * 1e6 * math.tan(math.radians(phi_peak))
+                + spec["c_peak"],
                 dilation=dilation, sigma1=sigma1, penalty=penalty, c_ax=c_ax,
                 u_cmd=u_cmd, k_eff=k_eff, dc_cap=dc_cap, d_c=d_c,
                 tau1=first["tau"] * 1e6, sn1=first["sn"] * 1e6,
@@ -293,7 +438,7 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
     xs, ys, ups, downs = schedule(spec["p_max"], spec["hold"])
     sep_mesh = math.dist(spec["src_in"], spec["src_out"])
     deck = DECK_NUMBER[name]
-    stem = f"{deck}_{spec['tag']}_bbfast_r1"
+    stem = f"{deck}_{spec['tag']}_bbfast_r{ROUND}"
 
     subs = [
         ("mesh_file", spec["mesh"], f"{spec['label']} factor-3 mesh, verified 5b9fcc5"),
@@ -351,15 +496,40 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
         if re.search(rf"^{key}\s*=", text, re.M):
             text = apply(text, key, "0.0", "NEUTRALISED: fitted to Ye2018, not transferable")
 
-    # Specimen-suffixed flow constants.
-    for old in re.findall(r"(?:paper|mesh)_flow_width_over_length_\w+", text):
-        which = "paper" if old.startswith("paper") else "mesh"
-        sep = spec["sep_paper"] if which == "paper" else sep_mesh
+    # Flow geometry. ROUND-3 BUG FIX (defect class (g), MEMORY.md section 6.8): the
+    # round-2 pattern required a SUFFIX (`_\w+`), which only the SW-S3 parent has. On
+    # the SW-T1 and SW-T2 parents the key is bare, so OG-SH and OG-T silently kept
+    # Ye2018's 0.813242611781 / 0.814323680496 -- and Q is a SCORED channel on OG-SH,
+    # where the inherited value inflated it by exactly 0.813242611781/0.60607 = 1.342x
+    # at every one of the nine stages. The suffix is now optional and both writes are
+    # asserted.
+    wl = {}
+    for which, sep in (("paper", spec["sep_paper"]), ("mesh", sep_mesh)):
+        found = re.findall(rf"^{which}_flow_width_over_length(_\w+)?\s*=", text, re.M)
+        if len(found) != 1:
+            raise SystemExit(f"{name}: {which}_flow_width_over_length matched "
+                             f"{len(found)} times, expected exactly 1")
+        old = f"{which}_flow_width_over_length{found[0] or ''}"
         new = f"{which}_flow_width_over_length_{spec['tag']}"
         text = text.replace(old, new)
-        text = apply(text, new, f"{2 * SAMPLE_RADIUS / sep:.6f}",
+        wl[which] = 2 * SAMPLE_RADIUS / sep
+        text = apply(text, new, f"{wl[which]:.6f}",
                      f"W/L, W = 49.98 mm, L = {sep*1e3:.4f} mm ({which} frame). "
                      f"Eq (7) as printed is 10.3x out -- see audit section 8")
+
+    # The paper frame and the mesh frame use DIFFERENT source separations, so these two
+    # can never be equal. Round 2's decks had them byte-identical -- that equality was
+    # the free second tell that neither had been substituted.
+    if abs(wl["paper"] - wl["mesh"]) < 1e-9:
+        raise SystemExit(f"{name}: paper_ and mesh_flow_width_over_length are equal "
+                         f"({wl['paper']:.9f}) -- neither was substituted")
+    # The two Ye2018 93-series values, and only those. OG-SC's 0.625063 / 0.619048 are
+    # its own DERIVED numbers -- it was the one deck round 2 got right.
+    for stale in ("0.813242611781", "0.814323680496"):
+        for ln in text.splitlines():
+            code = ln.split("#", 1)[0]
+            if stale in code and "flow_width_over_length" in code:
+                raise SystemExit(f"{name}: inherited W/L {stale} survives: {code.strip()}")
 
     # Source nodes: the verified interface coordinates, not the design ones.
     for tag, (x, z) in (("source_in", spec["src_in"]), ("source_out", spec["src_out"])):
@@ -457,12 +627,55 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
                   count=1, flags=re.M)
     text = re.sub(r"if\(t<2550\.0", f"if(t<{end:.1f}", text)
 
+    # -----------------------------------------------------------------------
+    # ROUND-3 TIME STEPPING (MEMORY.md section 6.10). Replaces a flat dtmax = 0.75.
+    # Both deck shapes are handled: OG-SH/OG-SC carry a single [TimeStepper], OG-T a
+    # composite [TimeSteppers] whose members are min-combined, so the block is located
+    # by `type = IterationAdaptiveDT` rather than by its container's name.
+    # -----------------------------------------------------------------------
+    ts_t, ts_dt = dt_schedule(xs)
+    n_steps = sum((xs[i + 1] - xs[i]) / (DT_RAMP if i % 2 == 0 else DT_HOLD)
+                  for i in range(len(xs) - 1))
+
+    extra = (
+        f"      # ROUND 3: per-segment dt limit. Ramps (100 s, the load actually moves)\n"
+        f"      # keep {DT_RAMP} s; holds ({spec['hold']:.0f} s, where round 2 converged at\n"
+        f"      # nonlinear iteration 0 and a_h/Q/slip moved <0.1/0.4/2 %) get {DT_HOLD} s.\n"
+        f"      # {end/0.75:.0f} forced steps -> {n_steps:.0f}. dtmin and the cutback are untouched,\n"
+        f"      # so a stick-slip event still resolves itself down to 1e-6 s.\n"
+        f"      time_t  = '{' '.join(f'{v:.1f}' for v in ts_t)}'\n"
+        f"      time_dt = '{' '.join(f'{v:.2f}' for v in ts_dt)}'\n"
+        f"      # Land exactly on every injection breakpoint, so a hold-end sample is\n"
+        f"      # never straddled by a step that started inside the ramp.\n"
+        f"      timestep_limiting_function = injection_pressure\n"
+        f"      force_step_every_function_point = true\n")
+
+    text, n = re.subn(r"(?m)^(\s*)type = IterationAdaptiveDT\n",
+                      lambda m: m.group(0) + re.sub(r"(?m)^      ", m.group(1), extra),
+                      text, count=1)
+    assert n == 1, f"{name}: no IterationAdaptiveDT block to re-step"
+
+    text, n = re.subn(r"(?m)^(\s*dtmax\s*=\s*)[^\n#]*",
+                      rf"\g<1>{DT_HOLD}   # ROUND 3: was 0.75; time_t/time_dt now govern",
+                      text, count=1)
+    assert n == 1, f"{name}: dtmax not found"
+
+    # An EIGHTH inherited Ye2018 constant, found while doing the above: OG-T carries a
+    # FunctionDT capping dt to 0.05 s over t in [1530, 1680]. That window is SW-T1's
+    # burst, not OG-T's -- 3000 forced full-cost steps in a place chosen for a different
+    # specimen. Round 2 showed the adaptive cutback reaching dt = 0.0166 s unaided, well
+    # below this cap, so the cap only ever costs time. Flattened, not deleted, so the
+    # composite stepper's structure and its Functions block still resolve.
+    text = re.sub(r"(\[event_dt_cap\][^\[]*?\n\s*x\s*=\s*)'[^']*'",
+                  rf"\g<1>'0 {end:.0f}'", text, count=1, flags=re.S)
+    text = re.sub(r"(\[event_dt_cap\][^\[]*?\n\s*y\s*=\s*)'[^']*'",
+                  rf"\g<1>'{DT_HOLD} {DT_HOLD}'", text, count=1, flags=re.S)
+
     # Exodus frame budget. OG-SH's round-1 run wrote 480 frames and a 6.5 GB file;
     # OG-SC's schedule is 2.5x longer, so a fixed interval of 10 would land ~16 GB
     # on a link that has to carry three of these. Hold every deck near 500 frames.
-    n_steps = end / 0.75
-    text = re.sub(r"^(\s*time_step_interval\s*=\s*)10\s*$",
-                  rf"\g<1>{max(10, round(n_steps / 500)):d}", text, count=1, flags=re.M)
+    text = re.sub(r"^(\s*time_step_interval\s*=\s*)\d+\s*$",
+                  rf"\g<1>{max(1, round(n_steps / 500)):d}", text, count=1, flags=re.M)
     for key, base in (("exodus_file_base", "results_exodus_hpc"),
                       ("csv_file_base", "results_csv_hpc"),
                       ("checkpoint_file_base", "results_checkpoint_hpc")):
@@ -470,13 +683,59 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
 
     # Header-only annotations.
     ROWS = rows
-    OVERRIDE_NOTE = ("\n#                    OVERRIDDEN: section 2.3 says the Figure 3b criterion "
-                     "\n#                    overestimates THIS specimen (the test ran at ~0.92 tau_p, "
-                     "\n#                    not 0.85), so phi_peak is 32.70, not the 36.05 that "
-                     "\n#                    mu = 0.7 / c = 1.2 MPa gives."
-                     if spec.get("phi_peak_override") else "")
     m = re.search(r"dilation_angle_peak_degrees\s*=\s*([0-9.]+)", parent)
     PARENT_DIL = f"{float(m.group(1)):.2f} deg" if m else "unknown"
+    if d["bracket"]:
+        lo, hi, fs = d["bracket"]
+        R3_ENV = (f"\n#                    ROUND 3: phi_r is BRACKETED FROM BOTH SIDES by Table 2's"
+                  f"\n#                    own dL_s column -- the joint must hold at the last locked"
+                  f"\n#                    stage and fail at stage {fs}, which gives"
+                  f"\n#                    {lo:.3f} < phi_r < {hi:.3f} deg. Round 2 ran {lo - 2.209:.3f}, BELOW the"
+                  f"\n#                    bracket, and burst 3 stages early at tau/tau_limit 1.0160.")
+    elif spec.get("pin_envelope_through_stage1"):
+        R3_ENV = (f"\n#                    ROUND 3: PINNED through Table 2 stage 1, not read off"
+                  f"\n#                    Figure 3. Section 4.1 has this joint creeping through every"
+                  f"\n#                    hold, so its stage-1 pair IS on the envelope:"
+                  f"\n#                    tau_limit({d['sn1']/1e6:.2f}) = {d['tau_limit1']/1e6:.2f} MPa vs Table 2's"
+                  f"\n#                    {rows[0]['tau']:.2f}. Round 2 ran 32.70 deg and stalled at"
+                  f"\n#                    tau/tau_limit = 0.9900 with JRC pinned all run.")
+    else:
+        R3_ENV = ("\n#                    ROUND 3: UNCHANGED. This specimen's envelope cannot be"
+                  "\n#                    judged yet -- see the WARNING block below.")
+
+    OGT_WARNING = "" if name != "OGT" else """#
+# ------------------------------------------------------------------------------
+# WARNING -- DO NOT SUBMIT THIS DECK UNTIL THE PRELOAD DEFECT IS FOUND.
+#
+# In round 2 this specimen never got loaded. During the PRELOAD ramp, before any
+# injection and with a pore pressure identical to the other two decks, the
+# fracture's own normal traction FELL while the reported paper-frame sigma'_n rose:
+#
+#     t = 3.75 s   bb_effective_normal_stress 30.34 MPa   paper frame 31.19   ratio 0.97
+#     t = 15.00 s                             27.53                   38.55         0.71
+#     t = 26.25 s                             24.76                   45.92         0.54
+#
+# OG-SH and OG-SC show NO such divergence over the same ramp -- OG-SH holds
+# 0.987-1.011 at every one of its nine hold stages -- so this is neither the
+# reporting chain nor a poroelastic effect. tau reached the envelope at t ~ 31 s,
+# the joint shed 0.53 mm, slip-weakened to residual, and all 6800 s that follow are
+# a joint lying on its residual at tau/tau_limit ~ 1.04. Its stage-1 tau came out at
+# 16.48 MPa against Table 2's 66.50.
+#
+# The round-3 fixes below (time stepping, W/L) are applied so this deck is ready,
+# but its ENVELOPE is deliberately unchanged: no constant can be judged underneath a
+# defect that costs 0.53 mm before injection starts. Run 110_04_og_t_preload_probe.i
+# LOCALLY first -- 200 s, Exodus every step.
+#
+# Two candidates, in order:
+#   1. the axial gate. axial_pres_final is a 0.71 % axial strain here against 0.28 %
+#      (OG-SH) and 0.20 % (OG-SC), because sigma_1 targets 193.43 MPa against 94.65
+#      and 63.39. The divergence tracks sigma_1 across the three decks.
+#   2. theta = 28 deg. Two meshes exist (_theta26_, _theta28_); this deck loads
+#      theta28 and sets bulk_sin_theta = sin 28, which is self-consistent, but this
+#      is the one specimen whose printed and geometric angles disagree.
+# ------------------------------------------------------------------------------
+"""
     STABILITY = ("D_c > cap -> STABLE, which is what the paper reports."
                  if not spec["bursts"] else
                  "D_c < cap -> UNSTABLE, which is what the paper reports.")
@@ -484,9 +743,22 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
     header = f"""# =============================================================================
 # {stem}
 #
-# KALANTAR ET AL. (2025), specimen {spec['label']} ({spec['kind']} fracture) -- ROUND 2.
+# KALANTAR ET AL. (2025), specimen {spec['label']} ({spec['kind']} fracture) -- ROUND {ROUND}.
 # Built by scripts/build_110_kalantar_decks.py from
 # Examples/YeGhasemmi2018/{spec['parent']}.
+{OGT_WARNING}#
+# WHAT CHANGED FROM ROUND 2 (see Examples/Kalantar2025/MEMORY.md sections 6.7-6.11)
+#   1. TIME STEPPING. dtmax 0.75 -> per-segment time_t/time_dt, {DT_RAMP} s on ramps and
+#      {DT_HOLD} s in holds, snapped onto every injection breakpoint. {end/0.75:.0f} forced steps
+#      -> {n_steps:.0f}. This, not the mesh, is what truncated OG-T at 36 % and OG-SC at 77 %.
+#   2. FLOW GEOMETRY. paper_/mesh_flow_width_over_length are now really substituted
+#      ({wl['paper']:.6f} / {wl['mesh']:.6f}); round 2's regex needed a suffix only the SW-S3
+#      parent had, so OG-SH and OG-T kept Ye2018's and OG-SH's SCORED Q ran 1.342x high.
+#   3. ENVELOPE, per specimen and NOT in the same direction -- see below.
+#   The mesh is deliberately UNCHANGED. Coarsening OG-SH to factor 4 puts both
+#   injection points on BULK nodes ~950 um off the fracture and lengthens the flow
+#   path 2.94 %; and a discretisation change in the same round as the physics fixes
+#   would make neither attributable.
 #
 # NOTHING IN THIS DECK IS CALIBRATED. Every constant below is derived from the
 # paper, from Table 2, or measured off the verified mesh. The parent supplies
@@ -501,10 +773,10 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
 #   E, nu            {YOUNGS_MODULUS/1e9:.0f} GPa, {POISSONS_RATIO}  (section 2.1)
 #   porosity, k      {POROSITY}, {MATRIX_PERMEABILITY:.1e} m^2  (section 2.1)
 #   JRC, JCS         {spec['jrc']:.2f}, {UCS/1e6:.0f} MPa (= UCS, section 2.1 / 3.2)
-#   peak envelope    tau = {spec['mu_peak']} sigma'_n + {spec['c_peak']/1e6:.1f} MPa (Figure 3)
+#   peak envelope    {d['envelope_source']}
 #                    -> phi_peak {phi_peak:.2f} deg at the stage-1 sigma'_n of
 #                    {d['sn1']/1e6:.2f} MPa, so phi_r = phi_peak - JRC log10(JCS/sigma'_n)
-#                    = {phi_r:.3f} deg.{OVERRIDE_NOTE}
+#                    = {phi_r:.3f} deg. tau_limit there = {d['tau_limit1']/1e6:.2f} MPa.{R3_ENV}
 #   residual         phi = {d['phi_residual']:.3f} deg, atan of Table 2's LAST stage
 #                    (tau {ROWS[-1]['tau']:.2f} / sigma'_n {ROWS[-1]['sn']:.2f} MPa). Round 1 carried the
 #                    parent's 29.756 deg here, which on OG-SH was ABOVE phi_r and
@@ -562,12 +834,32 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
 #   closure term contributes ~0.03 um, so it is nearly inert here, but none of it
 #   is derived. Refit against the a_h(sigma'_n) loop once the loading gate passes.
 #
-# PREDICTION, WRITTEN BEFORE THE RUN
-#   {spec['label']} slips {'through every hold (42 um total, largest step 11 um)' if name=='OGSH' else 'in one burst at the top of the staircase' if name=='OGSC' else 'progressively, 275 um total'}.
-#   The D_c/k_eff criterion above now puts this deck on the {'STABLE' if not spec['bursts'] else 'UNSTABLE'} side, matching.
-#   A slip-weakening law has no dependence on dsigma'_n/dt, so the campaign's
-#   standing weakness predicts this deck will {'FAIL to reproduce the distributed creep and will instead move on the ramps' if name=='OGSH' else 'reproduce the timing to within one injection step'}.
-#   FALSIFIER: {'if OG-SH does reproduce hold-creep without a rate law, the sws4-slips-on-ramps-not-holds finding is specimen-specific, not general' if name=='OGSH' else 'if the event lands more than one injection step away, the derived envelope is wrong, not the timing'}.
+# PREDICTION FOR ROUND 3, WRITTEN BEFORE THE RUN
+#   ONE NUMBER, so it cannot be read two ways. Round 2's prediction offered a
+#   two-branch falsifier and the true cause was in neither branch, which sent the
+#   post-mortem at a gate that had just passed.
+#
+{
+'''#   OG-SH: tau_limit at stage 1 IS the measured 26.14 MPa, by construction, so the
+#   test is downstream of it -- tau/tau_limit must EXCEED 1.0 and bb_jrc_mobilized_pp
+#   must come off its 15.600 cap. Round 2 reached 0.9900 and never moved.
+#   IF IT PASSES AND tau STILL DOES NOT EVOLVE, the cause is
+#   roughness_characteristic_slip, not the envelope -- and that is a free knob with no
+#   measurement behind it, so it is the LAST thing to touch, not the first.''' if name == 'OGSH' else
+'''#   OG-SC: tau_limit(sigma'_n = 31.55 MPa) > 13.08 MPa -- i.e. it holds through
+#   stage 6 and bursts at stage 7, where Table 2 bursts. Round 2 burst at stage 4.
+#   That is the whole claim. If it bursts early OR never bursts, the bracket is wrong.
+#   Secondary, NOT a falsifier: the measured drop is 3.4 MPa and round 2 shed 9.1.''' if name == 'OGSC' else
+'''#   OG-T: NO PREDICTION IS LEGITIMATE. Its constitutive sigma'_n falls while the
+#   reported one rises, before injection, and until that is closed any prediction
+#   about its envelope would be preregistering a proxy for a confound. Run the
+#   preload probe first.'''}
+#
+#   The time-stepping change (item 1 above) is a NUMERICS change and must be neutral.
+#   Check it on its own terms, not on the score: the stage-1 tau and sigma'_n should
+#   reproduce round 2's to within a few tenths of a percent. If they move more than
+#   that, dt is not yet converged and DT_RAMP must come back down before any envelope
+#   conclusion is drawn from this round.
 # =============================================================================
 """
     out = KAL / name / f"{stem}.i"
@@ -582,7 +874,96 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
         code = ln.split("#", 1)[0]
         if code.strip() and re.search(r"sw_?[st]\d|ye2018|SWS\d|SWT\d", code, re.I):
             leftovers.append(ln)
-    return out, leftovers, dict(d, end=end, ups=ups, downs=downs, sep_mesh=sep_mesh)
+    return out, leftovers, dict(d, end=end, ups=ups, downs=downs, sep_mesh=sep_mesh,
+                                n_steps=n_steps, wl_paper=wl["paper"], wl_mesh=wl["mesh"])
+
+
+PROBE_END = 60.0            # s -- round 2's OG-T shed 0.53 mm at t ~ 31 s
+PROBE_DT = 0.5              # s -- finer than round 2's 0.75, to resolve the crossing
+
+
+def write_preload_probe(deck: Path, spec: dict) -> Path:
+    """A short LOCAL diagnostic cut from the OG-T deck. Round 3 does not answer why
+    OG-T's constitutive sigma'_n falls while its reported one rises; this run does,
+    and it costs ~120 steps instead of 9000.
+
+    Derived from the full deck rather than hand-written, so the two cannot drift.
+    """
+    text = deck.read_text()
+    stem = deck.stem.replace(f"_{spec['tag']}_bbfast_r{ROUND}", "_og_t_preload_probe")
+
+    text = re.sub(r"^(\s*end_time\s*=\s*)[^\n#]*",
+                  rf"\g<1>{PROBE_END:.0f}   # PROBE: the preload ramp only", text,
+                  count=1, flags=re.M)
+    # Flat, fine dt -- the segment schedule is irrelevant inside the first ramp.
+    text = re.sub(r"^(\s*)time_t  = '[^']*'",
+                  rf"\g<1>time_t  = '0.0 {PROBE_END:.1f}'", text, count=1, flags=re.M)
+    text = re.sub(r"^(\s*)time_dt = '[^']*'",
+                  rf"\g<1>time_dt = '{PROBE_DT} {PROBE_DT}'", text, count=1, flags=re.M)
+    text = re.sub(r"^(\s*dtmax\s*=\s*).*$",
+                  rf"\g<1>{PROBE_DT}   # PROBE: flat and fine through the preload",
+                  text, count=1, flags=re.M)
+    text = re.sub(r"(\[event_dt_cap\][^\[]*?\n\s*x\s*=\s*)'[^']*'",
+                  rf"\g<1>'0 {PROBE_END:.0f}'", text, count=1, flags=re.S)
+    text = re.sub(r"(\[event_dt_cap\][^\[]*?\n\s*y\s*=\s*)'[^']*'",
+                  rf"\g<1>'{PROBE_DT} {PROBE_DT}'", text, count=1, flags=re.S)
+    # Every step to Exodus -- the point of the run is WHERE on the fracture the normal
+    # traction goes, which no postprocessor can show.
+    text = re.sub(r"^(\s*time_step_interval\s*=\s*)\d+\s*$", r"\g<1>1", text,
+                  count=1, flags=re.M)
+    for key, base in (("exodus_file_base", "results_exodus_probe"),
+                      ("csv_file_base", "results_csv_probe"),
+                      ("checkpoint_file_base", "results_checkpoint_probe")):
+        text = apply(text, key, f"{base}/{stem}", "probe, local")
+
+    header = f"""# =============================================================================
+# {stem}
+#
+# LOCAL DIAGNOSTIC, NOT AN HPC JOB. Cut from {deck.name} by
+# scripts/build_110_kalantar_decks.py. {PROBE_END:.0f} s at dt {PROBE_DT}, Exodus every step
+# -- about {PROBE_END/PROBE_DT:.0f} steps. Run it on <= 24 ranks:
+#
+#   cd Examples/Kalantar2025/OGT
+#   mpiexec -n 24 ../../../orca-opt -i {stem}.i
+#
+# THE QUESTION. In round 2 OG-T's two normal-stress channels moved in OPPOSITE
+# directions during the preload, before injection, at a pore pressure identical to
+# the other two decks:
+#
+#     t = 3.75 s   bb_effective_normal_stress 30.34 MPa   paper frame 31.19   ratio 0.97
+#     t = 15.00 s                             27.53                   38.55         0.71
+#     t = 26.25 s                             24.76                   45.92         0.54
+#
+# tau then crossed the envelope at t ~ 31 s, the joint shed 0.53 mm, and the
+# remaining 6800 s were a joint on its residual. OG-SH and OG-SC show no such
+# divergence -- OG-SH holds 0.987-1.011 at every one of its nine hold stages.
+#
+# WHAT TO READ, in order:
+#   1. bb_effective_normal_stress_pp vs effective_normal_paper_frame_mpa_pp in the
+#      CSV. If they diverge before czm_shear_slip_mm_pp moves, the cause is upstream
+#      of the joint law and the envelope constants are not at fault.
+#   2. normal_traction over the fracture in the Exodus. Uniform decrease is a
+#      loading/BC problem; a localised drop is the joint opening somewhere.
+#   3. stress_zz through the core. axial_pres_final commands 0.71 % strain here
+#      against 0.28 % (OG-SH) and 0.20 % (OG-SC) -- the divergence tracks sigma_1
+#      across the three decks, which is the first candidate.
+#   4. If 1-3 exonerate the gate, the remaining candidate is theta = 28 deg. The
+#      _theta26_ mesh is already built and is a one-line swap.
+#
+# DO NOT tune any joint constant off this run. It exists to identify a defect, not
+# to fit one.
+# =============================================================================
+"""
+    # Drop the parent deck's own KALANTAR banner (everything up to and including its
+    # closing rule) so the probe leads with the question it is asking.
+    rule = "# " + "=" * 77
+    lines = text.splitlines(keepends=True)
+    ends = [i for i, ln in enumerate(lines) if ln.rstrip() == rule]
+    body = "".join(lines[ends[1] + 1:]) if len(ends) >= 2 else text
+
+    out = deck.parent / f"{stem}.i"
+    out.write_text(header + body)
+    return out
 
 
 def check_points_in_mesh(deck: Path) -> list[str]:
@@ -636,6 +1017,18 @@ def main() -> int:
         assert d["phi_residual"] < d["phi_peak"], (
             f"{name}: slip-weakening residual {d['phi_residual']:.2f} >= phi_peak "
             f"{d['phi_peak']:.2f} -- the joint would strengthen with slip")
+        # ROUND 3. Where Table 2 brackets phi_r from both sides, the deck must sit
+        # inside the bracket. Round 2 sat 2.2 deg below OG-SC's and burst 3 stages early.
+        if d["bracket"]:
+            lo, hi, fs = d["bracket"]
+            assert lo < d["phi_r"] < hi, (
+                f"{name}: phi_r {d['phi_r']:.3f} outside the Table 2 dL_s bracket "
+                f"[{lo:.3f}, {hi:.3f}] -- it would burst at the wrong stage")
+        # And where the envelope is pinned through stage 1, it must reproduce it.
+        if spec.get("pin_envelope_through_stage1"):
+            err = abs(d["tau_limit1"] - rows[0]["tau"] * 1e6) / (rows[0]["tau"] * 1e6)
+            assert err < 1e-6, (f"{name}: pinned tau_limit {d['tau_limit1']/1e6:.4f} "
+                                f"!= Table 2 stage 1 {rows[0]['tau']:.4f} MPa")
         print(f"{spec['label']:<9}{d['phi_peak']:>8.2f}d{d['phi_r']:>7.3f}d"
               f"{d['phi_residual']:>8.3f}d{d['dilation']:>6.2f}d{d['sigma1']/1e6:>8.2f}M"
               f"{d['d_c']*1e6:>7.1f}/{d['dc_cap']*1e6:<6.1f}{d['ah0']*1e6:>7.2f}u"
@@ -646,10 +1039,28 @@ def main() -> int:
         for msg in check_points_in_mesh(out):
             fail += 1
             print(f"    !! {msg}")
+        if d["bracket"]:
+            lo, hi, fs = d["bracket"]
+            print(f"    phi_r bracket from Table 2's dL_s jump at stage {fs}: "
+                  f"[{lo:.3f}, {hi:.3f}] deg, deck {d['phi_r']:.3f}")
+        print(f"    envelope: {d['envelope_source']}")
+        print(f"    steps {d['end']/0.75:.0f} -> {d['n_steps']:.0f} "
+              f"({d['end']/0.75/d['n_steps']:.2f}x fewer), "
+              f"W/L {d['wl_paper']:.6f} paper / {d['wl_mesh']:.6f} mesh")
         print(f"    -> {out.relative_to(ROOT)}")
+        if name == "OGT":
+            probe = write_preload_probe(out, spec)
+            for msg in check_points_in_mesh(probe):
+                fail += 1
+                print(f"    !! {msg}")
+            print(f"    -> {probe.relative_to(ROOT)}  "
+                  f"(LOCAL probe, {PROBE_END:.0f} s, ~{PROBE_END/PROBE_DT:.0f} steps)")
     print("\nSchedules match Table 2's stage counts on all three specimens.")
     print("Every PointValue is inside its own mesh." if not fail else
           f"\n{fail} PROBLEM(S) -- do not submit.")
+    print("\nROUND 3. OG-SH and OG-SC are ready to submit. OG-T is NOT -- run\n"
+          "Examples/Kalantar2025/OGT/110_04_og_t_preload_probe.i locally first;\n"
+          "its envelope is deliberately unchanged until the preload defect is closed.")
     return 1 if fail else 0
 
 

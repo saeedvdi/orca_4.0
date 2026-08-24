@@ -25,12 +25,26 @@ ACCOUNT = "def-biaoli66"
 
 NTASKS = 64
 MEM_GB = 64
-WALLTIME = "2-00:00:00"
+
+# ROUND 3. Wall time is now per job, because round 3's per-segment dt schedule cuts the
+# step count 4.2-5.0x and round 2's flat 2 d / 3 d requests were what truncated OG-T at
+# 36 % and OG-SC at 77 %. Budget from OG-SH's measured round-1 cost -- 24.3 s per solving
+# (ramp) step, 1.65 s per hold step at 64 ranks -- and then round up hard, because the
+# ramp cost is the one number carried across specimens:
+#
+#   OG-SH  600 ramp + 540 hold  ->  ~4.3 h   ask 24 h  (5.6x margin)
+#   OG-SC  867 ramp + 1560 hold ->  ~6.6 h   ask 24 h  (3.6x margin)
+#   OG-T  1133 ramp + 1020 hold ->  ~8.1 h   ask 3 d   (8.9x margin -- it is the one that
+#                                                       spends half its steps in a burst)
+#
+# OG-T is listed so the script exists, but see the WARNING block at the top of its deck:
+# do not submit it until 110_04_og_t_preload_probe.i has been run locally.
+WALLTIME = "1-00:00:00"
 
 JOBS = [
-    ("Examples/Kalantar2025/OGSH", "110_01_og_sh_bbfast_r1"),
-    ("Examples/Kalantar2025/OGT",  "110_03_og_t_bbfast_r1"),
-    ("Examples/Kalantar2025/OGSC", "110_05_og_sc_bbfast_r1"),
+    ("Examples/Kalantar2025/OGSH", "110_02_og_sh_bbfast_r3", "1-00:00:00"),
+    ("Examples/Kalantar2025/OGSC", "110_06_og_sc_bbfast_r3", "1-00:00:00"),
+    ("Examples/Kalantar2025/OGT",  "110_04_og_t_bbfast_r3",  "3-00:00:00"),
 ]
 
 TEMPLATE = """#!/bin/bash
@@ -60,15 +74,20 @@ srun --mpi=pmi2 -n {ntasks} {remote}/orca-opt -i {stem}.i \\
 
 
 def main() -> int:
-    for subdir, stem in JOBS:
+    for subdir, stem, walltime in JOBS:
+        deck = ROOT / subdir / f"{stem}.i"
+        if not deck.exists():
+            raise SystemExit(f"no deck for {stem} -- run build_110_kalantar_decks.py first")
         text = TEMPLATE.format(stem=stem, remote=REMOTE, subdir=subdir,
-                               account=ACCOUNT, walltime=WALLTIME,
+                               account=ACCOUNT, walltime=walltime,
                                ntasks=NTASKS, mem=MEM_GB)
-        verify(text, NTASKS, MEM_GB, WALLTIME)
+        verify(text, NTASKS, MEM_GB, walltime)
         out = ROOT / subdir / f"{stem}_hpc.sh"
         out.write_text(text)
         out.chmod(0o755)
-        print(f"  {NTASKS:>4} ranks {MEM_GB:>4}G {WALLTIME}  ->  {out.relative_to(ROOT)}")
+        note = "  <-- DO NOT SUBMIT YET, see the deck header" if "og_t" in stem else ""
+        print(f"  {NTASKS:>4} ranks {MEM_GB:>4}G {walltime}  ->  "
+              f"{out.relative_to(ROOT)}{note}")
     print("\nntasks and srun -n agree in every script (the 97/98 truncation check).")
     return 0
 
