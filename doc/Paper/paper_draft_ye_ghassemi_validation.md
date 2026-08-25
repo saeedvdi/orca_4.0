@@ -2297,6 +2297,14 @@ behaviour of a joint under repeated loading, and a model calibrated against a si
 can be asked directly whether it contains such a mechanism. The answer is informative either way,
 and the negative answer is the more useful one, because it localises the missing physics.
 
+It also turns out not to be the whole answer. Repetition can fail to produce gain for two quite
+different reasons — because the joint cannot weaken any further, or because nothing brings it back
+to the stress at which it would — and these are separable by experiment rather than by argument.
+The first is a property of the friction law; the second is a property of the loading system, and it
+is the one that changes between a laboratory frame and a fault at depth. §6.6.6 sets out the two
+routes and §6.6.9 separates them experimentally, with the result that this section reports a criterion for when
+cyclic stimulation can work rather than only an inventory of what the law omits.
+
 #### 6.6.1 The numerical experiment
 
 Each validated deck is rerun with one change and no others: the injection function becomes three
@@ -2479,13 +2487,27 @@ The runs can only land in one of three places, and the design is such that each 
 Outcome 1 and outcome 2 are distinguished by whether cumulative plastic slip increases at all after
 cycle 1, which is a directly reported quantity; no inference is required.
 
-#### 6.6.6 What the law cannot produce, whichever outcome occurs
+#### 6.6.6 The two routes to renewed slip, and what closes each
 
-None of the three outcomes is accumulation. That is not an accident of the calibration but a
-structural property of the formulation: **every history variable is monotone in slip and every one
-of them is either spent or spending, so nothing in the model makes a repeat cycle more damaging than
-the first.** The mechanisms the soft-stimulation literature invokes for multi-cycle gain are all
-absent by construction —
+None of the three outcomes is accumulation, and it is worth being precise about why, because the
+reason is not one thing but two, and only one of them is a property of the constitutive law.
+
+New slip requires the driving shear stress to reach the strength limit, and there are exactly two
+routes to that. Either **the limit falls to the stress** — the joint re-weakens — or **the stress
+rises to the limit** — the joint re-loads. A null requires *both* routes to be closed, and in these
+runs they are closed by different things: the first by the constitutive law, the second by the
+loading system. Only the first is a property of the model.
+
+**Route A is closed by construction, and unspent strength does not open it.** Every history
+variable in the formulation — cumulative plastic slip, irreversible dilation, roughness state, the
+retained-opening minimum — advances only with plastic slip, and plastic slip advances only when the
+driving stress reaches the limit. The strength envelope therefore cannot fall *unless the joint has
+already slipped*: weakening can continue a slip episode but can never initiate one. This is a
+sharper statement than "the joint has run out of weakening to give", and §6.6.9 shows the
+distinction matters — the double-stiffness arm holds an entirely unspent budget and still ratchets
+exactly zero, because that budget is unreachable without the slip that would spend it. The
+mechanisms the soft-stimulation literature invokes for multi-cycle gain are precisely the ones that
+would open route A independently of slip, and they are all absent by construction —
 
 - *asperity fatigue*, which requires damage to accumulate with the number of load reversals rather
   than with the slip they produce, and therefore requires a cycle counter or a damage variable
@@ -2497,13 +2519,37 @@ absent by construction —
 - *thermal effects*, excluded here by design (§2.4), which in the field contribute a contraction
   that reopens the joint on each cool-down.
 
-If the runs saturate, the finding to report is therefore not "cyclic stimulation does not work". It
-is that a constitutive law calibrated to reproduce four monotonic injection tests to 2.4–6.1 %
-reproduces first-cycle enhancement and contains no mechanism for multi-cycle gain, so whatever
-produces that gain in field trials lies outside it — and the model would systematically
-under-predict the benefit of cycling for exactly that reason. Naming the missing mechanism, and
-bounding how much of the observed effect it has to supply, is more useful to the next model than
-reporting a gain factor from this one.
+One of these absences can be quantified rather than merely named. Time-dependent frictional healing
+was implemented for this campaign as a Dieterich–Ruina overstress
+$\sigma'_n[\,a\ln(1+V/V_0) - b\ln(1+V_\theta/V_0)\,]$ on top of the Barton–Bandis envelope, with
+the state variable ageing through elastic stick, and bracketed over $b = 0$–0.015.
+Measured directly from those runs, the state variable spans $\theta = 5.1$–1817 s over a test, so at
+the laboratory value $b = 0.015$ the healing term recovers **1.05 MPa over the entire experiment**,
+or 0.24 MPa across a single 1600 s hold, against a mean $\sigma'_n$ of 23.5 MPa. That is smaller
+than the rate term already present in the calibrated decks (0.31 MPa mean, 0.87 MPa peak) and far
+inside the loading-frame uncertainty of §6.6.9. **Healing is also of the wrong sign to drive
+ratcheting**: after cycle 1 the joint sits *below* yield, and healing raises the limit, pushing it
+further below. It cannot produce equal-peak gain at any value of $b$.
+
+**Route B is closed by the loading system, not by the law.** As §6.6.5 anticipates and §6.6.9
+confirms, the specimen is loaded through a commanded axial displacement acting through the series
+compliance of the frame (§3.5.5). Slip on an inclined joint therefore relieves the very shear stress
+that drives it, and the joint parks below yield, where returning to the same injection pressure
+cannot reach it. This is a boundary condition, not a constitutive property. Route A is closed in
+every configuration of this model; route B is closed only while the loading system is stiff enough,
+and it is route B that does **not** transfer to a fault at depth, where the surrounding rock mass is
+far more compliant relative to the fault than a servo-hydraulic frame is to a core. §6.6.9 separates
+the two experimentally by moving the frame stiffness and nothing else.
+
+The finding to report is therefore not "cyclic stimulation does not work", and not simply that a
+mechanism is missing. It is that **multi-cycle gain requires the fault to return to its yield
+surface, and whether it does is set by the stiffness of the loading system rather than by the
+friction law.** A constitutive law calibrated against four monotonic injection tests to 2.4–6.1 %
+reproduces first-cycle enhancement, contains no mechanism that makes repetition itself damaging, and
+predicts that cycling at a fixed peak buys nothing whenever the loading system is stiff enough to
+unload the fault as it slips. Whatever additional gain field trials record beyond that lies outside
+this law; naming the missing mechanism, and bounding how much of the observed effect it has to
+supply, is more useful to the next model than reporting a gain factor from this one.
 
 #### 6.6.7 Why the experiment is at specimen scale
 
@@ -2525,7 +2571,17 @@ Third, cost — a new mesh, a new in-situ stress state, new boundary conditions 
 — for a result that would still rest on the extrapolation the first reason objects to.
 
 The field-scale statement this study can support is made instead through the compliance argument of
-§6.9, which transfers a mechanism rather than a parameter set.
+§6.9, which transfers a mechanism rather than a parameter set — and §6.6.9 sharpens what is being
+transferred. The controlling quantity for multi-cycle gain is not a parameter of the friction law
+but the stiffness of the loading system relative to the fault, and that is a ratio, not an
+extrapolated constant. It can be stated at specimen scale, where it is measured against data, and
+carried to depth as a criterion: **cycling at a fixed peak adds nothing while the loading system is
+stiff enough to unload the fault as it slips, and begins to add slip as soon as it is not.** A
+laboratory specimen in a servo-hydraulic frame sits deep in the first regime; a fault at depth,
+loaded through a far more compliant rock mass, does not. On this reading the disagreement between
+laboratory cyclic tests and field soft-stimulation trials is not evidence that one of them is wrong,
+and the criterion is checkable in either: the diagnostic is the strength margin, which is a reported
+quantity here and an inferable one in the field.
 
 #### 6.6.8 Superseded 97-series result: outcome 1
 
@@ -2666,14 +2722,63 @@ to the same pressure — but only in the specimen that arrests below yield**, wh
 claim than the soft-stimulation literature usually makes and comes with a precondition that can be
 checked.
 
-**The frame bracket.** The loading-frame stiffness is *derived* from Table 2 (Appendix A.2), not
-measured, so the ×2 and ×0.5 arms are the honest uncertainty on it. Their effect on absolute
-magnitudes is severe: at the peak hold SW-T1 gives 0.405 mL/min and 4.8 µm of slip at double
-stiffness against 33.9 mL/min and 1159 µm at half, a swing of $-93.9$ % to $+408$ % in flow around
-the nominal case. **No absolute flow or slip magnitude from these runs should be quoted without
-that bracket beside it.** The qualitative conclusion is nevertheless robust: the equal-peak null
-survives at both ends, with cycle-2/cycle-1 ratios of 1.000000 at double stiffness and 1.00077 at
-half.
+**The frame bracket, and what it isolates.** The loading-frame stiffness is *derived* from Table 2
+(Appendix A.2), not measured, so the ×2 and ×0.5 arms are the honest uncertainty on it. Their effect
+on absolute magnitudes is severe: at the peak hold SW-T1 gives 0.405 mL/min and 4.8 µm of slip at
+double stiffness against 33.9 mL/min and 1159 µm at half, a swing of $-93.9$ % to $+408$ % in flow
+around the nominal case. **No absolute flow or slip magnitude from these runs should be quoted
+without that bracket beside it.**
+
+The equal-peak null survives at both ends as a ratio — cycle 2 against cycle 1 gives 1.000000 at
+double stiffness and 1.00077 at half. Read as an *increment*, however, the same arms are not flat at
+all, and they are what separates route A from route B of §6.6.6:
+
+**Table 11b.** Slip ratchet per cycle against loading-frame stiffness and yield proximity. $W$ is the
+weakening state, so $W = 1$ is an entirely unspent strength budget; the margin is
+$\tau_{\rm lim} - \tau$ at the cycle-2 peak hold, so zero means the joint sits on its yield surface.
+The ratchet is the slip change at that hold relative to cycle 1.
+
+| Specimen | frame | $W$ remaining | margin (MPa) | ratchet, cycle 1→2 |
+|---|---|---:|---:|---:|
+| SW-T1 | ×2.0 | **1.00000** | $+12.884$ | **0.0000 µm** |
+| SW-S3 | ×1.0 | 0.26840 | $+0.679$ | $-0.052$ µm (elastic) |
+| SW-T2 | ×1.0 | 0.00162 | $+0.00003$ | $+0.0005$ µm |
+| SW-T1 | ×1.0 | 0.00285 | $+0.00004$ | $+0.0058$ µm |
+| SW-S4 | ×1.0 | 0.27856 → 0.27623 | $-0.0016$ | $+0.528$ µm |
+| SW-T1 | ×0.5 | 0.00000 | $+0.00033$ | $+0.367$ µm |
+
+Two things follow, and the first disposes of the obvious reading of the null.
+
+The double-stiffness arm carries a **completely unspent weakening budget — $W = 1.000$ to five
+figures — and ratchets exactly zero.** The null is therefore not "the model has no weakening left to
+give". It is that the joint sits 12.9 MPa below its yield surface, the same injection pressure
+cannot bring it back, and the untouched strength budget is unreachable without the slip that would
+spend it. Route A is not the binding constraint on that specimen; route B is.
+
+The ratchet is non-zero **if and only if the joint sits on the yield surface**, and it grows sharply
+as the loading system softens: halving the frame stiffness multiplies the first increment by a factor
+of 63, from 0.0058 to 0.367 µm, on the same specimen with the same parameters and the same schedule
+(both are first increments, so the comparison is like for like). Normalised by total slip the factor
+is still 29. The largest ratchet in the set belongs to SW-S4, the one specimen meeting both
+conditions at once — sitting on yield with a quarter of its strength budget unspent, and the only
+one whose $W$ moves measurably across cycles at all.
+
+Two limits of this reading should be stated with it. First, every three-cycle case *shakes down*:
+the increment decays by 24× on SW-S4, 7.5× on SW-T1 and 18× on SW-T2 between the first and second
+repetitions, so what the model produces is a decaying transient rather than sustained ratcheting.
+Real rock under equal-amplitude cycling is not observed to decay to zero, and that difference — not
+the absence of gain as such — is the sharpest statement of what the law is missing. Second, the
+factor of 63 is larger than any mechanism identified here accounts for: $\Delta s \propto 1/k_{\rm
+eff}$ predicts only a factor of two, and it is not an approach to critical stiffness, since by the
+cycling stage $s/D_c$ is 3.6 and 7.7, $W$ is 0.003 and 0.000, and the local ratio of frame stiffness
+to weakening slope is 143 and $5.7\times10^{6}$ — far above critical in both arms. Two arms cannot
+resolve a scaling, and this is the first thing a further stiffness rung would settle.
+
+Separately worth recording from the same calculation: evaluated at the *steepest* point of the
+weakening curve, which is what governs the initial ramp rather than the later cycles, the nominal
+frame sits at only $1.22\times$ the critical stiffness for stable slip, and the ×0.5 arm at
+$0.61\times$. The calibrated configuration is close to the stability boundary on first loading, which
+belongs in §6.8 beside the flow bracket.
 
 **Status of the preregistered SW-S4 check.** §6.6.8 attributed part of SW-S4's 97-series behaviour
 to a confinement bleed still running during injection. The 101 decks retime it, and a threshold was
@@ -2794,6 +2899,14 @@ remains nil on the slow arms as well. **Arrest and self-propping are both proper
 state rather than of the depressurisation path**, over the range tested — which also means neither
 can be attributed to the fracture out-draining the matrix at one particular rate.
 
+The qualifier is not a formality. The bracket spans 150–1500 s, and the time-dependent mechanism
+that would close a propped joint at constant stress — pressure solution at the asperity contacts,
+which the isothermal formulation of §2.4 does not carry — operates over $10^5$–$10^7$ s in granite
+at room temperature. The claim is therefore rate-independence *over the observation window*, not
+asymptotically, and nothing here bounds how much of the retained aperture survives to reservoir
+timescales. That distinction matters little for a several-hour laboratory test and a great deal for
+a thermal-hydraulic-mechanical extension, where temperature drives the same mechanism much harder.
+
 #### 6.7.2 What sets the sign: the gouge-fill term, and how much of it is calibration
 
 SW-S4's reversal is the one entry in Table 12 that looks like a prediction of the constitutive law,
@@ -2911,6 +3024,22 @@ polished joints in general.
     supplies no evidence for the one term a field-scale application must enable, and Table 13 shows
     the correction is large — at a 10 m joint length it would remove three-quarters of SW-T1's JRC
     and compress the four-specimen roughness contrast from 7.8× to 2.3×.
+18. The cyclic and shut-in nulls (§6.6.9, §6.7) are conditioned on the displacement-controlled
+    loading frame and should not be read as unconditional properties of the constitutive law.
+    Table 11b shows the equal-peak ratchet moving from exactly zero to 0.367 µm per cycle across a
+    four-fold change in frame stiffness, on one specimen with no other change, and the frame
+    stiffness itself is derived rather than measured (Appendix A.2). A softer loading system than
+    any tested here — which is the field case — is not covered by the bracket.
+19. The two stiffness arms cannot resolve how the ratchet scales. The 63-fold increase between the
+    nominal and half-stiffness arms exceeds the $1/k_{\rm eff}$ scaling that the frame identity
+    alone predicts, and is not attributable to an approach to critical stiffness (§6.6.9). The
+    mechanism is unidentified, and a third rung would be required to fit a scaling rather than
+    report two points.
+20. Evaluated at the steepest point of the slip-weakening curve, the nominal frame stiffness is
+    only 1.22 times the critical stiffness for stable slip on SW-T1, and the half-stiffness arm is
+    below it at 0.61. The calibrated configuration therefore sits close to the stability boundary
+    on first loading, where the quasi-static formulation is least reliable (item 5), even though
+    the joint is far above the boundary by the time cycling begins.
 
 ### 6.9 Implications
 
@@ -2924,7 +3053,12 @@ by the compliance of the host rock mass surrounding the fault: the same fault em
 compliant, fractured country rock unloads differently, under the same injected pressure, than it
 would in stiff, intact rock — for exactly the mechanism §3.5.5's stability criterion makes
 explicit, since $k_{\rm sys}$ is a property of the surroundings, not of the fault alone, and it
-determines whether a given strength drop can be shed quasi-statically or must go dynamic. A
+determines whether a given strength drop can be shed quasi-statically or must go dynamic. That
+criterion is not comfortably satisfied even here: evaluated at the steepest point of SW-T1's
+weakening curve, the calibrated series stiffness exceeds the critical value by only a factor of
+1.22, and the half-stiffness arm of §6.6.9 falls below it. The margin separating stable, aseismic
+accommodation from dynamic rupture in these experiments is a factor smaller than the uncertainty on
+the stiffness that sets it — which is the quantitative form of the warning that follows. A
 reservoir model that imposes remote stress as fixed — implicitly an infinitely stiff surrounding
 medium — is the field equivalent of this experiment's rigid-frame limit, and by §3.5.5's own
 criterion that is the limit in which the *least* slip is stably absorbed and dynamic rupture is
@@ -3107,11 +3241,27 @@ will eventually be asked to run at reservoir scale.
     number of cycles but whether a cycle exceeds the previous maximum. The end state is
     path-independent if and only if the joint arrests on its yield surface — the one specimen that
     arrests below yield slips 19 % less when taken up a staircase than in a single ramp.
-12. Slip arrests within the shut-in transient on all four specimens and at both bleed-off rates
+12. That null has two causes, only one of which is constitutive, and they separate experimentally.
+    New slip needs the strength limit to fall to the driving stress or the driving stress to rise to
+    the limit, and both routes are closed here for different reasons. The first is closed by the
+    law, in which the envelope cannot fall unless the joint has already slipped, so weakening can
+    continue a slip episode but never initiate one. The second is closed by the loading frame. The
+    double-stiffness arm ratchets exactly zero while holding an entirely unspent strength budget
+    ($W = 1.000$) — unreachable without the slip that would spend it — so the binding constraint
+    there is not the friction law but the frame, which unloads the fault as it slips and parks it
+    12.9 MPa below yield. Softening the frame
+    four-fold moves the per-cycle ratchet from zero to 0.367 µm on the same specimen with no other
+    change. **Multi-cycle gain requires the fault to return to its yield surface, and whether it
+    does is set by the stiffness of the loading system rather than by the friction law** — a
+    criterion that transfers to depth, where the surrounding rock mass is far more compliant than a
+    servo-hydraulic frame, whereas the null itself does not. Time-dependent frictional healing,
+    implemented and bracketed for this purpose, recovers at most 1.05 MPa over an entire test at
+    laboratory $b$ and is of the wrong sign to drive ratcheting.
+13. Slip arrests within the shut-in transient on all four specimens and at both bleed-off rates
     tested; the peak slip rate always precedes shut-in. At specimen scale, diffusive relaxation
     supplies no delayed reactivation, so observed field delays must rest on mechanisms outside this
     formulation.
-13. Three of the four fractures remain 45–61 % more permeable after shut-in than at the same
+14. Three of the four fractures remain 45–61 % more permeable after shut-in than at the same
     effective normal stress during injection, and the fourth ends 14 % *less* permeable. Neither
     JRC, dilation angle, slip magnitude nor the unloading retention fraction orders that outcome;
     single-parameter controls identify the ratio of slip-driven gouge fill to initial hydraulic
