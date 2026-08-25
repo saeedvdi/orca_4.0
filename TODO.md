@@ -457,6 +457,52 @@ and — written as an expected **failure** — OG-SC still bursts at stage 6, no
 against a 64 GB HPC job). An environment limit, not a deck defect; `--check-input` passes on all
 four and the diffs are verified.
 
+### 1.8d Round-4 results — 2026-08-25. Split verdict, and the frame is the defect
+
+**Full write-up: [`doc/KALANTAR2025_ROUND4_BACKANALYSIS.md`](doc/KALANTAR2025_ROUND4_BACKANALYSIS.md).**
+All three complete for the first time, OG-T included.
+
+| | r1 | r2 | r3 | **r4** |
+|---|---|---|---|---|
+| OG-SH | 62 | 67 | **17** | **31** worse |
+| OG-SC | — | — | 77 | **29** better |
+| OG-T | — | — | — | 58 *(control)* |
+
+**Nulls: 2 failed, 1 passed, 1 passed as the expected failure.** They did their job — chasing
+null 1's failure past the branch its own wording anticipated is what produced everything below.
+
+* **PASSED — OG-SC's aperture is finished.** `a_h` at stage 6 = **1.53 µm** against
+  1.60 ± 0.10; channel nRMSE **39 → 10**, bias +0.002 µm. Two constants derived from Table 2,
+  never retouched. The saturated-closure diagnosis is closed.
+* **FAILED — OG-SH's `D_c` overshot badly.** τ at stage 9 went +9.7 % → **−19.6 %** and slip
+  +15 % → **+155 %**. Cause: **the fit treated Table 2's `dL_s` as an independent variable when
+  the model has to solve for it.** Shorter `D_c` → weaker joint → more slip → weaker still. The
+  fit priced the first step of that loop and none of the rest. *Never fit a constant against a
+  channel the model predicts.*
+* **THE REAL DEFECT — the frame stiffness is counted twice.** Rounds 3 and 4 differ in one
+  constant, so they bracket. τ wants `D_c` = 110 µm, slip wants 166 µm — **split**, so a second
+  defect. It is visible directly: across the two runs τ sheds **82.5 MPa/mm of slip** where
+  `k_eff = K_sys cos²θ sinθ/A` says 150.5. The joint unloads against the machine **in series
+  with the core** — 88.8 MPa/mm, an **8 % match**. Table 2's own `ΔL_s`/`Δτ` identity verifies
+  with `K_sys` alone, so the paper's `K_sys` is the *system*; the deck adds the core a second
+  time and the joint sees **0.59×** the experiment's stiffness. **Every stability cap this
+  campaign has quoted is 1.7× too small.**
+* **OG-T, complete at last, is unchanged.** Sheds **518 µm before injection**, ends at 639
+  against the paper's 275. Still blocked on the preload probe (#120).
+
+**Round 5 — fix the frame first, change one thing:**
+
+1. `penalty = 1/(A/K_sys − C_ax)` (1.70× OG-SH, 1.58× OG-SC/OG-T).
+2. Rebuild the stability cap on the series `k_eff`; keep it **reported**.
+3. **Revert OG-SH's `D_c` to 150 µm** — its bracket is not interpretable against a soft frame.
+4. Keep OG-SC's residual, `V_m`, `K_ni`.
+5. Check OG-SC's post-burst τ/σ'ₙ pairing: its mobilised friction is 0.336, *below* the
+   21.175° residual it was given, which a sliding joint cannot do.
+6. OG-T stays held.
+
+Nulls for round 5 in §6 of the write-up — the first is *OG-SH's slip at stage 9 falls from
+55.2 µm to 48 ± 5 µm at unchanged `D_c`*.
+
 ### 1.9 Kalantar items not on the critical path
 
 * **111-series Mohr–Coulomb siblings** — after round 3 lands.
