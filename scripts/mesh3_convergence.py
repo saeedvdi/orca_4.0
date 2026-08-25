@@ -28,11 +28,19 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..",
                     "Examples", "YeGhasemmi2018")
 
 # The four scored channels, in the paper's reporting frame.
+#
+# d_n reads the GLOBAL KINEMATIC JUMP, not each material's own
+# ``normal_opening_total`` decomposition. The two constitutive laws decompose
+# that total differently -- the Mohr-Coulomb material's omits the elastic
+# closure term -- so ``czm_normal_dilation_paper_mm_pp`` is not the same
+# observable across a BBFast/MC pair, and on the MC side it is monotone by
+# construction. See "The d_n channel" in table2_gate.py. The matched-stage
+# scores below go through table2_gate and follow its default independently.
 CHANNELS = {
     "Q (ml/min)":    "flow_rate_validation_ml_min_pp",
     "sigma'_n (MPa)": "effective_normal_paper_frame_mpa_pp",
     "tau (MPa)":     "shear_stress_paper_frame_mpa_pp",
-    "d_n (mm)":      "czm_normal_dilation_paper_mm_pp",
+    "d_n (mm)":      "frac_normal_dilation_paper_mm",
 }
 
 # (specimen, mesh-5 final, mesh-3 twin).  Both members of a pair differ only in

@@ -182,6 +182,28 @@ sibling specimens that agree with the measurement. Because the frame is already 
 reported as a **known, quantified, non-tunable residual**, and the paper should quote it that way
 rather than as unexplained scatter.
 
+> **REVISED 2026-08-25 — the pre-registered trigger fired, and "non-tunable" is now too strong.**
+> `doc/FINAL_DECK_SELECTION.md` §6 registered the test: *"Watch `tau` on SW-S3 in particular. If it
+> improves markedly at mesh 3, part of what `SWS3_FINAL.md` §5(b) attributes to the loading frame
+> is discretisation compliance, and that section needs rewriting."* The mesh-3 twin `93_06` has
+> since completed all eleven stages, and it does improve markedly:
+>
+> | | Q | σ'ₙ | **τ** | d_n | d_s | mean |
+> |---|---:|---:|---:|---:|---:|---:|
+> | `93_05` mesh 5 | 3.00 % | 3.35 % | **8.01 %** | 7.42 % | 1.11 % | 4.58 % |
+> | `93_06` mesh 3 | 4.50 % | 2.33 % | **5.69 %** | 6.18 % | 5.13 % | 4.76 % |
+>
+> **About 2.3 points of the 8.01 % — 29 % of it — is discretisation compliance, not the specimen's
+> frame.** The residual is still one-signed and still real at 5.69 %, so the stiffness-deficit
+> diagnosis above is not withdrawn; what is withdrawn is "non-tunable". The correct statement is
+> that the τ residual has two components, one numerical and bounded by the mesh pair and one
+> physical, and only the second is what §4's 19 % secant-compliance measurement describes.
+>
+> Note the mean does **not** improve (4.58 → 4.76): refinement buys σ'ₙ, τ and d_n and loses Q and
+> d_s. Channels moving in opposite directions under the same refinement is why no convergence order
+> is claimed for this specimen (manuscript §5.1), and it is also why chasing τ with mesh alone
+> would be trading one error for another.
+
 **(c) The largest single error is stage 6, the burst itself** (τ 5.79 vs 3.55 MPa). The measured
 specimen drops its shear stress further and faster than the slip-weakening law can. This is the
 same class of limitation documented on SW-S4 — a slip-weakening law has no rate or normal-stress-rate

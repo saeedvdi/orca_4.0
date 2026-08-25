@@ -241,7 +241,12 @@ SPECIMENS = {
         # term in the aperture law that subtracts.
         slip_damage=True,
         slip_damage_char_slip=15.0e-6,
-        # ROUND 5. D_c goes BACK to round 3's 150 um and is HELD.
+        # ROUND 6. With the corrected frame, round 5's 150 um arm was now too stable:
+        # stage-5 slip was 23.18 um against 44.6 measured and tau was +14.9 %.  The
+        # frame mechanism itself passed (the within-run unloading slope changed from
+        # 84 to 165 MPa/mm, against 172 expected), so D_c can finally be bracketed on
+        # the corrected frame.  100 um is the first coupled-response arm; it is not a
+        # refit to measured slip treated as an independent variable.
         #
         # Round 4 fitted it to Table 2's mu(s) path and got 59.3 um. The run's slip went
         # from +15 % to +155 % and tau from +9.7 % to -19.6 %. The fit treated dL_s as an
@@ -254,18 +259,22 @@ SPECIMENS = {
         # A split bracket means a second defect, and it is the frame (see the penalty
         # note in derive()). D_c cannot be re-bracketed against a frame that is 1.7x too
         # soft, so round 5 changes the frame and nothing else on this specimen.
-        d_c_hold=1.500e-04,
-        d_c_hold_why=("reverted to round 3's value: its round-4 bracket splits (tau "
-                      "wants 110 um, slip 166) and a split means a second defect -- the "
-                      "frame. Re-bracket only after the frame fix is verified"),
+        d_c_hold=1.000e-04,
+        d_c_hold_why=("round-6 corrected-frame bracket arm: round 5 at 150 um "
+                      "under-slipped (23.18 vs 44.6 um at stage 5) and over-carried "
+                      "tau (+14.9%); 100 um tests the coupled response without "
+                      "conditioning the law on model-predicted slip"),
     ),
     "OGT": dict(
-        tag="og_t", label="OG-T", kind="tensile", theta=28.0, theta_printed=25.999,
+        tag="og_t", label="OG-T", kind="tensile, 26-degree diagnostic arm",
+        theta=26.0, theta_printed=25.999,
         jrc=12.10, mu_peak=1.1, c_peak=0.0, p_max=30.0e6, hold=300.0,
-        core_height=0.100,
-        mesh="mesh/kalantar2025_og_t_theta28_size3.e",
-        src_in=(-0.020362222, 0.011704230), src_out=(0.020362222, 0.088295770),
-        sep_paper=0.0851596, parent="SWT1/93_01_swt1_final_c26p9_resc9p19_ppfix.i",
+        core_height=0.10448,
+        mesh="mesh/kalantar2025_og_t_theta26_size3.e",
+        src_in=(-0.020362222, 0.010491258), src_out=(0.020362222, 0.093988742),
+        sep_paper=0.039980 / math.sin(math.radians(26.0)),
+        parent="SWT1/93_01_swt1_final_c26p9_resc9p19_ppfix.i",
+        diagnostic_arm=True,
         # a_h runs 0.10 -> 1.11 -> 0.00 um. Both ends are AT the 0.01 um print
         # resolution, so the "loss" is not measurable and no gouge term is derivable.
         # Left off rather than fitted.
@@ -321,14 +330,20 @@ SPECIMENS = {
         d_c_hold_why=("Table 2 gives this joint ONE sliding stage, so the mu(s) path "
                       "cannot resolve D_c; and its burst slip is a frame readout "
                       "(slip = delta_tau/k_eff to 0.1 %), not a weakening measurement"),
+        # ROUND 6. The corrected frame reduced model burst slip from 64.9 to 45.3 um
+        # but did not move the premature stage-6 burst to the measured stage 7.  The
+        # undegraded envelope already brackets the transition correctly; 3.75 um of
+        # pre-burst plastic slip degrades it before it gets there.  Increase the one
+        # rate-law parameter 5x to suppress that inherited Ye2018 creep.
+        tangential_viscosity=2.0e12,
     ),
 }
 
 # Every round gets its own deck numbers so earlier CSVs and Exodus files are never
 # overwritten -- the previous round's per-stage tables are the evidence for the
 # changes in this one. Rounds 1-2 used 110_01/03/05, round 3 110_02/04/06.
-DECK_NUMBER = {"OGSH": "110_10", "OGT": "110_11", "OGSC": "110_12"}
-ROUND = 5
+DECK_NUMBER = {"OGSH": "110_13", "OGT": "110_14", "OGSC": "110_15"}
+ROUND = 6
 
 
 def schedule(p_max: float, hold: float) -> tuple[list[float], list[float]]:
@@ -988,6 +1003,16 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
         text = re.sub(rf"^(\s+{key}\s*=\s*)[^\n#]*", rf"\g<1>{value}   ", text,
                       count=1, flags=re.M)
 
+    # ROUND 6, OG-SC only.  This is a physical rate-law coefficient, not a solver
+    # regulariser.  Keep it out of the common tuple so the two controls remain byte-
+    # identical to round 5 in their constitutive blocks.
+    if "tangential_viscosity" in spec:
+        text, n = re.subn(
+            r"^(\s+tangential_viscosity\s*=\s*)[^\n#]*",
+            rf"\g<1>{spec['tangential_viscosity']:.4e}   # ROUND 6: 5x arm; delay pre-burst creep",
+            text, count=1, flags=re.M)
+        assert n == 1, f"{name}: tangential_viscosity not found"
+
     # -----------------------------------------------------------------------
     # THE REPORTING FRAME. Round 1 inherited all of this from the parent, so the
     # scored channels were resolved onto Ye2018's sigma_3 = 30 MPa and the PARENT's
@@ -1131,35 +1156,20 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
 
     OGT_WARNING = "" if name != "OGT" else """#
 # ------------------------------------------------------------------------------
-# WARNING -- DO NOT SUBMIT THIS DECK UNTIL THE PRELOAD DEFECT IS FOUND.
+# ROUND-6 OG-T DIAGNOSTIC -- SUBMIT THE 60 s PRELOAD PROBE, NOT THIS FULL DECK.
 #
-# In round 2 this specimen never got loaded. During the PRELOAD ramp, before any
-# injection and with a pore pressure identical to the other two decks, the
-# fracture's own normal traction FELL while the reported paper-frame sigma'_n rose:
+# The 28-degree production mesh sheds hundreds of micrometres before injection:
+# round 5 still carried 337 um by the first hold, while Table 2 starts at zero.
+# Across OG-SH / OG-SC / OG-T the preload-slope defect orders with fracture-tip
+# clearance (14.92 / 6.72 / 3.00 mm -> 1.012 / 0.830 / -0.382), not axial load.
 #
-#     t = 3.75 s   bb_effective_normal_stress 30.34 MPa   paper frame 31.19   ratio 0.97
-#     t = 15.00 s                             27.53                   38.55         0.71
-#     t = 26.25 s                             24.76                   45.92         0.54
-#
-# OG-SH and OG-SC show NO such divergence over the same ramp -- OG-SH holds
-# 0.987-1.011 at every one of its nine hold stages -- so this is neither the
-# reporting chain nor a poroelastic effect. tau reached the envelope at t ~ 31 s,
-# the joint shed 0.53 mm, slip-weakened to residual, and all 6800 s that follow are
-# a joint lying on its residual at tau/tau_limit ~ 1.04. Its stage-1 tau came out at
-# 16.48 MPa against Table 2's 66.50.
-#
-# The round-3 fixes below (time stepping, W/L) are applied so this deck is ready,
-# but its ENVELOPE is deliberately unchanged: no constant can be judged underneath a
-# defect that costs 0.53 mm before injection starts. Run 110_04_og_t_preload_probe.i
-# LOCALLY first -- 200 s, Exodus every step.
-#
-# Two candidates, in order:
-#   1. the axial gate. axial_pres_final is a 0.71 % axial strain here against 0.28 %
-#      (OG-SH) and 0.20 % (OG-SC), because sigma_1 targets 193.43 MPa against 94.65
-#      and 63.39. The divergence tracks sigma_1 across the three decks.
-#   2. theta = 28 deg. Two meshes exist (_theta26_, _theta28_); this deck loads
-#      theta28 and sets bulk_sin_theta = sin 28, which is self-consistent, but this
-#      is the one specimen whose printed and geometric angles disagree.
+# This arm loads the already-verified 26-degree sensitivity mesh.  It lengthens the
+# core to 104.48 mm to realise the paper's Table-2 reduction angle, leaving only
+# 1.00 mm clearance at each fracture tip.  It is a FALSIFIER, not a rescue: if tip
+# interaction is the cause, the constitutive/reported normal-stress slope must become
+# still worse than on the 28-degree, 3.00-mm-clearance mesh.  Run only the generated
+# 110_14_og_t_preload_probe.i (60 s, every step); no flow or hold result from this arm
+# is a validation datum.
 # ------------------------------------------------------------------------------
 """
     STABILITY = ("D_c > cap -> STABLE, which is what the paper reports."
@@ -1173,6 +1183,26 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
 # Built by scripts/build_110_kalantar_decks.py from
 # Examples/YeGhasemmi2018/{spec['parent']}.
 {OGT_WARNING}#
+# WHAT CHANGED FROM ROUND 5 (doc/KALANTAR2025_ROUND5_BACKANALYSIS.md)
+{
+'''#   OG-SH: corrected-frame D_c bracket, 150 -> 100 um.  Round 5 verified the
+#   stiffness mechanism (84 -> 165 MPa/mm within-run, expected 172), but its outcome
+#   overshot: stage-5 slip 23.18 vs 44.6 um and tau +14.9 %.  This is the first D_c
+#   arm evaluated on the corrected frame; all other constants are held.
+#   NULL: stage-5 slip = 45 +/- 15 um and tau error falls below +8 %.''' if name == 'OGSH' else
+'''#   OG-SC: tangential_viscosity 4e11 -> 2e12 Pa.s/m, the only physics change.
+#   Round 5 retained 3.75 um of pre-burst plastic slip and still failed at stage 6;
+#   the paper stays locked through stage 6 and bursts at stage 7.  The undegraded
+#   envelope already brackets those two stages, so this arm tests inherited creep.
+#   NULL: stage-5 plastic slip <= 2 um and the first macroscopic burst moves to stage 7.
+#   Closure V_m/K_ni, residual angle, frame and D_c are held.''' if name == 'OGSC' else
+'''#   OG-T: no constitutive calibration.  The full deck is a 26-degree sensitivity
+#   arm, and only its generated 60 s preload probe is to be submitted.  Compared with
+#   the 28-degree mesh, fracture-tip clearance falls from 3.00 to 1.00 mm.
+#   NULL/FALSIFIER: if tip interaction causes the preload inversion, the slope of
+#   bb_effective_normal_stress versus the paper-frame value becomes more negative.'''
+}
+#
 # WHAT CHANGED FROM ROUND 4 (doc/KALANTAR2025_ROUND4_BACKANALYSIS.md)
 #   ROUND 5 CHANGES ONE THING: THE FRAME. Round 4's four constants produced a split
 #   verdict -- OG-SC's aperture null PASSED (a_h 1.53 against a preregistered
@@ -1321,9 +1351,9 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
 #   REAL core mid-height. Round 1 used the PARENT's, which put two of them outside
 #   the OG-T and OG-SC meshes and killed both jobs at t = 0.75 s.
 #
-# WHAT IS STILL INHERITED AND STILL SUSPECT (round-5 candidates)
+# WHAT IS STILL INHERITED AND STILL SUSPECT (round-6 candidates)
 #   initial_normal_stiffness, maximum_closure, normal_closure_*,
-#   normal_unload_retention_fraction, aperture_scale, tangential_viscosity,
+#   normal_unload_retention_fraction, aperture_scale,
 #   roughness_characteristic_slip and dilation_decay_distance are all Ye2018 fits.
 #
 #   ROUND 4 removed two of these on OG-SC. The claim that "at Kalantar's stress levels
@@ -1333,9 +1363,9 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
 #   a term pinned near its ceiling does not merely contribute little, it cannot respond
 #   at all. V_m and K_ni are now fitted here{' -- but NOT on this specimen, whose closure and gouge terms are confounded (it slips through its own pressurization branch), so its pair is still the parent s' if not d['closure'] else ''}.
 #
-#   tangential_viscosity is the one to price next. It is not a numerical regulariser,
-#   it is the hidden rate law -- worth 0.035-3.5 MPa in tau -- and OG-SC's early burst
-#   is now attributed to 7.6 um of pre-burst creep that it governs.
+#   tangential_viscosity is not a numerical regulariser; it is the hidden rate law.
+#   It remains inherited on OG-SH/OG-T.  OG-SC round 6 prices it explicitly at 5x
+#   because the corrected-frame run still accumulated 3.75 um before its early burst.
 #
 # PREDICTIONS FOR ROUND 4, WRITTEN BEFORE THE RUN
 #   ONE NUMBER EACH, so none can be read two ways. This is the practice that paid off
@@ -1402,7 +1432,7 @@ PROBE_DT = 0.5              # s -- finer than round 2's 0.75, to resolve the cro
 
 
 def write_preload_probe(deck: Path, spec: dict) -> Path:
-    """A short LOCAL diagnostic cut from the OG-T deck. Round 3 does not answer why
+    """A short diagnostic cut from the OG-T deck. Round 3 does not answer why
     OG-T's constitutive sigma'_n falls while its reported one rises; this run does,
     and it costs ~120 steps instead of 9000.
 
@@ -1433,17 +1463,14 @@ def write_preload_probe(deck: Path, spec: dict) -> Path:
     for key, base in (("exodus_file_base", "results_exodus_probe"),
                       ("csv_file_base", "results_csv_probe"),
                       ("checkpoint_file_base", "results_checkpoint_probe")):
-        text = apply(text, key, f"{base}/{stem}", "probe, local")
+        text = apply(text, key, f"{base}/{stem}", "preload probe")
 
     header = f"""# =============================================================================
 # {stem}
 #
-# LOCAL DIAGNOSTIC, NOT AN HPC JOB. Cut from {deck.name} by
+# DIAGNOSTIC, NOT A FULL TABLE-2 RUN. Cut from {deck.name} by
 # scripts/build_110_kalantar_decks.py. {PROBE_END:.0f} s at dt {PROBE_DT}, Exodus every step
-# -- about {PROBE_END/PROBE_DT:.0f} steps. Run it on <= 24 ranks:
-#
-#   cd Examples/Kalantar2025/OGT
-#   mpiexec -n 24 ../../../orca-opt -i {stem}.i
+# -- about {PROBE_END/PROBE_DT:.0f} steps. Round 6 supplies a 64-rank HPC script.
 #
 # THE QUESTION. In round 2 OG-T's two normal-stress channels moved in OPPOSITE
 # directions during the preload, before injection, at a pore pressure identical to
@@ -1466,8 +1493,8 @@ def write_preload_probe(deck: Path, spec: dict) -> Path:
 #   3. stress_zz through the core. axial_pres_final commands 0.71 % strain here
 #      against 0.28 % (OG-SH) and 0.20 % (OG-SC) -- the divergence tracks sigma_1
 #      across the three decks, which is the first candidate.
-#   4. If 1-3 exonerate the gate, the remaining candidate is theta = 28 deg. The
-#      _theta26_ mesh is already built and is a one-line swap.
+#   4. Compare the slope with round 5's 28-degree mesh. This probe is the verified
+#      26-degree arm with 1.00 mm tip clearance, versus 3.00 mm in round 5.
 #
 # DO NOT tune any joint constant off this run. It exists to identify a defect, not
 # to fit one.
@@ -1628,16 +1655,14 @@ def main() -> int:
                 fail += 1
                 print(f"    !! {msg}")
             print(f"    -> {probe.relative_to(ROOT)}  "
-                  f"(LOCAL probe, {PROBE_END:.0f} s, ~{PROBE_END/PROBE_DT:.0f} steps)")
+                  f"(HPC diagnostic probe, {PROBE_END:.0f} s, ~{PROBE_END/PROBE_DT:.0f} steps)")
     print("\nSchedules match Table 2's stage counts on all three specimens.")
     print("Every PointValue is inside its own mesh." if not fail else
           f"\n{fail} PROBLEM(S) -- do not submit.")
-    print(f"\nROUND {ROUND}. {DECK_NUMBER['OGSH']} (OG-SH) and {DECK_NUMBER['OGSC']} "
-          f"(OG-SC) are ready to submit.\nOG-T is NOT -- run "
-          f"Examples/Kalantar2025/OGT/{DECK_NUMBER['OGT']}_og_t_preload_probe.i\n"
-          f"locally first; its constitutive constants are deliberately HELD at round "
-          f"3's\nvalues until the preload defect is closed, so it stays a clean "
-          f"control.")
+    print(f"\nROUND {ROUND}. Submit {DECK_NUMBER['OGSH']} (OG-SH), "
+          f"{DECK_NUMBER['OGSC']} (OG-SC), and only the 60 s "
+          f"{DECK_NUMBER['OGT']} OG-T preload probe. Do not submit the full OG-T "
+          f"deck; it is the source for the diagnostic arm, not a validation run.")
     return 1 if fail else 0
 
 

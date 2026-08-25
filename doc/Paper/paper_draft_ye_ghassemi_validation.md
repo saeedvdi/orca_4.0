@@ -24,7 +24,20 @@ Barton–Bandis runs `93_01`, `93_03`, `93_05` and `93_07`, scored by
 `scripts/table2_gate.py` with an independent recomputation, and cross-checked in
 `doc/independent_analysis/CONSOLIDATED_ANALYSIS_2026-08-18.md` and
 `doc/independent_analysis/TABLE2_ERROR_ACCURACY_RANKING.csv`. The completed Mohr–Coulomb
-comparison is now reported in §5.5 and §6.3. Three post-slip mesh comparisons remain incomplete.
+comparison is now reported in §5.5 and §6.3. All four Barton–Bandis mesh pairs are now complete
+over eleven stages (§5.1); three of the four Mohr–Coulomb mesh pairs remain incomplete.
+
+**Revision 2026-08-25 — two corrections to the Mohr–Coulomb comparison, both against our own
+interest.** (i) The two constitutive materials decompose their reported normal opening
+differently, so the campaign's $d_n$ channel was not the same observable on the two sides of the
+comparison and the baseline was charged for a missing reporting term. Scoring now uses the global
+kinematic jump; no Barton–Bandis score moves, and the baseline improves — SW-S4 from 8.97 % to
+7.07 %, cutting that specimen's advantage from 1.46× to 1.15×. (ii) An archived campaign of 52
+completed, independently calibrated Mohr–Coulomb runs on the two saw-cut specimens reaches 4.40 %
+on SW-S4 and 6.07 % on SW-S3; the SW-S4 figure is better than this paper's Barton–Bandis final.
+§5.5.1 reports it and reframes the claim as parameter economy and transferability rather than
+fit capability. Provenance, scores and the disqualifying defects of those archived runs are in
+`doc/independent_analysis/MC_ARCHIVE_RECOVERY_2026-08-25.md`.
 
 **§6.6 and §6.7 now report the corrected 101-series controls.** All 16 runs complete. Equal-peak
 cycling adds no material enhancement, escalating peaks expose specimen-specific thresholds, and
@@ -123,9 +136,9 @@ not yet measured is marked `[PENDING]`; nothing is invented.
 | T2 | Discretised fracture area against the exact ellipse, both meshes | Geometric verification; costs no simulation time and answers the meshing question before it is asked. |
 | T3 | Surface area omitted by the planar interface, estimated from JRC | The quantitative form of the saw-cut/tensile hierarchy. Labelled an estimate, not a measurement. |
 | T4 | Model parameters classified measured / derived / calibrated | **The most important table in the paper.** |
-| T5 | Quantitative agreement per sample per observable, BBFast, with MC baseline column | RMS and peak error; MC column exists to be beaten, not analysed in its own right. |
+| T5 | Quantitative agreement per sample per observable, BBFast, with MC baseline column | RMS and peak error. The MC column is a matched, non-refitted transfer; §5.5.1 separately reports what a freely calibrated MC reaches, so the baseline is not presented as a straw man. |
 | F6 | Cyclic: $P_i$, $d_s$, $d_n$, $a_h$ against time over three cycles, one row per specimen, with the three floor holds marked | The floor-to-floor comparison of §6.6 read straight off the figure. |
-| T6 | Mohr–Coulomb baseline scores, five observables, four specimens | The comparison of §6.3; pairs with F2. |
+| T6 | Mohr–Coulomb baseline scores, five observables, four specimens, with a JRC column and a BB/MC ratio column | The comparison of §6.3; pairs with F2. The ratio column ordered by JRC is the result — the four-specimen mean conceals that the two laws are equivalent on the polished saw cut. |
 | T7 | The three-cycle injection schedules | Design of §6.6.1. Fold into the text if space is tight. |
 | T8 | Measured cycle-1 retention, from Ye & Ghassemi Table 2 stages 1 and 11 | The anchor for §6.6 — first-cycle enhancement is *already measured*, and is zero on SW-S4. |
 | T9 | The four slip-history channels as calibrated, per specimen | Shows two of the four channels are inert on most specimens. **Keep**: it is what makes the cyclic prediction specimen-specific rather than generic. |
@@ -182,7 +195,9 @@ Results-only.]`
    injection-induced shear slip in four granite fractures to 2.4–6.1 % normalised RMS error
 2. The published data over-determines fracture orientation and load-frame compliance, allowing
    calibration without free geometric parameters
-3. The matched Barton–Bandis law reduces mean error by 77% relative to a linear Mohr–Coulomb baseline
+3. The matched Barton–Bandis law reduces mean error by 76% relative to a linear Mohr–Coulomb
+   baseline; the advantage separates the two saw cuts from the two tensile fractures — 1.15× and
+   4.0× at JRC below 2, against 5.7× and 9.6× at JRC near 15
 4. Simulated flow is about half the reported rate at matching aperture, a geometry-factor
    difference rather than a constitutive error
 
@@ -208,8 +223,10 @@ histories alone, to within 0.03° and 3 % respectively. This removes the geometr
 the calibration and makes the remaining comparison a test of the interface constitutive law. The
 model reproduces the eleven-stage flow, stress and displacement histories to a mean normalised RMS
 error of 2.4 % to 6.1 % across five independent observables. Under a matched calibration, the
-Barton–Bandis formulation reduces the four-specimen mean error by 77% relative to a linear
-Mohr–Coulomb baseline. We also show
+Barton–Bandis formulation reduces the four-specimen mean error by 76% relative to a linear
+Mohr–Coulomb baseline, and the advantage rises by nearly an order of magnitude with joint
+roughness — from 1.15× on the polished saw cut, where the two envelopes should and do coincide, to
+5.7× and 9.6× on the two tensile fractures. We also show
 that this loading path cannot separate cohesion from joint roughness, so the two must be reported as
 one constrained combination. Simulated flow rates fall consistently below the reported values at
 matching hydraulic aperture; we show this reflects the difference between a one-dimensional slab
@@ -1794,46 +1811,72 @@ $4.0\times10^{-3}$ m², an areal node spacing near 3 mm, and the SW-T1 fracture-
 4.33 mm. The factor-3 siblings hold roughly an order of magnitude more elements, i.e. element
 edges shorter by about a factor of two. Refined siblings were built for all four.
 
-Two pairs carry evidence, and they are complementary. SW-S4's pair is complete over the full
-eleven-stage schedule; SW-S4 is the specimen whose slip is progressive rather than a single burst
-(§6.4), and it is the only specimen for which both constitutive laws also have a complete pair.
-SW-S3's pair reaches stage 6, which is peak injection — so it covers every loading stage and, with
-them, the slip event itself, missing only the five unloading stages. SW-S3 slips as a burst, so
-between them the two pairs cover both failure styles.
+**All four Barton–Bandis pairs are now complete over the full eleven-stage schedule.** The
+Mohr–Coulomb siblings are complete only on SW-S4; the other three refined baseline runs stopped
+short and are reported over the stages they reached, or not at all.
 
 | Specimen | law | stages | factor-5 mesh | factor-3 mesh | change |
 |---|---|---:|---:|---:|---:|
-| SW-S4 | Barton–Bandis | 11/11 | 6.14 % | 6.37 % | $+0.23$ |
-| SW-S4 | Mohr–Coulomb | 11/11 | 8.97 % | 8.84 % | $-0.14$ |
-| SW-S3 | Barton–Bandis | 6/11 | 4.36 % | 5.26 % | $+0.90$ |
-| SW-S3 | Mohr–Coulomb | 6/11 | 24.39 % | 24.89 % | $+0.50$ |
+| SW-T1 | Barton–Bandis | 11/11 | 4.44 % | 5.53 % | $+1.09$ |
+| SW-T2 | Barton–Bandis | 11/11 | 2.43 % | 2.26 % | $-0.17$ |
+| SW-S3 | Barton–Bandis | 11/11 | 4.58 % | 4.76 % | $+0.19$ |
+| SW-S4 | Barton–Bandis | 11/11 | 6.14 % | 6.29 % | $+0.15$ |
+| SW-S4 | Mohr–Coulomb | 11/11 | 7.08 % | 6.86 % | $-0.21$ |
+| SW-S3 | Mohr–Coulomb | 6/11 | 25.12 % | 25.76 % | $+0.63$ |
+| SW-T2 | Mohr–Coulomb | 4/11 | 43.63 % | 41.45 % | $-2.17$ |
+| SW-T1 | Mohr–Coulomb | 1/11 | — | — | not scored |
 
-The two SW-S3 rows are scored over stages 1–6 with the Table 2 range renormalised over the same
-six stages, so that the two meshes are directly comparable to each other. They are **not**
-comparable to the eleven-stage errors of Table 5, and only the change is quoted.
+Truncated rows are scored over the stages the refined run reached, with the Table 2 range
+renormalised over that same stage set so that the two meshes are directly comparable to each
+other. Those rows are **not** comparable to the eleven-stage errors of Table 5, and only the
+change is quoted. The SW-T1 baseline pair reaches only the preload, where the two meshes agree
+trivially, and carries no information.
 
-On both specimens the change under refinement is a small fraction of the difference between the two
-constitutive laws — 2.83 points on SW-S4, 20.0 points on SW-S3 over its loading branch — so the
-comparison of §5.5 is not an artefact of discretisation. On SW-S4 the two changes fall on opposite
-sides of zero. Within SW-S4's Barton–Bandis pair the channels do not move together: refinement
-improves $Q$ (5.01 % → 4.88 %) and $\sigma'_n$ (3.87 % → 3.86 %) and worsens both displacement
-channels (4.63 % → 4.80 % and 7.08 % → 8.17 %), with $\tau$ essentially unchanged. The largest
-systematic shift through unloading is about 0.0018 mm in shear slip.
+**The change under refinement is not one-signed, and that is the limit on what can be claimed.**
+Three of the four Barton–Bandis pairs worsen slightly and one improves; within a single specimen
+the individual channels move in opposite directions — refining SW-S3 improves $\sigma'_n$, $\tau$
+and $d_n$ while worsening $Q$ and $d_s$; refining SW-T1 improves $\sigma'_n$ and $\tau$ while
+worsening the other three. Two grid levels behaving non-monotonically are not in the asymptotic
+range, so no observed order of convergence and no grid-convergence index can be computed from
+them without inventing the exponent. We therefore quote the mesh difference as a **bound** —
+discretisation moves the mean score by 0.15 to 1.09 points, and individual channels by 0.2 to
+3.7 % — and make no extrapolation to zero element size. One channel deserves explicit warning:
+SW-S3's flow rate differs by 2.95 % between the two meshes against a reported accuracy of 3.00 %,
+so for that specimen and that observable the discretisation uncertainty is the same size as the
+result.
 
-The two tensile pairs supply no evidence and none is quoted. SW-T1's refined run terminates during
-the preload before any scored stage; SW-T2's reaches stage 4 of 11. Percentage of elapsed time
-flatters the latter — SW-T2's refined run covers 78 % of the pressurisation branch but only 6.6 %
-of the flow range, because a tensile fracture stays shut until it opens and the entire flow
-response lives in the last fifth of the loading. Over that pre-burst window the Barton–Bandis and
-Mohr–Coulomb runs agree with each other to 0.00 % in $Q$, which is the direct statement that
-nothing constitutive has yet engaged. The cost is the reason for both: the refined meshes are far
-more expensive precisely on the specimens whose slip arrives as a single burst, which is the
+**The mesh difference is nonetheless small against the difference between the two laws.** On
+SW-S4, where both pairs are complete, refinement moves each law by 0.15 and 0.21 points while the
+two laws sit 0.93 points apart; on SW-S3, over the six stages the baseline pair reaches, the
+figures are 0.19 and 0.63 against a separation of 20.5. The comparison of §5.5 is therefore not an
+artefact of discretisation on either specimen — but SW-S4's margin is now the same order as its
+mesh sensitivity, and §5.5.1 already declines to rest anything on it. Within SW-S4's
+Barton–Bandis pair the channels do not move together: refinement improves $Q$ (4.99 % → 4.86 %),
+$\sigma'_n$ (3.90 % → 3.89 %) and $d_n$ (4.63 % → 4.59 %), leaves $\tau$ unchanged to 0.02
+points, and worsens only $d_s$ (7.08 % → 8.00 %), which carries the whole of the pair's $+0.15$.
+The largest systematic shift through unloading is about 0.0018 mm in shear slip.
+
+**A systematic bias in the same direction on all four.** The discretised area of the fracture
+ellipse grows by $+0.25$ to $+0.27$ % from the factor-5 to the factor-3 mesh on every specimen, so
+the coarse meshes under-resolve the elliptical boundary by a consistent amount. Table 2 sizes this
+against the exact ellipse; it is a bias, not a random error, and it is not removed by the fact that
+the scores themselves move both ways.
+
+The two tensile *baseline* pairs supply no usable evidence and none is quoted. SW-T1's refined
+Mohr–Coulomb run terminates during the preload before any scored stage; SW-T2's reaches stage 4 of
+11. Percentage of elapsed time flatters the latter — it covers 78 % of the pressurisation branch
+but only 6.6 % of the flow range, because a tensile fracture stays shut until it opens and the
+entire flow response lives in the last fifth of the loading. Over that pre-burst window the
+Barton–Bandis and Mohr–Coulomb runs agree with each other to 0.00 % in $Q$, which is the direct
+statement that nothing constitutive has yet engaged. The cost is the reason for both: the refined
+meshes are far more expensive precisely on the specimens whose slip arrives as a single burst,
+which is the
 hardest event for the solver. This is a genuine limitation of the verification rather than a
 formatting gap.
 
-The claim supported here is therefore mesh-insensitivity over the full schedule on the specimen
-that resolves the weakening path progressively, and over the full loading branch — slip event
-included — on a burst specimen; not mesh-insensitivity demonstrated on all four. SW-S4's stage-4
+The claim supported here is therefore **bounded mesh sensitivity over the full schedule on all
+four specimens for the constitutive law this paper validates**, with the two-level, non-monotone
+caveat above, and a complete matched pair for the baseline on one specimen only. SW-S4's stage-4
 residual (§5.3) persists under refinement, which is what identifies it as constitutive rather than
 an artefact of discretisation.
 
@@ -2022,16 +2065,42 @@ All four mesh-5 baseline runs complete. Table 6 reports the same five-observable
 
 **Table 6.** Matched Mohr–Coulomb baseline normalised RMS errors.
 
-| Specimen | $Q$ | $\sigma'_n$ | $\tau$ | $d_n$ | $d_s$ | **mean** | Barton–Bandis mean |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| SW-T1 | 22.88 % | 18.67 % | 25.85 % | 31.05 % | 27.90 % | **25.27 %** | 4.44 % |
-| SW-T2 | 14.54 % | 19.32 % | 26.17 % | 27.86 % | 27.83 % | **23.14 %** | 2.43 % |
-| SW-S3 | 9.59 % | 8.18 % | 19.55 % | 27.49 % | 27.54 % | **18.47 %** | 4.57 % |
-| SW-S4 | 6.32 % | 4.41 % | 11.41 % | 16.55 % | 6.18 % | **8.97 %** | 6.14 % |
+| Specimen | JRC | $Q$ | $\sigma'_n$ | $\tau$ | $d_n$ | $d_s$ | **mean** | Barton–Bandis mean | ratio |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| SW-S4 | 1.19 | 6.32 % | 4.41 % | 11.41 % | 7.02 % | 6.18 % | **7.07 %** | 6.14 % | 1.15× |
+| SW-S3 | 1.96 | 9.59 % | 8.18 % | 19.55 % | 26.27 % | 27.54 % | **18.23 %** | 4.57 % | 3.98× |
+| SW-T2 | 14.63 | 14.54 % | 19.32 % | 26.17 % | 28.05 % | 27.83 % | **23.18 %** | 2.43 % | 9.55× |
+| SW-T1 | 15.32 | 22.88 % | 18.67 % | 25.85 % | 31.25 % | 27.91 % | **25.31 %** | 4.44 % | 5.71× |
 
-The matched Barton–Bandis mean is 4.39% across specimens, versus 18.96% for Mohr–Coulomb, a
-76.8% reduction. The two laws agree closely before yield as designed; the separation appears on
+The matched Barton–Bandis mean is 4.39% across specimens, versus 18.45% for Mohr–Coulomb, a
+76.2% reduction. The two laws agree closely before yield as designed; the separation appears on
 the post-yield weakening path and is present in every scored channel, not only the headline mean.
+
+**The ratio column is the result, not the mean.** The advantage rises by nearly an order of
+magnitude across the roughness range and is close to unity at the smooth end: on the polished saw
+cut SW-S4 the two laws are within 15%, on the rougher saw cut SW-S3 the nonlinear envelope is 4.0×
+better, and on the two tensile fractures 9.6× and 5.7×. What the ratio separates cleanly is the
+*class* — both saw cuts (JRC < 2) against both tensile fractures (JRC ≈ 15). It does not resolve
+within a class: SW-T1 is the rougher of the two tensile specimens by 0.7 JRC units and has the
+*smaller* ratio, so the trend should be read as a two-population separation, not as a monotone
+function of JRC. Four specimens cannot support the stronger reading, and the 0.7-unit difference
+is inside the scatter of any JRC estimate. A comparison that reported only the four-specimen mean
+would hide the one specimen on which the baseline is competitive, and it is that specimen — the
+one whose roughness is negligible, where the two envelopes should coincide — that makes the trend
+a physical result rather than a fitting artefact.
+
+*One note on the $d_n$ column, because it changed.* The two constitutive materials decompose
+their reported normal opening differently: the Barton–Bandis material sums an irreversible, a
+reversible and an elastic contribution, the Mohr–Coulomb material only a plastic and a reversible
+one. Scored on that decomposition, the baseline's $d_n$ is the plastic jump alone — monotone by
+construction, and therefore credited with zero recovery on the unloading branch whatever the
+mechanics did. The values above are instead scored on the global kinematic normal jump, which is
+what the experiment's displacement transducers measure and which both materials emit under the
+same definition. The change leaves every Barton–Bandis score untouched and improves the baseline
+(SW-S4 from 8.97% to 7.07%). It also corrects a physical statement: on the two saw cuts the
+Mohr–Coulomb runs recover 12.7 µm and 9.6 µm of normal displacement against Barton–Bandis'
+11.4 µm and 11.0 µm — that is, equally well. The failure to recover is confined to the tensile
+fractures, where the baseline recovers 0.8 µm and 1.3 µm against 19.9 µm and 10.6 µm.
 
 A caveat that will shape how the result can be read, whichever way it falls. The two envelopes are
 tangent by construction at the onset stress, and they separate only as $\sigma'_n$ moves away from
@@ -2041,6 +2110,36 @@ factor a wider stress sweep would produce. This dataset therefore cannot be expe
 discriminate the two *forms* on envelope slope alone, and §6.3 treats the comparison as a
 performance question — which law reproduces Table 2 better, under a matched calibration procedure —
 rather than as a test of which envelope shape is correct.
+
+#### 5.5.1 What a freely calibrated Mohr–Coulomb model can reach
+
+The baseline above is deliberately not refitted, and a reader is entitled to ask what the linear
+envelope achieves when it *is*. We can answer that from completed runs rather than by assertion.
+An earlier campaign on the same two saw-cut specimens fitted the Mohr–Coulomb law directly to
+Table 2 — 52 completed runs, with peak and residual friction, both cohesions and their roughness
+exponent, the weakening distance, peak and residual dilation angles, a secondary-weakening depth
+and the tangential viscosity all free, and rate-and-state friction enabled. Scored on the metric
+used here, the best of those runs reach **4.40 % on SW-S4 and 6.07 % on SW-S3**, against 7.07 %
+and 18.23 % for the matched baseline. On SW-S4 that is better than the Barton–Bandis final's
+6.14 %.
+
+We report this because it bounds the claim, and because the bound is the more interesting
+statement. A linear envelope with roughness-dependent parameters *can* reproduce a saw-cut
+specimen in this dataset, and on the polished one it can do so better than the nonlinear law. What
+it cannot do is reach that agreement without per-specimen fitting: the two calibrations share no
+parameter value, neither transfers to the other specimen, and no Mohr–Coulomb calibration for
+either tensile fracture was ever obtained. The Barton–Bandis finals, by contrast, take JRC, JCS
+and $\phi_r$ from the source publication's own characterisation of each specimen and fit one
+hydraulic aperture scale. The comparison this paper makes is therefore about **parameter economy
+and transferability at a given accuracy**, not about whether the linear form is capable of a fit;
+and the roughness scaling in Table 6 is what makes that economy argument physical rather than
+bookkeeping.
+
+Those earlier runs are not quoted as the baseline because they cannot be: they sit on the
+superseded SW-S3 mesh (124.40 mm against Table 1's 123.40 mm) and the superseded SW-S4 mesh
+(28.99° with the fracture plane 2.85 mm off centre), they carry the pre-study Biot setting, and a
+model with rate-and-state friction and two dilation angles is not the linear baseline this
+section is defined against.
 
 ---
 
@@ -2109,10 +2208,21 @@ constant form does not — and §5.3 identifies which those are.
 
 ### 6.3 Roughness and the choice of strength envelope
 
-The matched comparison is decisive in performance: Barton–Bandis lowers the four-specimen mean
-nRMSE from 18.96% to 4.39%, with specimen-level reductions from 31.6% (SW-S4) to 82.9% (SW-T1).
-Every specimen improves in every scored channel. Because the envelopes are tangent at onset and
-share the same closure and loading system, the separation is a post-yield weakening-path result.
+The matched comparison is decisive in aggregate and revealing in its exceptions: Barton–Bandis
+lowers the four-specimen mean nRMSE from 18.45% to 4.39%, with specimen-level reductions ranging
+from 13.1% (SW-S4) to 89.5% (SW-T2). Nineteen of the twenty specimen–channel pairs improve; the
+single exception is SW-S4's shear displacement, where the baseline is closer (6.18% against
+7.08%). Because the envelopes are tangent at onset and share the same closure and loading system,
+the separation is a post-yield weakening-path result.
+
+The specimen-level spread is the substance here, and it separates by roughness class rather than
+scattering: 1.15× on SW-S4 (JRC 1.19) and 3.98× on SW-S3 (JRC 1.96), against 5.71× on SW-T1
+(JRC 15.32) and 9.55× on SW-T2 (JRC 14.63). A law whose advantage over a linear envelope is
+negligible on a polished surface and an order of magnitude on a tensile fracture is behaving the
+way its construction says it should; a law that won uniformly by the same factor on all four would
+be harder to attribute to roughness at all. Within the tensile pair the ordering inverts — SW-T1 is
+rougher and has the smaller ratio — so we claim a separation between two populations, not a
+monotone dependence on JRC, which four specimens could not establish in any case.
 
 Two things about that comparison should be settled in advance of the numbers, because they
 determine what the result is allowed to mean.
@@ -2131,6 +2241,18 @@ instead of fit quality — that JRC, JCS and the basic friction angle are quanti
 measure independently, whereas a fitted $\mu$ and $c$ are not. That is a weaker claim than "the
 nonlinear envelope is necessary," and it is the one the data would support. We prefer to state that
 conditional now rather than discover the temptation to overclaim after seeing the scores.
+
+*That conditional came due, on SW-S4.* At 1.15× the two laws are inside any reasonable
+reproducibility floor on the polished saw cut, and §5.5.1 shows that a freely refitted
+Mohr–Coulomb model reaches 4.40 % there — better than the Barton–Bandis final's 6.14 %. For that
+specimen the provenance argument is the whole argument, and we make it explicitly: Barton–Bandis
+reaches 6.14 % using JRC, JCS and $\phi_r$ as published for that specimen, while Mohr–Coulomb
+reaches 4.40 % using eight parameters fitted to the very table it is being scored against, none of
+which transfers to any other specimen in the set. We do not claim the nonlinear envelope is
+necessary on SW-S4. We claim it is not needed there, that this is what its own construction
+predicts at JRC 1.19, and that the case for it is made by the three rougher specimens — where the
+same non-refitted procedure yields 4.0×, 5.7× and 9.6×, and where no Mohr–Coulomb calibration has
+ever been obtained at all.
 
 **Where the two laws should genuinely diverge is on the specimen that slips progressively.** SW-S4
 sheds strength across three hold stages rather than in one, so it is the only specimen whose
@@ -2998,11 +3120,14 @@ polished joints in general.
     parameterisations' envelopes differ by about 3 % in slope over the range injection sweeps.
     Reported JRC, JCS and $c$ values should be read as one calibrated combination, not three
     independently constrained properties.
-14. Mesh comparison over the full eleven stages exists only for SW-S4 (§5.1): BBFast changes from
-    6.14 % on mesh 5 to 6.37 % on mesh 3, and Mohr–Coulomb from 8.97 % to 8.84 %. SW-S3's pair
-    reaches stage 6, i.e. peak injection, and so covers the whole loading branch including its slip
-    event, changing by $+0.90$ and $+0.50$ points on a six-stage renormalisation. The two tensile
-    pairs supply no evidence. Separately, *every* pair differs in injection–production separation —
+14. Mesh comparison over the full eleven stages now exists for **all four specimens** on the
+    Barton–Bandis law (§5.1), changing by $+1.09$ (SW-T1), $-0.17$ (SW-T2), $+0.19$ (SW-S3) and
+    $+0.15$ (SW-S4) points. The Mohr–Coulomb baseline has a complete pair only on SW-S4
+    ($7.08 \to 6.86$ %); SW-S3's reaches stage 6 ($+0.63$ on a six-stage renormalisation),
+    SW-T2's stage 4, and SW-T1's the preload only. The change is not one-signed and individual
+    channels move in opposite directions within a single specimen, so the difference is reported
+    as a bound and no convergence order or grid-convergence index is claimed. SW-S3's flow rate
+    is the one channel where the mesh difference (2.95 %) equals the reported accuracy (3.00 %). Separately, *every* pair differs in injection–production separation —
     by 4.00, 2.22, 3.24 and 4.35 % for SW-S3, SW-S4, SW-T1 and SW-T2 — because the source nodes are
     snapped to a mesh whose axis interval count is not divisible by five; on the same count every
     factor-5 mesh, and hence every reported run, sits 2.0–3.9 % long against the design separation.
@@ -3233,8 +3358,14 @@ will eventually be asked to run at reservoir scale.
    mismatch in a postprocessor, not a model failure. Because every attempt is scored through the
    same channel, a reporting error fails consistently and therefore reads as a robust finding.
 10. Under matched calibration, the Barton–Bandis formulation reduces the four-specimen mean error
-    from 18.96 % for the Mohr–Coulomb baseline to 4.39 %, a 76.8 % reduction. The gain is present on
-    every specimen and is largest on the tensile fractures.
+    from 18.45 % for the Mohr–Coulomb baseline to 4.39 %, a 76.2 % reduction. The gain is monotone
+    separated by joint roughness — 1.15× and 3.98× on the two saw cuts (JRC 1.19, 1.96) against
+    5.71× and 9.55× on the two tensile fractures (JRC 15.32, 14.63) — which is the result; the
+    mean alone conceals that on the polished saw cut the two laws are equivalent. The separation is
+    between the two populations, not monotone within them. A freely refitted Mohr–Coulomb model reaches 4.40 % on that specimen, better than
+    Barton–Bandis, using eight per-specimen fitted parameters that transfer to nothing (§5.5.1).
+    The claim is parameter economy and transferability at a given accuracy, not that a linear
+    envelope cannot fit these data.
 11. Cycling to a pressure the fracture has already seen accumulates nothing: three equal-peak cycles
     return the cycle-1 aperture and flow to within 1 % on all four specimens. Escalating peaks, by
     contrast, raise permeability by up to ×5.6 at matched ambient conditions. What matters is not the

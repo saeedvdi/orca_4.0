@@ -36,6 +36,47 @@ staircase that lands on the end of the hold; on a digitized ramp it lands on
 the closest approach. The model is then sampled at the last output row at or
 before that time.
 
+The d_n channel
+---------------
+Two postprocessors in these decks both claim to be "normal displacement in the
+paper's sign convention", and they are NOT the same observable across the two
+constitutive laws:
+
+    czm_normal_dilation_paper_mm_pp   reads ``normal_opening_total``
+    frac_normal_dilation_paper_mm     reads the global normal jump directly
+
+``normal_opening_total`` is a constitutive decomposition, and the two materials
+decompose differently::
+
+    ADOrcaBartonBandisContactTractionFastAD
+        normal_opening_total = irreversible + reversible + ELASTIC
+    ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile  (the MC baseline)
+        normal_opening_total = plastic + reversible          <- no elastic term
+
+The MC material's elastic closure never reaches that channel. With
+``reversible_normal_compliance`` at its default of zero -- which is what the
+94-series sets -- the MC d_n column is the plastic normal jump alone, so it is
+monotone by construction and reports **exactly zero** recovery on the unloading
+branch no matter what the mechanics did. Measured on the 94-series finals:
+
+    specimen   recovery on normal_opening_total   recovery on the global jump
+    SW-S3                        0.00 um                        12.74 um
+    SW-S4                        0.00 um                         9.64 um
+    SW-T1                        0.00 um                          0.84 um
+    SW-T2                        0.00 um                          1.27 um
+
+Scoring MC on ``normal_opening_total`` therefore charges the baseline for a
+missing reporting term, not for a missing mechanism, and it does so only on one
+side of the comparison the campaign exists to make. On SW-S4 that alone is
+1.9 percentage points of mean nRMSE (8.97 -> 7.07).
+
+The default channel here is the **global kinematic jump**, which is what the
+experiment's LVDTs measure and which both materials emit. For the ppfix-frame
+BBFast finals the two channels are numerically identical, so this default
+changes no Barton-Bandis score; it changes the Mohr-Coulomb ones, in the
+baseline's favour. Pass ``--dn-channel total`` to reproduce the pre-2026-08-25
+campaign numbers.
+
 The d_n / d_s datum
 -------------------
 Table 2 reports d_n = d_s = 0.000 at stage 1 for all four samples, so the model
@@ -120,6 +161,18 @@ TABLE2 = {
     },
 }
 
+# The two d_n channels, most-preferred first within each. "kinematic" is the
+# default and is the like-for-like observable; "total" reproduces the campaign's
+# pre-2026-08-25 numbers and is retained so historical scores can be regenerated.
+DN_CHANNELS = {
+    "kinematic": [("frac_normal_dilation_paper_mm", 1.0),
+                  ("czm_normal_dilation_paper_mm_pp", 1.0)],
+    "total":     [("czm_normal_dilation_paper_mm_pp", 1.0),
+                  ("frac_normal_dilation_paper_mm", 1.0)],
+}
+DEFAULT_DN_CHANNEL = "kinematic"
+
+
 SCORED = ["Q_ml_min", "sigma_n_MPa", "tau_MPa", "dn_mm", "ds_mm"]
 INFORMATIONAL = ["ah_um", "k_1e12_m2"]
 
@@ -145,8 +198,11 @@ MODEL_COLUMNS = {
                     ("effective_normal_compression_mpa_pp", 1.0)],
     "tau_MPa":     [("shear_stress_paper_frame_mpa_pp", 1.0),
                     ("shear_traction_magnitude_pa", 1e-6)],
-    "dn_mm":       [("czm_normal_dilation_paper_mm_pp", 1.0),
-                    ("frac_normal_dilation_paper_mm", 1.0)],
+    # Placeholder: the active d_n candidates are chosen per run by
+    # dn_candidates() from DN_CHANNELS. See "The d_n channel" above -- the two
+    # postprocessors are not the same observable across the two laws.
+    "dn_mm":       [("frac_normal_dilation_paper_mm", 1.0),
+                    ("czm_normal_dilation_paper_mm_pp", 1.0)],
     "ds_mm":       [("czm_shear_slip_mm_pp", 1.0)],
     "ah_um":       [("hydraulic_aperture_um_pp", 1.0),
                     ("hydraulic_aperture_pp", 1e6)],
@@ -270,6 +326,32 @@ def stage_times(x: np.ndarray, y: np.ndarray, tol_mpa: float) -> list[float]:
     return times
 
 
+def dn_recovery_split(raw: pd.DataFrame) -> dict | None:
+    """Compare the two d_n channels on one run, in micrometres.
+
+    ``recovery`` is how far d_n comes back from its most-open excursion by the
+    end of the run -- the quantity Table 2's unloading branch actually tests.
+    A material whose ``normal_opening_total`` omits the elastic term reports
+    recovery of exactly zero here while the global jump reports the real value;
+    that difference is a reporting artefact and must not be read as physics.
+    Returns None when the run does not carry both channels.
+    """
+    tot_col, kin_col = "czm_normal_dilation_paper_mm_pp", "frac_normal_dilation_paper_mm"
+    if tot_col not in raw.columns or kin_col not in raw.columns:
+        return None
+    out = {}
+    for tag, col in (("total", tot_col), ("kinematic", kin_col)):
+        v = pd.to_numeric(raw[col], errors="coerce").dropna().to_numpy() * 1.0e3
+        if v.size == 0:
+            return None
+        # Paper sign convention: opening is negative, so the most-open state is
+        # the minimum and recovery is the climb back from it.
+        out[tag] = {"min_um": float(v.min()), "final_um": float(v[-1]),
+                    "recovery_um": float(v[-1] - v.min())}
+    out["recovery_gap_um"] = out["kinematic"]["recovery_um"] - out["total"]["recovery_um"]
+    return out
+
+
 def first_column(df: pd.DataFrame, candidates) -> tuple[pd.Series | None, str | None]:
     for name, scale in candidates:
         if name in df.columns:
@@ -278,7 +360,11 @@ def first_column(df: pd.DataFrame, candidates) -> tuple[pd.Series | None, str | 
 
 
 def score_run(csv_path: Path, sample: str, tag: str | None, tol_mpa: float,
-              datum: str, preload_time: float) -> dict:
+              datum: str, preload_time: float,
+              dn_channel: str = DEFAULT_DN_CHANNEL) -> dict:
+    if dn_channel not in DN_CHANNELS:
+        raise SystemExit(f"unknown --dn-channel {dn_channel!r}; "
+                         f"choose one of {sorted(DN_CHANNELS)}")
     deck = find_deck(csv_path, tag)
     x, y = parse_schedule(deck)
     times = stage_times(x, y, tol_mpa)
@@ -287,13 +373,21 @@ def score_run(csv_path: Path, sample: str, tag: str | None, tol_mpa: float,
     raw = raw.sort_values("time").drop_duplicates("time", keep="last").reset_index(drop=True)
     t_end = float(raw["time"].iloc[-1])
 
+    columns = dict(MODEL_COLUMNS)
+    columns["dn_mm"] = DN_CHANNELS[dn_channel]
+
     model = pd.DataFrame({"time": pd.to_numeric(raw["time"], errors="coerce")})
     used: dict[str, str] = {}
-    for key, candidates in MODEL_COLUMNS.items():
+    for key, candidates in columns.items():
         series, name = first_column(raw, candidates)
         model[key] = np.nan if series is None else series
         if name:
             used[key] = name
+
+    # Report how far apart the two d_n channels are on THIS run. They coincide
+    # for the ppfix Barton-Bandis decks and diverge for the Mohr-Coulomb ones;
+    # surfacing it here is what stops the asymmetry from being invisible again.
+    dn_divergence = dn_recovery_split(raw)
 
     # Sample the last output row at or before each stage time.
     #
@@ -349,6 +443,7 @@ def score_run(csv_path: Path, sample: str, tag: str | None, tol_mpa: float,
         "csv": csv_path, "deck": deck, "sample": sample, "table": out,
         "t_end": t_end, "reached": reached, "used": used,
         "datum": datum, "offsets": offsets,
+        "dn_channel": dn_channel, "dn_divergence": dn_divergence,
     }
 
 
@@ -423,6 +518,13 @@ def print_run(res: dict) -> None:
     print(f"  datum       {res['datum']} "
           f"(dn offset {res['offsets']['dn_mm']:.6g} mm, ds offset {res['offsets']['ds_mm']:.6g} mm)")
     print(f"  columns     " + ", ".join(f"{k}<-{v}" for k, v in res["used"].items()))
+    div = res.get("dn_divergence")
+    if div is not None:
+        gap = div["recovery_gap_um"]
+        flag = "" if abs(gap) < 0.5 else "   <-- channels disagree; see 'The d_n channel'"
+        print(f"  d_n channel {res['dn_channel']};  unloading recovery: "
+              f"kinematic {div['kinematic']['recovery_um']:+.2f} um, "
+              f"normal_opening_total {div['total']['recovery_um']:+.2f} um{flag}")
     print(f"{'=' * 100}")
 
     hdr = f"{'st':>2} {'seg':<10}{'Pi':>4}{'t_s':>9}{'Pi_mod':>8}"
@@ -503,6 +605,10 @@ def main() -> int:
     ap.add_argument("--tol-mpa", type=float, default=0.15,
                     help="how close a schedule point must sit to a target to count as that hold")
     ap.add_argument("--datum", choices=["stage1", "preload"], default="stage1")
+    ap.add_argument("--dn-channel", choices=sorted(DN_CHANNELS), default=DEFAULT_DN_CHANNEL,
+                    help="which normal-displacement channel to score; 'kinematic' (default) is "
+                         "the global jump both laws emit, 'total' is the per-material "
+                         "normal_opening_total decomposition used before 2026-08-25")
     ap.add_argument("--preload-time", type=float, default=55.0)
     ap.add_argument("--csv-out", type=Path, help="write the per-stage table(s) here")
     args = ap.parse_args()
@@ -513,7 +619,7 @@ def main() -> int:
             raise SystemExit(f"No such CSV: {path}")
         sample = args.sample or detect_sample(path, find_deck(path, args.tag))
         results.append(score_run(path, sample, args.tag, args.tol_mpa,
-                                 args.datum, args.preload_time))
+                                 args.datum, args.preload_time, args.dn_channel))
 
     labels = list(args.label) + [r["csv"].stem for r in results[len(args.label):]]
 

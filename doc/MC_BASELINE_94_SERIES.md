@@ -7,6 +7,24 @@ The paper's framing is **BBFast primary, Mohr-Coulomb baseline**. For that compa
 anything, the two runs of a pair have to differ in the constitutive law and in nothing else. This
 document records how the eight 94-series decks were built and where their parameters come from.
 
+> **UPDATE, 2026-08-25 — read `doc/independent_analysis/MC_ARCHIVE_RECOVERY_2026-08-25.md`
+> before quoting any number in this file.** Two things changed.
+>
+> 1. **A scoring defect was found and fixed.** The MC material's `normal_opening_total` omits
+>    the elastic closure term that BBFast's includes, so the campaign's `d_n` column was not the
+>    same observable on the two sides of the comparison and the baseline was charged for a
+>    missing *reporting* term. `scripts/table2_gate.py` now scores `d_n` on the global kinematic
+>    jump by default. **No BBFast final moved**; the MC finals did:
+>    SW-S4 **8.97 -> 7.07**, SW-S3 18.47 -> 18.23, SW-T1 25.27 -> 25.31, SW-T2 23.14 -> 23.18.
+>    SW-S4's BB/MC gain falls from 1.46x to **1.15x**.
+> 2. **The old decks dismissed in section 1 below score better than this baseline** when their
+>    CSVs are put through today's gate: `67_11` reaches **4.43 %** on SW-S4 (`65_11`: 4.40 %)
+>    and `83_11` **6.07 %** on SW-S3, against 7.07 % and 18.23 % here. On SW-S4 that is better
+>    than the BBFast final's 6.14 %. Section 1's reasons for not reusing those decks remain
+>    correct and sufficient -- superseded meshes, missing paper-frame channels, `biot = 1e-12`,
+>    rate-and-state on -- but "cannot be reused" is not "was worse", and section 6's expectation
+>    below must be read with that distinction in mind.
+
 ---
 
 ## 1. Why none of the four existing MC decks could be reused
@@ -224,7 +242,14 @@ python3 scripts/table2_gate.py --tag hpc --sample SWT1 \
 ## 6. What to expect, and what would be a red flag
 
 The BBFast decks are calibrated and the MC decks inherit their envelope, so the MC runs are **not**
-expected to match Table 2 as well — that is the finding the baseline exists to produce. What
+expected to match Table 2 as well — that is the finding the baseline exists to produce.
+
+> **Scope, added 2026-08-25.** That finding is about *this transfer*, not about Mohr-Coulomb.
+> An independently calibrated Mohr-Coulomb model reaches 4.40 % on SW-S4 and 6.07 % on SW-S3
+> (`MC_ARCHIVE_RECOVERY_2026-08-25.md` §2), so the correct claim is a parameter-economy claim —
+> BBFast matches with the paper's own measured JRC/JCS/phi_r plus one aperture scale, where
+> Mohr-Coulomb needed eight fitted parameters per specimen and never transferred between
+> specimens — not a claim that the linear envelope cannot fit the data. What
 *would* indicate a build error rather than a physics result:
 
 * slip onset landing on a different injection stage than its BBFast sibling (the peak envelopes

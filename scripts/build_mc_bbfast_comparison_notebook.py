@@ -430,8 +430,19 @@ change the hydraulic response but do not move the premature MC weakening onto
 the measured stage.
 
 SW-S4 behaves differently: slip develops progressively, and MC follows shear
-displacement slightly better. Its normal-dilation trajectory remains much
-worse, so the specimen still favours BBFast in the combined score.
+displacement slightly better. Its normal-dilation trajectory is still worse
+(7.02% against 4.63%), so the specimen favours BBFast in the combined score --
+but only by 1.15x, which is inside any reasonable reproducibility floor. At
+JRC 1.19 the two envelopes should coincide, and they do; the case for the
+nonlinear law rests on the three rougher specimens.
+
+*Note on the d_n channel.* These scores use the global kinematic normal jump.
+The per-material `normal_opening_total` decomposition used before 2026-08-25 is
+not the same observable on the two sides of this comparison -- the MC material's
+omits the elastic term, so its d_n was monotone by construction and credited
+with zero unloading recovery. On the two saw cuts the MC mechanics actually
+recovers 12.7 and 9.6 um against BBFast's 11.4 and 11.0 um; the recovery failure
+is real only on the tensile fractures.
 """
         ),
         markdown(
@@ -508,14 +519,27 @@ for sample, spec in PAIR_SPECS.items():
 1. All four 102-series MC simulations are complete and scoreable; their poor
    agreement is not caused by truncation or damaged output.
 2. For the updated best-case pairs, BBFast lowers the four-specimen mean nRMSE
-   from **19.107% to 3.828%**, an **80.0% reduction**.
+   from **18.604% to 3.828%**, a **79.4% reduction**. The four-specimen mean is
+   not the result, though: the ratio is 1.15x on SW-S4 (JRC 1.19), 4.25x on
+   SW-S3 (1.96), 9.46x on SW-T1 (15.32) and 10.98x on SW-T2 (14.63) -- i.e.
+   the two saw cuts separate from the two tensile fractures by roughly an order
+   of magnitude, and the ratio is near unity at the polished end. The ordering
+   inverts within the tensile pair, so report a two-population separation, not
+   monotonicity in JRC.
 3. BBFast is more accurate in **19 of 20** specimen–observable comparisons.
    The exception is SW-S4 shear displacement, where MC is modestly better.
 4. The large SW-T1, SW-T2, and SW-S3 error is created by premature MC
    weakening at loading stage 5, not by the final post-slip endpoint alone.
-5. The 102 refinements do not support another monotonic MC tuning run. The
-   model discrepancy lies in the weakening/dilation path that the comparison
-   is intended to test.
+5. The 102 refinements do not support another *BBFast-derived* MC tuning run:
+   they act on a roughness description MC does not carry, so their failure to
+   help is expected. This is **not** evidence that MC cannot be calibrated. An
+   archived campaign of 52 independently fitted MC runs
+   (`orca_3.0_full`, see `doc/independent_analysis/MC_ARCHIVE_RECOVERY_2026-08-25.md`)
+   reaches 4.40% on SW-S4 -- better than the BBFast final -- and 6.07% on
+   SW-S3, using roughly eight fitted parameters per specimen against this
+   baseline's zero. The claim these runs support is parameter economy and
+   transferability at a given accuracy, not that a linear envelope cannot fit
+   the data.
 6. These results complete the **monotonic** comparison only. A direct
    MC-versus-BBFast cyclic or shut-in claim requires matched MC versions of the
    101-series schedules and should not be inferred from this notebook.

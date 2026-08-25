@@ -26,25 +26,20 @@ ACCOUNT = "def-biaoli66"
 NTASKS = 64
 MEM_GB = 64
 
-# ROUND 3. Wall time is now per job, because round 3's per-segment dt schedule cuts the
-# step count 4.2-5.0x and round 2's flat 2 d / 3 d requests were what truncated OG-T at
-# 36 % and OG-SC at 77 %. Budget from OG-SH's measured round-1 cost -- 24.3 s per solving
-# (ramp) step, 1.65 s per hold step at 64 ranks -- and then round up hard, because the
-# ramp cost is the one number carried across specimens:
+# The round-3 per-segment dt schedule cut the step count 4.2-5.0x. Budget from
+# OG-SH's measured round-1 cost -- 24.3 s per solving ramp step and 1.65 s per hold
+# step at 64 ranks -- gives about 4.3 h for OG-SH and 6.6 h for OG-SC. The 24 h
+# request leaves 5.6x and 3.6x margins, respectively.
 #
-#   OG-SH  600 ramp + 540 hold  ->  ~4.3 h   ask 24 h  (5.6x margin)
-#   OG-SC  867 ramp + 1560 hold ->  ~6.6 h   ask 24 h  (3.6x margin)
-#   OG-T  1133 ramp + 1020 hold ->  ~8.1 h   ask 3 d   (8.9x margin -- it is the one that
-#                                                       spends half its steps in a burst)
-#
-# OG-T is listed so the script exists, but see the WARNING block at the top of its deck:
-# do not submit it until 110_04_og_t_preload_probe.i has been run locally.
+# Round 6 uses the same 24 h request for every submitted case, per the campaign
+# resource constraint.  OG-T is intentionally a 60 s diagnostic probe rather than
+# another invalid full schedule.
 WALLTIME = "1-00:00:00"
 
 JOBS = [
-    ("Examples/Kalantar2025/OGSH", "110_02_og_sh_bbfast_r3", "1-00:00:00"),
-    ("Examples/Kalantar2025/OGSC", "110_06_og_sc_bbfast_r3", "1-00:00:00"),
-    ("Examples/Kalantar2025/OGT",  "110_04_og_t_bbfast_r3",  "3-00:00:00"),
+    ("Examples/Kalantar2025/OGSH", "110_13_og_sh_bbfast_r6", WALLTIME),
+    ("Examples/Kalantar2025/OGT",  "110_14_og_t_preload_probe", WALLTIME),
+    ("Examples/Kalantar2025/OGSC", "110_15_og_sc_bbfast_r6", WALLTIME),
 ]
 
 TEMPLATE = """#!/bin/bash
@@ -85,9 +80,8 @@ def main() -> int:
         out = ROOT / subdir / f"{stem}_hpc.sh"
         out.write_text(text)
         out.chmod(0o755)
-        note = "  <-- DO NOT SUBMIT YET, see the deck header" if "og_t" in stem else ""
         print(f"  {NTASKS:>4} ranks {MEM_GB:>4}G {walltime}  ->  "
-              f"{out.relative_to(ROOT)}{note}")
+              f"{out.relative_to(ROOT)}")
     print("\nntasks and srun -n agree in every script (the 97/98 truncation check).")
     return 0
 

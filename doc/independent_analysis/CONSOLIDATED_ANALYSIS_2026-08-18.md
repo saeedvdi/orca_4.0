@@ -5,6 +5,19 @@
 **Consolidation date:** 2026-08-18; result and coverage updates through 2026-08-20
 **Benchmark:** Ye and Ghassemi (2018), four granite-fracture injection tests
 
+> **SUPERSEDED IN TWO PLACES, 2026-08-25.** Every Mohr–Coulomb score below predates a fix to
+> `scripts/table2_gate.py`. The two constitutive materials decompose their reported normal opening
+> differently (the MC material's `normal_opening_total` has no elastic term), so the campaign's
+> `d_n` channel was not the same observable on the two sides of the comparison. Scoring now uses
+> the global kinematic jump. **No Barton–Bandis score changed**; the MC finals became
+> SW-T1 25.31, SW-T2 23.18, SW-S3 18.23, **SW-S4 7.07** (was 8.97), taking SW-S4's BB/MC ratio
+> from 1.46× to 1.15×. Separately, the BB/MC comparison here is a matched *transfer*, and an
+> archived campaign of 52 independently calibrated MC runs reaches 4.40 % on SW-S4 and 6.07 % on
+> SW-S3 — so "MC cannot reproduce this dataset" is not a supported reading of the tables below.
+> Both corrections, with provenance and caveats, are in
+> `doc/independent_analysis/MC_ARCHIVE_RECOVERY_2026-08-25.md`. The BBFast content of this
+> document is unaffected.
+
 This is the single synthesis of the independent analyses in `doc/`, updated with the results
 that arrived after those reports were written. It is not a concatenation in chronological order:
 several early reports describe parameterisations, meshes, data extractions, or reporting channels

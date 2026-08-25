@@ -44,18 +44,37 @@ calibration, the MC score should have moved.
 
 | specimen | **final** | mean nRMSE % | best-case MC | mean nRMSE % | change |
 |---|---|---|---|---|---|
-| SW-T1 | **`94_01_swt1_mc_final`** | 25.272253 | `102_01` (V_m 55 µm) | 25.350563 | +0.078 |
-| SW-T2 | **`94_03_swt2_mc_final`** | 23.144323 | `102_02` (aperture scale 0.0177) | 23.364774 | +0.220 |
-| SW-S3 | **`94_05_sw3_mc_final`** | 18.470130 | `102_03` (c_res 1.30 MPa) | 18.743525 | +0.273 |
-| SW-S4 | **`94_07_sw4_mc_final`** | 8.972580 | `102_04` (93_07 calibration) | 8.968570 | −0.004 |
+| SW-T1 | **`94_01_swt1_mc_final`** | 25.313363 | `102_01` (V_m 55 µm) | 25.444760 | +0.131 |
+| SW-T2 | **`94_03_swt2_mc_final`** | 23.182517 | `102_02` (aperture scale 0.0177) | 23.402790 | +0.220 |
+| SW-S3 | **`94_05_sw3_mc_final`** | 18.227743 | `102_03` (c_res 1.30 MPa) | 18.506613 | +0.279 |
+| SW-S4 | **`94_07_sw4_mc_final`** | 7.067297 | `102_04` (93_07 calibration) | 7.062957 | −0.004 |
 
 Three moved the wrong way and the fourth did not move at all: 0.004 points is a
 twentieth of the 0.1-point cross-machine reproducibility floor, so `102_04` and
-`94_07` are the same run. **The gap is constitutive, and the 94-series stands.**
+`94_07` are the same run. **The gap is not closed by Barton–Bandis-derived
+refinements, and the 94-series stands as the matched baseline.**
 
-This is a real result, not a null. It is the other half of the 103-series argument in
-manuscript §6.3.1: the exponent change alone reproduces the gap on the tensile pair,
-and the best available calibration alone does not close it anywhere.
+> **SCOPE CORRECTION, 2026-08-25.** This section previously read "**The gap is
+> constitutive**". That is more than the 102-series can support, and it has been
+> narrowed. The 102-series transplants *BBFast-derived* refinements onto the MC
+> envelope; those act on a roughness description MC does not carry, so their failure
+> to help is expected and says nothing about calibrating MC in its own right. It can
+> be calibrated: 52 completed, independently fitted MC runs in `orca_3.0_full` reach
+> **4.40 %** on SW-S4 (better than our BBFast final's 6.139 %) and **6.07 %** on
+> SW-S3 — using roughly eight fitted parameters per specimen against the 94-series'
+> zero. Full record, scores and caveats:
+> `doc/independent_analysis/MC_ARCHIVE_RECOVERY_2026-08-25.md`.
+>
+> The numbers in the table above also moved, because `scripts/table2_gate.py` now
+> scores `d_n` on the global kinematic jump rather than each material's own
+> `normal_opening_total` decomposition — the MC material's omits the elastic term, so
+> the baseline had been charged for a missing reporting term. No BBFast score
+> changed. SW-S4's MC baseline improved 8.97 → 7.07, taking that specimen's BB/MC
+> ratio from 1.46× to **1.15×**.
+
+This is still a real result, not a null. It is the other half of the 103-series
+argument in manuscript §6.3.1: the exponent change alone reproduces the gap on the
+tensile pair, and no BBFast-derived refinement closes it anywhere.
 
 ---
 
@@ -219,10 +238,16 @@ that size and do not read it as mesh error.
 
 `scripts/update_table2_ranking.py --write` rescores everything and will pick the
 mesh-3 rows up automatically. Then, per specimen and law, compare mean nRMSE against
-the mesh-5 parent. The one complete pair so far sets the expectation: SW-S4 moves
-6.139 → 6.367 on BBFast and 8.973 → 8.837 on MC — **opposite signs**, both small
-against the 2.83-point gap between the two laws, which is the argument §5.1 makes.
+the mesh-5 parent.
 
-Watch `tau` on SW-S3 in particular. If it improves markedly at mesh 3, part of what
-`SWS3_FINAL.md` §5(b) attributes to the loading frame is discretisation compliance,
-and that section needs rewriting.
+> **RESOLVED 2026-08-25.** All four BBFast pairs have now completed eleven stages:
+> SW-T1 4.44 → 5.53, SW-T2 2.43 → 2.26, SW-S3 4.58 → 4.76, SW-S4 6.14 → 6.29. The MC
+> siblings are complete only on SW-S4 (7.07 → 6.85); SW-S3's reaches stage 6, SW-T2's
+> stage 4, SW-T1's the preload only. The changes are not one-signed and individual
+> channels move in opposite directions within a specimen, so the manuscript reports a
+> bound rather than a convergence order (§5.1).
+>
+> **The SW-S3 `tau` watch fired.** It improves 8.01 → 5.69 at mesh 3 — about 29 % of
+> that residual is discretisation compliance, not the loading frame. `SWS3_FINAL.md`
+> §5(b) has been revised accordingly: the stiffness-deficit diagnosis stands, the
+> "non-tunable" qualifier does not.

@@ -182,6 +182,10 @@ def score(csv_path: Path, sample: str, deck: Path, tol_mpa: float) -> dict:
 
     raw = (pd.read_csv(csv_path).sort_values("time")
            .drop_duplicates("time", keep="last").reset_index(drop=True))
+    t_end = float(pd.to_numeric(raw["time"], errors="coerce").max())
+    deck_end = float(x[-1])
+    complete_pct = 100.0 * t_end / deck_end if deck_end else 100.0
+    complete = t_end >= deck_end - 1e-9
     model = pd.DataFrame({"time": pd.to_numeric(raw["time"], errors="coerce")})
     used = {}
     for key, candidates in KAL_COLUMNS.items():
@@ -191,15 +195,25 @@ def score(csv_path: Path, sample: str, deck: Path, tol_mpa: float) -> dict:
             used[key] = name
 
     rows = []
+    reached = 0
     for i in range(n):
+        # Never recycle the last available CSV row into holds that the run did not
+        # reach.  Before this guard, a truncated OG-T round-5 snapshot at t=3305.5 s
+        # was silently repeated through all later holds and printed a plausible but
+        # invalid 17-stage score.
+        if times[i] > t_end + 1e-9:
+            break
         at = model[model["time"] <= times[i] + 1e-9]
         if at.empty:
             continue
         rows.append(at.iloc[-1])
+        reached += 1
     got = pd.DataFrame(rows).reset_index(drop=True)
 
     scored_keys = [SCORED_FORCE, SCORED_FLOW[sample]]
     out = {"sample": sample, "csv": csv_path, "used": used, "stages": n,
+           "reached_stages": reached, "t_end": t_end, "deck_end": deck_end,
+           "complete_pct": complete_pct, "complete": complete,
            "scored": scored_keys, "channels": {}}
     cos_t = math.cos(math.radians(THETA_DECK[sample]))
     for key in dict.fromkeys(scored_keys + DIAGNOSTIC):
@@ -231,23 +245,30 @@ def score(csv_path: Path, sample: str, deck: Path, tol_mpa: float) -> dict:
 
 def report(res: dict) -> None:
     sample = res["sample"]
-    print(f"\n{sample}   {res['csv'].name}   {res['stages']} hold stages")
+    state = ("complete" if res["complete"] else
+             f"INCOMPLETE {res['complete_pct']:.1f}% -- diagnostics only, NOT SCOREABLE")
+    print(f"\n{sample}   {res['csv'].name}   {res['reached_stages']}/"
+          f"{res['stages']} hold stages   [{state}]")
     print(f"  {'channel':<14}{'n':>4}{'drop':>6}{'nRMSE %':>10}{'MAE':>12}"
           f"{'bias':>12}   source column")
     scored = []
     for key in dict.fromkeys(res["scored"] + DIAGNOSTIC):
-        mark = "*" if key in res["scored"] else " "
+        mark = "*" if key in res["scored"] and res["complete"] else " "
         c = res["channels"].get(key)
         if c is None:
             print(f" {mark}{key:<14}{'--':>4}{'not emitted by the deck':>28}")
             continue
-        if key in res["scored"]:
+        if key in res["scored"] and res["complete"]:
             scored.append(c["nrmse_pct"])
         print(f" {mark}{key:<14}{c['n']:>4}{c['dropped']:>6}{fmt(c['nrmse_pct'],10,2)}"
               f"{fmt(c['mae'],12,4)}{fmt(c['bias'],12,4)}   {res['used'].get(key,'?')}")
     if scored:
         print(f"  {'MEAN (* only)':<14}{'':>20}{fmt(float(np.mean(scored)),10,2)}")
-    print(f"\n  * = SCORED. One force channel ({SCORED_FORCE}) and one flow channel "
+    elif not res["complete"]:
+        print("  NO SCORE: the run has not reached the deck end time; channel values "
+              "above are reached-stage diagnostics only.")
+    star_note = "* = SCORED" if res["complete"] else "* would be scored only after completion"
+    print(f"\n  {star_note}. One force channel ({SCORED_FORCE}) and one flow channel "
           f"({SCORED_FLOW[sample]}).\n    The others are readouts of the same two "
           f"measurements and are shown for diagnosis only:\n    sigma'_n and tau are "
           f"both affine in sigma_1, and constant-piston-displacement\n    control makes "
