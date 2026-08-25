@@ -16,7 +16,15 @@ what was concluded. When a claim here is shown wrong, correct it **in place and 
 — §5 exists because the wrong round-1 assumptions were worth more than the right ones.
 Add a line to §12.
 
-**Last updated:** 2026-08-24. **Branch:** `orca_v8`, commit `353faf3` + round-2 results.
+**Last updated:** 2026-08-24 (round-3 results). **Branch:** `orca_v8`, commit `353faf3` +
+round-2 and round-3 results.
+
+> **State in one line, 2026-08-24 22:48.** Round 3 finished on OG-SH and OG-SC. **OG-SH mean
+> nRMSE 62 → 67 → 17**, from acting on round 2's one preregistered null. OG-SC's force channel
+> is exact for five stages then breaks on a single mis-derived constant. OG-T is unchanged and
+> still blocked on its preload. TODO #121 (`bb_jrc_mobilized`) is **closed — it is a deck flag,
+> not a bug**. Round-4 change list, with preregistered nulls:
+> `doc/KALANTAR2025_ROUND3_BACKANALYSIS.md` **Part II §10**. Read Part II before Part I.
 
 ---
 
@@ -37,9 +45,10 @@ Add a line to §12.
 | Meshes `.e` | `*/mesh/*.e` | built and verified 2026-08-23 |
 | 110-series BBFast decks, **round 2** | `OGSH/110_01…`, `OGT/110_03…`, `OGSC/110_05…` | built, `Syntax OK`, **run** |
 | SLURM jobs, 64 ranks / 64 GB | `*/110_0*_hpc.sh` | done — 2 d OG-SH, 3 d OG-T/OG-SC |
-| **Round-2 results, downloaded 2026-08-24 10:52** | `*/results_csv_hpc/*.csv` | **OG-SH complete and scored; OG-T 36 % and OG-SC 77 % — truncated, diagnosed but NOT scoreable** |
+| **Round-2 results, downloaded 2026-08-24 10:52** | `*/results_csv_hpc/110_0{1,3,5}_*.csv` | **OG-SH complete and scored; OG-T 36 % and OG-SC 77 % — truncated, diagnosed but NOT scoreable** |
+| **Round-3 results, downloaded 2026-08-24 22:48** | `*/results_csv_hpc/110_0{2,4,6}_*.csv` | **OG-SH 100 % (mean nRMSE 17) and OG-SC 100 % (77) — both scoreable; OG-T 0.5 %, dead** |
 | Round-1 results | (superseded in place) | scored, see §5 |
-| 111-series Mohr–Coulomb siblings | — | after a clean round-3 lands |
+| 111-series Mohr–Coulomb siblings | — | **unblocked** — round 3 landed clean on two of three |
 
 **One line.** Round 1 went to HPC as three jobs; two died at the first timestep on a
 reporting bug and the third ran 9.8 h and missed Table 2 on every channel. Six defect
@@ -674,6 +683,57 @@ two-sided friction bracket and OG-T's preload defect were both sitting in CSVs t
 on disk since 10:52, behind a boolean. *A run that is unscoreable is not uninformative.*
 Guard the **score**, never the **plot**.
 
+### 6.12 Source pinning is one integer, and the boreholes can be imprinted
+
+The pinning distance had been treated as an empirical property of each mesh — measured after
+every rebuild with `check_source_nodes.py`, never explained, and the only known remedy was to
+try another global size and re-measure. **It is closed-form.**
+
+Both boreholes sit at `y = 0` on the fracture plane. That is not the interior of a surface:
+it is exactly where `webcut … yplane` (§3) cut the fracture ellipse — the ellipse's **major
+axis** — and it is a *geometric curve*. Cubit divides that curve into `N` **equal** intervals
+(verified: min spacing == max spacing to machine precision on all six meshes), so the only
+node positions the source can reach are `k/N` along it. The design borehole sits at
+`x/r = (24.99 − 5)/24.99 = 0.799920`, so the error is `round(0.79992·N)/N − 0.79992`:
+
+| mesh | N | nearest fraction | predicted | `check_source_nodes.py` |
+|---|---|---|---|---|
+| `_size3` OG-SH | **25** | 20/25 = 0.800000 | 4.1 µm | 4.1 µm |
+| `_size3` OG-T | 27 | 22/27 = 0.814815 | 792.9 µm | 792.9 µm |
+| `_size3` OG-SC | 26 | 21/26 = 0.807692 | 388.5 µm | 388.5 µm |
+| graded OG-SH | 28 | 22/28 = 0.785714 | 732.2 µm | 732.2 µm |
+| graded OG-T | 29 | 23/29 = 0.793103 | 362.8 µm | 362.8 µm |
+| graded OG-SC | 27 | 22/27 = 0.814815 | 744.4 µm | 744.4 µm |
+
+Six for six, to 0.1 µm. **OG-SH's 4.1 µm pin — quoted throughout §3 as the reason it is the
+production mesh — was never quality. It is 25 being divisible by 5**, because the design
+borehole sits two microns off exactly 4/5 of the radius. The graded experiment's two
+"PASSES → FAILS" verdicts and OG-T's lone "pins better" are the same arithmetic, so **the
+OG-T exception recorded in §6.10 is not evidence that its graded sizing was good.**
+
+**Fix A, active in all three journals.** `split curve <id> location position <borehole>`
+after the webcuts, before `imprint all`. A vertex forces a node, so the error goes to **0**
+and stays there at any mesh size. It adds one vertex and replaces one curve with two — no new
+surfaces, no new volumes, so the hardcoded block/nodeset surface IDs and the nodeset 5/6
+vertex IDs survive. **A webcut would renumber all of them; do not use one.**
+
+**Fix B, commented fallback.** `curve <ids> interval 25`, forcing `N ≡ 0 (mod 5)`: a node at
+exactly `0.8 r = 0.019992`, 4.0–4.3 µm from design, at any coarseness, no topology change.
+
+**Why it is worth doing at all** — it is not speed. It (i) removes a **scored-channel** bias,
+since the re-pinned separations are +0.010 % / **+1.862 %** / **+0.972 %** off design and
+OG-T's design separation *is* the paper's 85.1596 mm; and (ii) it decouples pinning from mesh
+size, which is the only reason factor 4 was disqualified (§3). Coarser meshes become testable
+rather than automatically wrong.
+
+**Status: unrun — there is no Cubit on the workstation.** `split curve` on already-merged
+geometry and the element quality around the new vertex are both untested. The journals
+therefore export to a **new** `…_size3_pin.e`; `_size3.e` is untouched because 110_02 and
+110_06 are running on it. New tooling: `scripts/check_axis_intervals.py` (infers L, r, θ and
+the fracture plane from the mesh itself, reports `N` and names the fix) and
+`Examples/Kalantar2025/mesh_probe_axis_curves.jou` (probe only, prints the curve IDs).
+Sequence in `TODO.md` §1.7.
+
 ---
 
 ## 7. What is still inherited — the round-3 scope
@@ -687,6 +747,15 @@ Not derived, still Ye2018 fits:
 At Kalantar's stress levels the closure term contributes ~0.03 µm
 (σ₀ = V_m·K_ni = 15 MPa against σ'ₙ ≈ 43 MPa with p = 4), so it is nearly inert — **but
 "inert" is not "derived".** Refit against the a_h(σ'ₙ) loop once the loading gate passes.
+
+> **2026-08-24, round 3: the precondition is met on OG-SC and the refit is done.** "Nearly
+> inert" turned out to be the whole aperture defect, not a footnote: OG-SC's measured `a_h`
+> swings 0.570 µm over the pressurization branch and the saturated law can deliver 0.051 µm —
+> **11–24× short, stage by stage.** Two-parameter refit on Table 2's own six pre-burst stages,
+> `p` held at 4: **V_m 1.20 → 2.651 µm, σ₀ 15.0 → 36.29 MPa**, K_ni essentially unchanged at
+> 1.369e13. RMS 25 nm on a 570 nm swing. `K_ni` was never wrong; `V_m` was, and with it the
+> placement of σ₀ *below* the operating range instead of inside it. Details:
+> `doc/KALANTAR2025_ROUND3_BACKANALYSIS.md` §7.4.
 
 `tangential_viscosity` deserves separate attention: it is not a numerical regulariser, it
 is the hidden rate law, worth 0.035–3.5 MPa in τ, and SW-S4 needed 9× the others.
@@ -816,3 +885,5 @@ is a direct check on a single number and could not have been misread.
 | 2026-08-24 | `orca_v8` (results only) | Round-2 batch run and downloaded. Frame and loading gate both confirmed correct; OG-SH complete, other two truncated. New finding: the fracture reaches τ/τ_limit 0.9900 and never weakens — the envelope is 9.0 % too strong. Defect class (g) found: `flow_width_over_length` still Ye2018's on OG-SH and OG-T. Round-2 prediction scored and marked wrong |
 | 2026-08-24 (round 3 built) | `orca_v8` | Round-3 decks built: `110_02` OG-SH, `110_04` OG-T, `110_06` OG-SC, plus `110_04_og_t_preload_probe.i`. All four `Syntax OK`. Per-segment `time_t`/`time_dt` (4.2–5.0× fewer steps); OG-SC φ_r 19.148 → 22.660 (inside its measured bracket); OG-SH envelope pinned through stage 1, φ_peak 32.70 → **30.12** (the 31.3 quoted earlier ignored the 1.2 MPa cohesion); `flow_width_over_length` really substituted; OG-T's `event_dt_cap` found to be an **eighth** inherited Ye2018 constant and flattened. Four new build-time assertions. OG-T's envelope untouched by design |
 | 2026-08-24 (later) | `orca_v8` | **Notebook rewritten to show truncated runs without scoring them** (`SHOWN` vs `LOADED`, stage tables clipped to `t_end`, unreached span greyed) — §6.11. Unhiding OG-T and OG-SC produced three findings: **§6.9** OG-SC matches stages 1–3 exactly and gives a two-sided measured bracket `21.36° < φ_r < 24.05°` against a deck value of 19.148° (envelope too WEAK — opposite sign to OG-SH's); OG-T's constitutive σ'ₙ **falls** while the reported one rises during the preload, ratio 0.54 by t = 26 s, so it sheds 0.53 mm before injection and none of its constants are judgeable. **§6.10** both truncations are `dtmax = 0.75` forcing 9067/12133 steps, not the mesh: 83 % of OG-SH's wall time is 1206 ramp steps, 3594 hold steps converge at NL iteration 0, and three of nine holds move nothing to 7 digits. Mesh coarsening rejected with reasons. §9 step F3 re-ordered |
+| 2026-08-24 (round 3 results) | `orca_v8` | **Round 3 landed: OG-SH 100 %, OG-SC 100 %, OG-T dead at 0.5 %.** OG-SH **62 → 67 → 17** mean nRMSE — round 2's preregistered single-number null (`τ_limit` at stage 1 = measured τ) was acted on and paid off 3.7×; first such payoff in either campaign. **TODO #121 closed**: `bb_jrc_mobilized` is pinned by `use_mobilized_jrc = false` in every deck of both campaigns, and turning it on is *not* the fix because the law ramps roughness **up** with slip; the live weakening channel is `roughness_state` (OG-SH 1.000 → 0.732, OG-SC 0.640 → 0.141) and both manuscripts must name it instead. **OG-SC's φ_r bracket closes on the deck's own 22.660°** (holds stage 6 by +6.1 %, fails stage 7 by −5.8 % on the undegraded envelope) — the Part I "bracket narrows" inference withdrawn; the early burst is premature weakening (9.11 µm of model slip vs Table 2's 1.2). **OG-SC's `slip_weakening_residual` 15.354° was derived from a LOCKED stage** — a lower bound, not a measurement; correct value 21.17° from the one sliding stage. **OG-SH's `characteristic_slip_distance` 150 → 26.5 µm**, and the build assertion that blocked it is 1.36× too strict (linear-drop assumption on an `exp(−(s/D)^1.4)` law) plus charges σ'ₙ's fall to the friction term. **OG-T's preload defect orders with fracture-tip clearance (14.9/6.7/3.0 mm → 1.012/0.830/−0.382) and NOT with Δσ₁** — geometry promoted over the axial gate, and the 26° arm is 1.0 mm clearance, i.e. a falsifier not a rescue. §7's inherited-constant refit done for OG-SC. Round-4 list + 4 preregistered nulls in the back-analysis §10 |
+| 2026-08-24 (mesh) | `orca_v8` | Graded meshing **tried, measured, rejected** — the spacing-vs-distance profile is flat at ~0.98 mm out to 100 mm, `scheme polyhedron` yields HEX8 and propagates surface intervals through the whole volume, OG-SH came out **+8.2 % larger**. Then the real mechanism: **§6.12, source pinning is `round(0.79992·N)/N`** for the interval count on the fracture's major-axis curve — all six meshes predicted to 0.1 µm, OG-SH's famous 4.1 µm pin is 25 being divisible by 5. Borehole **vertex imprint** written into all three journals (`split curve … location position`, exporting to a new `_size3_pin.e`), with `curve … interval 25` as the commented fallback; `scripts/check_axis_intervals.py` and `mesh_probe_axis_curves.jou` added. **Unrun — no Cubit on the workstation** |

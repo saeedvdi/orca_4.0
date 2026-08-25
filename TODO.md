@@ -363,6 +363,59 @@ written falsifiable prediction (#120) → the tip test → **#121, why `bb_jrc_m
 moved in seven decks across both campaigns** → OG-SC's last φ_r step → OG-SH's weakening
 conversion.
 
+> **§1.8 is superseded by §1.8b. Three of its five conclusions did not survive completion**
+> — the `bb_jrc_mobilized` item, OG-SC's bracket, and the prime suspect on OG-T.
+
+### 1.8b Round-3 results — COMPLETE, 2026-08-24 22:48
+
+**Full write-up: [`doc/KALANTAR2025_ROUND3_BACKANALYSIS.md`](doc/KALANTAR2025_ROUND3_BACKANALYSIS.md)
+Part II.** `110_02` and `110_06` both reached `end_time`; `110_04` is unchanged at 0.5 %. Both
+completed runs are legitimately scoreable.
+
+| | round 1 | round 2 | **round 3** |
+|---|---|---|---|
+| OG-SH mean nRMSE | 62 | 67 | **17** (τ 21, Q 13) |
+| OG-SC mean nRMSE | — | — | 77 (τ 120, a_h 39) |
+
+**The headline is not the number, it is that a preregistered null paid off.** Round 2 closed by
+naming one — *"τ_limit at stage 1 equals the measured τ"* — after the falsifier before it had
+been mis-specified. Round 3 acted on that single number (φ_peak 32.70° → 30.12°) and the score
+fell 3.7×. First time in either campaign. **Keep closing rounds this way.**
+
+* **#121 CLOSED — not a bug, a deck flag.** `use_mobilized_jrc = false` in every deck of both
+  campaigns; `ADOrcaBartonBandisContactTractionFastAD.C:782-787` pins the property when it is
+  off. **And turning it on is not the fix** — `jrc = JRC·sbar^n` ramps roughness *up* with slip,
+  the opposite of both datasets. The live weakening channel is `roughness_state` (OG-SH
+  1.000 → 0.732, OG-SC 0.640 → 0.141). **Both manuscripts must be reworded — #127.**
+  *I had called this the project's highest-leverage item and blamed the unseeded-property
+  family. A constant that is constant in every deck is first evidence about the decks.*
+* **OG-SC's φ_r bracket closes on the deck's own 22.660°** — on the *undegraded* envelope it
+  holds stage 6 by +6.1 % and fails stage 7 by −5.8 %, exactly Table 2. §1.8's "bracket narrows"
+  is **withdrawn**: it read the early burst as a weak envelope when the weakening law had
+  already cut the limit 13 %. **Do not spend another φ_r step.**
+* **OG-SC's one wrong constant:** `slip_weakening_residual` 15.354° was derived from Table 2's
+  *last* stage, where slip has been frozen since stage 10 — a **locked** joint, so a lower bound
+  not a measurement. Correct value **21.17°**, from stage 7 where it has just slid. The model
+  collapses to μ = 0.2746 and gives τ 4.85 vs 9.73 measured.
+* **OG-SH's `characteristic_slip_distance` 150 → 26.5 µm.** The residual (25.930°) is right and
+  never reached: 48 µm of slip is `s/D = 0.32`, worth 18 % of the drop. The assertion that
+  blocked this is **1.36× too strict** (linear-drop assumption on an `exp(−(s/D)^1.4)` law) and
+  also charged σ'ₙ's fall to the friction term; corrected cap 23.2 µm, so 26.5 µm is stable by
+  1.14× — matching "creeps, no burst".
+* **OG-SC's aperture law is saturated.** σ₀ = V_m·K_ni = 15 MPa sits *below* the 28.5–36.1 MPa
+  operating range, so the closure term delivers 0.051 µm against a measured 0.570 — 11–24×
+  short. Refit on six pre-burst stages: **V_m 1.20 → 2.651 µm, σ₀ → 36.29 MPa**, K_ni unchanged.
+  RMS 25 nm. Closes OG-SC's half of the still-inherited list.
+* **OG-T: geometry promoted over the axial gate.** The measured/predicted `Δσ'ₙ` ratio orders
+  monotonically with **fracture-tip clearance** — 14.92 / 6.72 / 3.00 mm → **1.012 / 0.830 /
+  −0.382** — and does *not* order with Δσ₁ (OG-SH carries twice OG-SC's and scores better). The
+  **26° arm is 1.0 mm clearance**: a falsifier, never a rescue. Probe prediction sharpened in
+  #120.
+
+**Next, in order:** #126 round-4 decks (four constants + two builder assertions, four
+preregistered nulls) → #120 OG-T preload probe with both predictions written first → #127
+manuscript wording → 111-series MC siblings, now unblocked.
+
 ### 1.9 Kalantar items not on the critical path
 
 * **111-series Mohr–Coulomb siblings** — after round 3 lands.

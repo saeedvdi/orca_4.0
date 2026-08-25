@@ -118,6 +118,62 @@ webcut volume 1 with plane vertex 3 vertex 4 vertex 5
 delete vertex 3 4 5
 webcut volume all with plane xplane imprint merge
 webcut volume all with plane yplane imprint merge
+
+# ==============================================================================
+# BOREHOLE VERTEX IMPRINT -- a mesh node at each source BY CONSTRUCTION.
+# Added 2026-08-24. NOT YET RUN IN CUBIT -- see "IF THE SPLIT FAILS" below.
+# ==============================================================================
+# WHY. Both boreholes sit at y = 0 on the fracture plane. That is not the interior
+# of a surface: it is exactly the line where the yplane webcut above cut the
+# fracture ellipse -- the ellipse's MAJOR AXIS -- and it is a geometric curve.
+# Cubit divides that curve into N EQUAL intervals (measured: min spacing == max
+# spacing to machine precision), so the only node positions the source can reach
+# are k/N along it. The design borehole sits at x/r = 0.01999/0.02499 = 0.799920,
+# so the pinning error is integer arithmetic, round(0.79992 N)/N - 0.79992:
+#
+#     mesh              N    nearest fraction     pinning error
+#     _size3  OG-SH     25   20/25 = 0.800000         4.1 um   <-- N divisible by 5
+#     _size3  OG-T      27   22/27 = 0.814815       792.9 um
+#     _size3  OG-SC     26   21/26 = 0.807692       388.5 um
+#     graded  OG-SH     28   22/28 = 0.785714       732.2 um
+#     graded  OG-T      29   23/29 = 0.793103       362.8 um
+#     graded  OG-SC     27   22/27 = 0.814815       744.4 um
+#
+# All six reproduce the independently measured check_source_nodes.py distance to
+# 0.1 um. So THIS MESH'S CELEBRATED 4.1 um PIN WAS NOT QUALITY -- it is 25 being
+# divisible by 5, because the design borehole sits two microns off exactly 4/5 of
+# the radius. Nothing else about this mesh is special, and the two failures in the
+# graded attempt were the same arithmetic, not a meshing defect.
+#
+# Splitting the curve at the design position puts a VERTEX there, and Cubit meshes
+# every vertex with a node. Pinning then becomes EXACT and INDEPENDENT of mesh
+# size, which is the thing that lets this mesh be coarsened at all.
+#
+# The split adds one vertex and replaces one curve with two. It creates no new
+# surfaces and no new volumes, so the hardcoded block/nodeset surface IDs and the
+# nodeset 5/6 vertex IDs further down are unaffected. Do NOT try to do this with a
+# webcut instead -- that renumbers everything.
+#
+# CURVE IDS: run Examples/Kalantar2025/mesh_probe_axis_curves.jou once and paste
+# them here. They are the two curves of length 51.5460 mm (= r/sin29) lying in
+# surfaces 26 46 53 32; that length is unique in the model. c_pos runs to +x
+# (towards z_high = 0.105083153), c_neg to -x (towards z_low = 0.014916847).
+# Left at 0 deliberately, so an unfilled journal fails loudly on "curve 0".
+#{ c_pos = 0 }
+#{ c_neg = 0 }
+split curve {c_pos} location position  0.019990 0 0.096062915
+split curve {c_neg} location position -0.019990 0 0.023937085
+#
+# IF THE SPLIT FAILS -- if Cubit rejects `split curve` on merged geometry, or the
+# mesh quality drops near the new vertex -- comment the two split lines out and
+# uncomment the two below instead. Forcing N divisible by 5 puts a node at exactly
+# 0.8 r = 0.019992, i.e. 4.1 um from design, at ANY global coarseness, with no
+# change to the topology at all. That is the same pin this mesh already has, made
+# deliberate instead of accidental.
+#   curve {c_pos} {c_neg} interval 25
+#   curve {c_pos} {c_neg} scheme equal
+# ==============================================================================
+
 imprint all
 merge all
 
@@ -209,11 +265,20 @@ nodeset 5 name "no_disp_x"
 nodeset 6 add vertex 10 11 18 19
 nodeset 6 name "no_disp_y"
 
-# VERIFY BEFORE EXPORTING. Expect 100,048 elements, 1977 interface nodes, fracture
-# area 4.046795e-3 m^2. Then run scripts/check_source_nodes.py -- ALWAYS, after any
-# rebuild. On this mesh both sources land ON the fracture 4.1 um from the design
-# point, which is the best of any mesh tried and the reason it is production.
-list nodeset 4                          # interface nodes, expect 1977
+# VERIFY BEFORE EXPORTING. Element and interface-node counts will now differ from
+# the pre-imprint mesh (100,048 / 1977) because the split adds a constrained vertex;
+# the fracture AREA must not move -- it is the same geometry.
+list nodeset 4                          # interface nodes
 list surface 26 46 53 32 geometry       # fracture area, expect 4.046795e-3 m^2
 
-export mesh "kalantar2025_og_sh_theta29_size3.e" overwrite
+# EXPORTED UNDER A NEW NAME ON PURPOSE. _size3.e is the mesh the 110-series decks
+# point at and jobs 110_02 / 110_06 are running on it right now; do not overwrite
+# it with an untested mesh. Promote _pin.e to production only after BOTH of these
+# pass, run from the repository root in the `moose` conda environment:
+#     python3 scripts/check_axis_intervals.py <this mesh>   -> expect 0.0 um
+#     python3 scripts/check_source_nodes.py  <this mesh> \
+#             -0.019990 0 0.023937085   0.019990 0 0.096062915
+# The second must report the sources ON the fracture interface. If it does, the
+# deck's source coordinates become the DESIGN values above -- no re-pinning, and
+# mesh_flow_width_over_length goes to the design separation of 82.4654 mm.
+export mesh "kalantar2025_og_sh_theta29_size3_pin.e" overwrite
