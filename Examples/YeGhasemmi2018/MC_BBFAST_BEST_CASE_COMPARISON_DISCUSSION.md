@@ -18,6 +18,73 @@ with the same stage-1 displacement datum and range-normalised root-mean-square e
 throughout the validation campaign. Only the five independent measured quantities are scored:
 flow rate, effective normal stress, shear stress, normal displacement, and shear displacement.
 
+## Downloaded-result and run-coverage audit (2026-08-25)
+
+The downloaded files do not represent a result for every input deck in the four specimen
+directories. There are 178 campaign `.i` files, of which 118 have at least one result CSV that
+maps back to the deck and 60 have no mapped result. This literal count includes many retired
+legacy variants that were never selected for a production campaign, so it is an inventory result,
+not evidence that 60 current jobs failed.
+
+The named submission batches are substantially more complete. The 94, 97/98, 101, 103, and 104
+batches have 4/4, 8/8, 16/16, 3/3, and 5/5 result CSVs, respectively. The older rescoped 95/96
+submission manifest has 8/11: the missing files are the three rate-and-state level-matched
+controls `95_01` (SW-T1), `95_05` (SW-T2), and `95_09` (SW-S3). The project documentation already
+states that only the SW-S4 rate-and-state bracket was run, so these are remaining simulations,
+not missing copies of known completed HPC outputs.
+
+This audit treats the result CSV as the required scientific output because the ranking and all
+committed comparison readers consume CSV data. It does not show that every HPC artifact was
+downloaded: the four `results_exodus_hpc_rorqual` directories contain only one Exodus file in
+total (`94_03` for SW-T2), and current Slurm `.out`/`.err` files are generally absent. HPC
+checkpoints were explicitly disabled by the launch scripts. Consequently, completion can be
+established from schedule coverage and CSV end time, but scheduler exit codes and most solver-log
+diagnostics cannot be independently audited from this checkout.
+
+All 16 series-101 files reach their scheduled end times. Twelve are scientifically valid and the
+four SW-S4 files are `qualified_failed_pre_injection_falsifier`: their outputs are complete, but
+the registered pre-injection check fails. All five series-104 files also reach their scheduled end
+times and reproduce the committed 104 metrics. Series 101 and 104 use cyclic or shut-in schedules,
+so they must not be inserted into the monotonic Table-2 ranking.
+
+Recomputing the ranking against the downloaded sources changes the monotonic inventory from 71
+complete and 15 partial cases to **74 complete and 12 partial cases**. Three replacement CSVs now
+complete all eleven stages: `93_02` (SW-T1 mesh 3), `93_04` (SW-T2 mesh 3), and `93_06` (SW-S3
+mesh 3). The downloaded `93_08` SW-S4 file also changes its score from 6.366967% to 6.288682%.
+The selected mesh-5 BBFast and matched MC cases used in the headline comparison are unchanged.
+
+The ranking arithmetic is internally consistent after this refresh: each mean is the average of
+the five recorded nRMSE channels, accuracy is `100 − mean nRMSE`, complete runs alone receive a
+rank, and ties use competition ranking on the published six-decimal score. The rank is a numerical
+leaderboard, however, not a physical-selection list. It intentionally mixes model families,
+meshes, controls, and historical cases; most notably, numerical rank 1 for SW-S3 is explicitly
+marked `historical_unphysical`. Selection decisions must therefore use `selection_status` and the
+notes together with `rank_within_sample`, rather than the rank column alone.
+
+One superseded series-97 file, `97_03_sw3_cyclic3_hpc.csv`, has non-finite values in 50 channels
+on its final row. Its time history is monotonic and the corrected series-101 campaign supersedes
+it; it is neither a ranking source nor evidence against the current comparison. One local CSV,
+`126_01_swt1_fluxfix_t320_local.csv`, has no matching input deck anywhere in this repository and
+therefore cannot be independently reproduced from the files present here.
+
+### Fresh mesh-3 comparison
+
+The three newly completed 93-series files make the authoritative BBFast mesh comparison complete
+for all four specimens:
+
+| Specimen | mesh 5 mean nRMSE | mesh 3 mean nRMSE | mesh 3 − mesh 5 |
+|---|---:|---:|---:|
+| SW-T1 | 4.435159% | 5.527736% | +1.092577 pp |
+| SW-T2 | 2.427821% | 2.258740% | −0.169081 pp |
+| SW-S3 | 4.574322% | 4.759550% | +0.185228 pp |
+| SW-S4 | 6.139187% | 6.288682% | +0.149495 pp |
+| **Four-specimen mean** | **4.394122%** | **4.708677%** | **+0.314555 pp** |
+
+Mesh 3 is 7.2% worse in the four-specimen mean, driven mainly by SW-T1, while SW-T2 improves
+slightly. This is modest relative to the BBFast-versus-MC separation and does not change the model
+comparison below. A corresponding four-specimen MC mesh comparison is still unavailable:
+`94_02`, `94_04`, and `94_06` remain partial, while only SW-S4 `94_08` is complete.
+
 ## The transfer is verified, not merely asserted
 
 The strongest single check on this comparison is that the paired arms are the *same model* until
