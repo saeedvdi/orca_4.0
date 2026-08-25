@@ -203,9 +203,48 @@ the final SW-T1 run `93_01` gives **16.8 %**.
 `flow_rate_validation_ml_min_pp`, the cubic-law evaluation, which never touches the reaction
 vector. Every score, every ranking, and the whole of §5.5 are unaffected.
 
-**Fix.** Repoint the two `NodalSum`s, add a `react_pore_pressure` sum, and re-run **only to the
-first hold stage** — SW-T1 to $t = 300$ s is enough to regenerate both numbers. No exodus exists
-locally for `93_01`, so this cannot be recovered by post-processing.
+### 3.0 RESOLVED, same day
+
+All sixteen decks were repointed at `react_pore_pressure`, with the superseded `save_in` sums
+retained as `inj_saveiin_sum_legacy_pp` / `prod_saveiin_sum_legacy_pp` so the size of the
+correction stays recoverable from one run. SW-T1 `93_01` was then re-run locally to $t = 320$ s
+(deck `126_01`, 16 ranks, 427 steps, every step converged).
+
+**The edit is output-only, and that was verified rather than asserted.** At the same instant, the
+new run against the pre-fix HPC run:
+
+| channel | new | old | difference |
+|---|---:|---:|---:|
+| `hydraulic_aperture_um_pp` | 1.63 | 1.63 | 0 |
+| `flow_rate_validation_ml_min_pp` | 0.05279386 | 0.05279386 | 0 |
+| $\sigma'_n$ paper frame | 65.72963 | 65.72963 | $2.4\times10^{-8}$ % |
+| $\tau$ paper frame | 67.581535 | 67.581534 | $3.7\times10^{-8}$ % |
+| $d_n$ paper frame | 0.0014425 | 0.0014428 | $1.4\times10^{-2}$ % |
+
+The two stress channels differ only at roundoff (16 local ranks vs 128 on the cluster) and $d_n$ by
+less than the known cross-machine floor for that channel. **No scored quantity moved.**
+
+**Corrected values**, SW-T1 first hold, $\Delta p$ exactly 3.000 MPa, flat to all reported digits
+from $t = 110$ s onward:
+
+| quantity | value (mL min⁻¹) |
+|---|---:|
+| solved injection flux (tagged vector) | **0.0272** |
+| solved production flux (tagged vector) | **0.0293** |
+| per-kernel `save_in` accumulation (the bug) | 0.000191 |
+| cubic law on the simulated aperture | 0.0528 |
+| Ye & Ghassemi Table 2 | 0.053 |
+
+Correction factor **142×**. Mass balance **7.6 %**, not the 16.8 % the pre-fix decks reported.
+The ratio of solved flux to reported $Q$ is **0.52** — "about half", which is exactly what §5.4
+argued from the v2 numbers, so **the subsection's argument survives its own correction unchanged**.
+
+§5.1, the §5.4 table and Appendix B now carry these values. Appendix B's original v2 figures are
+kept as the record of the diagnosis and the finals' numbers added beside them.
+
+**Original plan, retained for the record.** Repoint the two `NodalSum`s, add a
+`react_pore_pressure` sum, and re-run only to the first hold stage. No exodus existed locally for
+`93_01`, so this could not be recovered by post-processing.
 
 ### 3.1 A second, smaller wiring issue in the same family
 
@@ -232,13 +271,15 @@ of Table 5 does and does not test.
 
 ## 5. How to move forward
 
-**Do first, because the manuscript is otherwise finished:**
+**All three manuscript items are done as of 2026-08-24:**
 
-1. **Task #123** — port the flow fix, re-run SW-T1 to $t = 300$ s locally, regenerate the §5.1 and
-   §5.4 numbers. Cheap, and it is the only item that changes a stated result.
-2. **Task #124** — rewrite §5.1's mesh paragraph and footnote 14 to promote SW-S3. This *adds* a
-   result; it does not retract one.
-3. **Task #125** — correct the separation claim to all four specimens and add the §2.1 null.
+1. ~~**Task #123**~~ — flow fix ported to all 16 decks, verified output-only, SW-T1 re-run, §5.1 /
+   §5.4 / Appendix B regenerated. **Done** (§3.0).
+2. ~~**Task #124**~~ — §5.1's mesh paragraph and footnote 14 rewritten to promote SW-S3. **Done.**
+3. ~~**Task #125**~~ — separation claim corrected to all four specimens, §2.1 null added. **Done.**
+
+What remains is a read-through: the manuscript is internally consistent as far as these three
+changes go, but §5.1 and §5.4 have both been rewritten and should be read once end to end.
 
 **Do not do:**
 

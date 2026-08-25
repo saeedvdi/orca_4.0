@@ -1873,16 +1873,44 @@ checkpoint_file_base = results_checkpoint_hpc_rorqual/93_08_sw4_final_theta30_jr
     variable = pore_pressure
     boundary = source_in
   []
+  # --- FLOW-MEASUREMENT FIX 2026-08-24 (task #123) -------------------------
+  # These two summed `inj_flux_aux`, the save_in quantity.  The 2026-08-06
+  # back-analysis established that save_in does not reproduce the nodal
+  # reaction here (mass_vol_expansion carries the mass_reaction tag but had no
+  # save_in, and the two-sided sum across the split injection node does not
+  # recover it either), and that the deck already builds the right quantity:
+  # `react_pore_pressure`, a TagVectorAux on mass_reaction with
+  # remove_variable_scaling = true.  That repoint was never carried into the
+  # 93/94-series finals, so every flux number they report is ~2 orders of
+  # magnitude low and the manuscript quoted values no finished run produces.
+  #
+  # OUTPUT-ONLY: `inj_flux_aux` is written by save_in and read by nothing but
+  # these postprocessors, so the residual, the solve and every other reported
+  # channel are unchanged from the runs already scored.  Only the flux
+  # diagnostics move.
   [inj_reaction_sum_pp]
     type = NodalSum
-    variable = inj_flux_aux
+    variable = react_pore_pressure
     boundary = source_in
   []
   [prod_reaction_sum_pp]
     type = NodalSum
+    variable = react_pore_pressure
+    boundary = source_out
+  []
+  # Superseded save_in sums, retained so the pre-fix numbers stay auditable and
+  # the size of the correction is recoverable from a single run.
+  [inj_saveiin_sum_legacy_pp]
+    type = NodalSum
+    variable = inj_flux_aux
+    boundary = source_in
+  []
+  [prod_saveiin_sum_legacy_pp]
+    type = NodalSum
     variable = inj_flux_aux
     boundary = source_out
   []
+  # ------------------------------------------------------------------------
   [flow_rate_pp]
     type = ParsedPostprocessor
     pp_names = inj_reaction_sum_pp

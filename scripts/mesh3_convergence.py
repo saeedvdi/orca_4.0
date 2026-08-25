@@ -100,12 +100,39 @@ def coverage(ref: dict[str, np.ndarray], t_cut: float) -> tuple[float, float, fl
     return pct, p_cut, q_pct
 
 
+def provenance(a: dict[str, np.ndarray], b: dict[str, np.ndarray]) -> str:
+    """Confirm from the data that the two runs really used different meshes.
+
+    A filename is not evidence.  Runs in this campaign have twice been read off
+    a CSV that a crashed job left untouched, so before comparing two files we
+    check a quantity that *only* the mesh can set:
+    ``fracture_interface_area_pp``, the discretised area of the ellipse.  It is
+    the same physical surface in both runs, so any difference is pure
+    discretisation -- and it must be non-zero, or one of the two files did not
+    come from the mesh its name claims.
+    """
+    key = "fracture_interface_area_pp"
+    if key not in a or key not in b:
+        return "  provenance: UNCHECKED (no fracture_interface_area_pp column)"
+    a5, a3 = float(a[key][len(a[key]) // 2]), float(b[key][len(b[key]) // 2])
+    if a5 <= 0:
+        return "  provenance: UNCHECKED (zero area)"
+    d = 100.0 * (a3 - a5) / a5
+    if abs(d) < 1e-9:
+        return (f"  provenance: *** FAILED *** both runs report area "
+                f"{a5:.10e} m^2 -- they used the SAME mesh, so this is not a "
+                f"convergence pair")
+    return (f"  provenance: OK   area {a5:.6e} -> {a3:.6e} m^2 ({d:+.3f} %), "
+            f"so the two runs used different meshes")
+
+
 def compare(spec: str, ref: str, tri: str) -> None:
     a, b = load(spec, ref), load(spec, tri)
     print(f"\n{'=' * 78}\n{spec}   mesh5 = {ref}\n{' ' * len(spec)}   mesh3 = {tri}")
     if a is None or b is None:
         print("  MISSING csv -- skipped")
         return
+    print(provenance(a, b))
 
     et = end_time(spec, tri)
     t5, t3 = a["time"], b["time"]

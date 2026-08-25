@@ -1781,14 +1781,11 @@ specimen's shear-stress score (8.01 % nRMSE, the second worst of the four). Re-g
 outstanding and would be expected to improve it; we report the ungated number rather than an
 estimate of the improvement.
 
-**Mass balance.** Injected and produced mass fluxes, recovered from the tagged residual vector,
-balance to 4.3 % at steady state during the first hold stage. `[Measured on SW-T1.]`
-`[TO RE-MEASURE before submission — task #123. This number comes from the 2026-08-06 deck`
-`generation, in which the two NodalSum postprocessors were repointed at react_pore_pressure. That`
-`repoint was never carried into the 93/94-series finals, which still sum inj_flux_aux and report`
-`16.8 % here. Nothing in Table 5 depends on it — the scored flow channel is the cubic-law`
-`evaluation, which does not touch the reaction vector — but this sentence and the §5.4 table must`
-`be regenerated from a corrected run before submission.]`
+**Mass balance.** Injected and produced mass fluxes, recovered from the tagged residual vector
+(Appendix B), balance to 7.6 % at steady state during the first hold stage, where the pressure
+drop is exactly 3.000 MPa. Both are flat to all reported digits from $t = 110$ s to the end of the
+stage, so the figure is a converged steady state and not a transient sample. `[Measured on SW-T1,`
+`deck 93_01.]`
 
 **Mesh convergence.** The two discretisations are labelled by the Cubit auto-size factor used to
 generate them, 5 for the reported runs and 3 for the refined siblings; the factor is a coarseness
@@ -1973,21 +1970,15 @@ the first hold stage of SW-T1, with the pressure drop at exactly 3.000 MPa:
 
 | quantity | value (mL min⁻¹) |
 |---|---|
-| solved injection flux | 0.0277 |
-| independent flux integral (Appendix B) | 0.0257 |
-| cubic law evaluated on the simulated aperture | 0.0508 |
+| solved injection flux | 0.0272 |
+| solved production flux | 0.0293 |
+| cubic law evaluated on the simulated aperture | 0.0528 |
 | Ye & Ghassemi Table 2 | 0.053 |
 
-`[TO REGENERATE before submission — task #123. The first two rows come from the 2026-08-06 deck`
-`generation, in which the flux postprocessors were repointed at react_pore_pressure; the finalized`
-`93/94-series decks still sum inj_flux_aux and give 0.000191 and 0.000223 at this point, a factor`
-`of 145 lower. The cubic-law row reproduces (0.0528). The argument of this subsection is unchanged`
-`in kind — both solved measures still fall below the reported value — but the factor must be`
-`re-measured from a corrected run before the numbers are quoted.]`
-
-The two independent simulated measures agree with each other to 7 %, and both fall to about half
-the reported value. The cubic-law evaluation, by contrast, reproduces the reported value to 4 % —
-but that agreement is circular, since the reported $Q$ and the cubic law are related by the same
+The two solved measures are the tagged-vector reactions at the two boundaries (Appendix B) and
+are independent of each other; they agree to 7.6 %, and both fall to about half — $0.52\times$ —
+the reported value. The cubic-law evaluation, by contrast, reproduces the reported value to 0.4 %
+— but that agreement is circular, since the reported $Q$ and the cubic law are related by the same
 equation used to obtain the reported $a_h$.
 
 The circularity is exact rather than approximate, and it is worth stating in that form. The
@@ -3247,9 +3238,17 @@ SW-T1 at the first hold stage the two measures agree to 7 % (0.0257 against 0.02
 while the per-kernel accumulation gives 0.00021 mL min⁻¹.
 
 A corollary: with the reaction correctly recovered, injected and produced fluxes carry opposite
-signs and balance to 4.3 %, which is a usable global mass-balance diagnostic. With the incorrect
-construction the same diagnostic reported an apparent imbalance of 2300 %, which had been
-misinterpreted as a physics problem.
+signs and balance to a few per cent, which is a usable global mass-balance diagnostic. With the
+incorrect construction the same diagnostic reported an apparent imbalance of 2300 %, which had
+been misinterpreted as a physics problem.
+
+The figures above were established on the deck generation in which the defect was found. On the
+finalized decks reported in §5 the same construction gives, for SW-T1 at the first hold stage with
+the pressure drop at exactly 3.000 MPa, a tagged-vector injection reaction of 0.0272 mL min⁻¹
+against a production reaction of 0.0293 — a 7.6 % balance — while the per-kernel accumulation on
+the same run gives 0.000191, low by a factor of 142. The correction factor is therefore a property
+of the measurement construction rather than of a particular calibration, and it reproduces across
+deck generations to within the difference between the two constitutive laws.
 
 ---
 

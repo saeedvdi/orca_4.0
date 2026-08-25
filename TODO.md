@@ -432,12 +432,15 @@ Full write-up: **`doc/YE2018_FINAL_BACKANALYSIS_2026-08-24.md`**. Arithmetic:
    injection, so it covers every loading stage and the slip event with them. Matched
    six-stage means: BB 4.36 → 5.26 (+0.90), MC 24.39 → 24.89 (+0.50). SW-S3 is a **burst**
    specimen, which fills the draft's own stated gap. §5.1 rewritten — task **#124**.
-3. **The 2026-08-06 flow fix was never ported to the finals.** All 16 decks still
-   `NodalSum` on `inj_flux_aux`; `react_pore_pressure` is built with
-   `remove_variable_scaling = true` in every deck and never summed. §5.4's "solved
-   injection flux 0.0277" reads **0.000191** in `93_01` — 145× — and in *every* SW-T1 run
-   back to `87_01`. §5.1's "4.3 % mass balance" reads 16.8 %. Scores untouched (the scored
-   $Q$ is the cubic-law channel). Task **#123**; the fix needs a re-run only to $t=300$ s.
+3. **The 2026-08-06 flow fix was never ported to the finals** — *now fixed, task #123.* All
+   16 decks were still `NodalSum`-ing `inj_flux_aux` while `react_pore_pressure`, built with
+   `remove_variable_scaling = true` in every deck, was never summed. §5.4's "solved injection
+   flux 0.0277" read **0.000191** in `93_01`, and in *every* SW-T1 run back to `87_01`.
+   Repointed everywhere and re-measured: injection **0.0272**, production **0.0293**, balance
+   **7.6 %** (was 16.8 %), correction factor **142×**. Scores were never affected — the scored
+   $Q$ is the cubic-law channel — and the re-run proves it: $a_h$ and $Q$ bit-identical.
+   **§5.4's argument survives unchanged**: the solved flux is 0.52× the reported $Q$, which is
+   the "about half" the subsection already claimed.
 
 Also established, and it is the reason the mesh comparison survives at all: **$Q$ is an
 exact algebraic function of the aperture** — $C\,a_h^3\Delta p$ with $C$ fitted and
@@ -453,7 +456,7 @@ it adds no evidence — write §5.1 on SW-S4 + SW-S3 regardless rather than wait
 
 | # | item | state |
 |---|---|---|
-| **#123** | Port the flow-measurement fix into the 93/94 finals; re-run SW-T1 to $t=300$ s | **new, do first** — only item that changes a stated result |
+| **#123** | Port the flow-measurement fix into the 93/94 finals; re-run SW-T1 | **DONE 2026-08-24.** All 16 decks repointed at `react_pore_pressure`; legacy `save_in` sums kept as `*_saveiin_sum_legacy_pp`. Verified **output-only**: $a_h$ and $Q$ bit-identical, $\sigma'_n$/$\tau$ to $10^{-8}$ %, $d_n$ inside the cross-machine floor. Re-run `126_01` (SW-T1, $t\le320$ s, 16 ranks, 427 steps, all converged). Corrected: injection **0.0272**, production **0.0293**, balance **7.6 %**, correction factor **142×**, ratio to reported $Q$ **0.52**. §5.1 + §5.4 + Appendix B updated |
 | **#124** | Rewrite §5.1's mesh paragraph + footnote 14 with SW-S3 promoted | **applied 2026-08-24**, verify on read-through |
 | **#125** | Correct the separation claim to all four specimens; add the $Q\equiv a_h^3$ null | **applied 2026-08-24**, verify on read-through |
 | **#81** | Score the mesh-3 convergence runs against their mesh-5 finals | **done** — `scripts/mesh3_convergence.py`; reproduces the manuscript's SW-S4 numbers exactly |
