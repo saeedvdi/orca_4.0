@@ -101,11 +101,14 @@ This is the same constant that dominated everything on Ye2018 — a ×2 bracket 
 −93.9 %/+408 % — and here it was supposed to be *measured* rather than inferred. It was
 measured. It was then softened by 1.7× in the deck.
 
-**It also invalidates the stability cap**, in the conservative direction: every cap this
-campaign has quoted, naive or corrected, used the machine-only `k_eff` and is therefore
-**1.7× too small**. OG-SH's corrected cap is 35.2 µm, not 23.2 — and round 4 put `D_c` at
-59.3 µm and still produced a near-runaway, so the criterion is not merely mis-scaled, it is
-being asked to do more than a linearised inequality can.
+**It also invalidates every stability cap this campaign has quoted.** All of them used the
+machine-only `k_eff` while the model was running a frame 1.7× softer, so the cap that actually
+applied in rounds 1–4 was **1.7× larger** than the one printed: OG-SH's was 35.2 µm, not 23.2.
+Round 4 put `D_c` at 59.3 µm — still above even that — and produced a near-runaway anyway, so
+the criterion is not merely mis-scaled; it is being asked to do more than a linearised
+inequality can. *(Once round 5 stiffens the frame the two agree again by construction, and the
+builder then prints 20.9 µm for OG-SH — that is the cap under the corrected frame, not a third
+value.)*
 
 > `C_ax` was calibrated on our own round-1 run to make the axial *gate* land σ₁ on target. That
 > was legitimate for its own purpose and is being read here as if it were a property of the
@@ -145,7 +148,11 @@ another constant** — it is the `postprocessor-only-channels-can-fake-model-err
 
 ---
 
-## 6. Round 5
+## 6. Round 5 — BUILT 2026-08-25
+
+`110_10` OG-SH, `110_11` OG-T, `110_12` OG-SC, all `Syntax OK`. Verified by diff: the **only**
+changes are the three axial-frame keys on all three decks, plus OG-SH's `D_c` reverted. OG-SC's
+three round-4 constants and OG-T's constitutive block are untouched.
 
 The frame stiffness is upstream of everything else here: it sets how much slip any weakening
 produces, on all three specimens, and it is a **derived** constant with a measurement behind it,
@@ -153,7 +160,7 @@ not a fit. Fix it first and re-bracket afterwards — do not tune `D_c` against 
 
 | # | change | basis |
 |---|---|---|
-| 1 | **Stiffen the axial penalty so the SERIES stiffness equals `K_sys`**: `penalty = 1/(A/K_sys − C_ax)`, i.e. 1.70× on OG-SH, 1.58× on OG-SC/OG-T | §3 — the paper's `K_sys` is the system, and the deck counts the core twice |
+| 1 | **Stiffen the axial penalty so the SERIES stiffness equals `K_sys`**: `penalty = 1/(A/K_sys − C_ax)` — **3.27× on OG-SH, 2.37× on OG-SC/OG-T**, which raises the stiffness the *joint* sees by 1.695× and 1.579×. The two ratios are different; do not confuse them | §3 — the paper's `K_sys` is the system, and the deck counts the core twice |
 | 2 | Rebuild the stability cap on the series `k_eff`, and keep it **reported** | §3.1 |
 | 3 | **Revert OG-SH's `D_c` to 150 µm** for the frame-fix run, so round 5 changes one thing | §2 — its bracket is not interpretable against a soft frame |
 | 4 | Keep OG-SC's residual, `V_m`, `K_ni` | null 3 passed; the residual recovered ⅔ of its gap |

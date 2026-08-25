@@ -241,6 +241,23 @@ SPECIMENS = {
         # term in the aperture law that subtracts.
         slip_damage=True,
         slip_damage_char_slip=15.0e-6,
+        # ROUND 5. D_c goes BACK to round 3's 150 um and is HELD.
+        #
+        # Round 4 fitted it to Table 2's mu(s) path and got 59.3 um. The run's slip went
+        # from +15 % to +155 % and tau from +9.7 % to -19.6 %. The fit treated dL_s as an
+        # independent variable; in the model it is an OUTCOME -- the joint slides until
+        # the frame's unloading meets the falling limit, so a shorter D_c weakens it,
+        # which produces more slip, which weakens it further. The fit priced the first
+        # step of that loop and none of the rest.
+        #
+        # Interpolating the two completed runs SPLITS: tau wants 110 um, slip wants 166.
+        # A split bracket means a second defect, and it is the frame (see the penalty
+        # note in derive()). D_c cannot be re-bracketed against a frame that is 1.7x too
+        # soft, so round 5 changes the frame and nothing else on this specimen.
+        d_c_hold=1.500e-04,
+        d_c_hold_why=("reverted to round 3's value: its round-4 bracket splits (tau "
+                      "wants 110 um, slip 166) and a split means a second defect -- the "
+                      "frame. Re-bracket only after the frame fix is verified"),
     ),
     "OGT": dict(
         tag="og_t", label="OG-T", kind="tensile", theta=28.0, theta_printed=25.999,
@@ -310,8 +327,8 @@ SPECIMENS = {
 # Every round gets its own deck numbers so earlier CSVs and Exodus files are never
 # overwritten -- the previous round's per-stage tables are the evidence for the
 # changes in this one. Rounds 1-2 used 110_01/03/05, round 3 110_02/04/06.
-DECK_NUMBER = {"OGSH": "110_07", "OGT": "110_08", "OGSC": "110_09"}
-ROUND = 4
+DECK_NUMBER = {"OGSH": "110_10", "OGT": "110_11", "OGSC": "110_12"}
+ROUND = 5
 
 
 def schedule(p_max: float, hold: float) -> tuple[list[float], list[float]]:
@@ -692,10 +709,46 @@ def derive(spec: dict, rows: list[dict]) -> dict:
     dilation = 0.5 * jrc_term
 
     # Series-spring gate on the axial command.
+    #
+    # ROUND 5. `penalty` is no longer K_sys/A. The joint does not unload against the
+    # penalty spring alone -- it unloads against that spring IN SERIES WITH THE CORE,
+    # so the axial stiffness it actually sees is 1/(1/penalty + C_ax). With
+    # penalty = K_sys/A that came to 0.59x (OG-SH) and 0.63x (the others) of K_sys/A,
+    # and the measurement agrees: across the round-3/round-4 pair, which differ in
+    # D_c alone, OG-SH's tau shed 82.5 MPa per mm of slip where K_sys/A predicts 150.5
+    # and the series value predicts 88.8.
+    #
+    # Table 2's own dL_s = -A dtau / (K_sys sin cos) identity verifies with K_sys ALONE
+    # to 0.4-4 % on all three specimens, so the paper's K_sys is the stiffness of the
+    # whole loading SYSTEM, sample included -- the name says so. Setting the penalty to
+    # K_sys/A and then letting an elastic core hang off it counts the sample twice.
+    #
+    # Invert instead: choose the penalty so the SERIES stiffness equals K_sys/A.
+    #     1/(1/penalty + C_ax) = K_sys/A   =>   penalty = 1/(A/K_sys - C_ax)
+    # That raises the penalty 3.27x on OG-SH and 2.37x on the other two, to raise the
+    # stiffness the JOINT sees by 1.695x and 1.579x. The two ratios are different and
+    # must not be confused.
+    #
+    # C_ax stays what it always was -- 0.8987 L/E, calibrated on the round-1 run. That
+    # calibration measured the MODEL's own core under the model's own BC, which is
+    # exactly the quantity being subtracted here. It is NOT a property of the
+    # experiment, and reading it as one is what let this sit for four rounds.
     sigma1 = SIGMA3 + first["tau"] * 1e6 / stc
-    penalty = K_SYS / SAMPLE_AREA
     c_ax = C_AX_OVER_L_OVER_E * spec["core_height"] / YOUNGS_MODULUS
+    penalty_machine = K_SYS / SAMPLE_AREA                 # rounds 1-4
+    series_compliance = SAMPLE_AREA / K_SYS - c_ax
+    if series_compliance <= 0.0:
+        raise SystemExit(
+            f"{spec['label']}: the core alone (C_ax = {c_ax:.4e} m/Pa) is softer than "
+            f"the whole system (A/K_sys = {SAMPLE_AREA/K_SYS:.4e}); no penalty can "
+            f"recover K_sys and the frame model needs revisiting")
+    penalty = 1.0 / series_compliance
     u_cmd = sigma1 / penalty + c_ax * (sigma1 - SIGMA3)
+    # What the joint will actually unload against, before and after. The `after` value
+    # is K_sys/A by construction -- computed the long way round so it is CHECKED, not
+    # assumed, and asserted in main().
+    k_axial_before = 1.0 / (1.0 / penalty_machine + c_ax)
+    k_axial_after = 1.0 / (1.0 / penalty + c_ax)
 
     # Stick-slip criterion (the series-spring identity under constant piston
     # displacement): the joint bursts iff its weakening distance is SHORTER than the
@@ -712,7 +765,11 @@ def derive(spec: dict, rows: list[dict]) -> dict:
     # the mobilised friction at stage 1. On a specimen that starts locked -- OG-SC sits
     # at tau/sigma'_n = 0.3645 while its envelope is at 0.4866 -- stage 1 reads BELOW
     # the residual and the cap collapses to zero.
-    k_eff = K_SYS * math.cos(th) ** 2 * math.sin(th) / SAMPLE_AREA   # Pa/m
+    # k_eff is now the REALISED series stiffness resolved onto the fracture, not an
+    # assumed one. After the round-5 fix it equals K_sys cos^2 sin / A; before it was
+    # 0.59-0.63x that, which made every stability cap this campaign quoted 1.7x small.
+    k_eff = k_axial_after * math.cos(th) ** 2 * math.sin(th)         # Pa/m
+    k_eff_before = k_axial_before * math.cos(th) ** 2 * math.sin(th)
     sn_res = rows[res_idx]["sn"]
     mu_peak_at_res = math.tan(math.radians(
         phi_r + spec["jrc"] * math.log10(UCS / (sn_res * 1e6))))
@@ -753,7 +810,9 @@ def derive(spec: dict, rows: list[dict]) -> dict:
                 tau_limit1=first["sn"] * 1e6 * math.tan(math.radians(phi_peak))
                 + spec["c_peak"],
                 dilation=dilation, sigma1=sigma1, penalty=penalty, c_ax=c_ax,
-                u_cmd=u_cmd, k_eff=k_eff, dc_cap=dc_cap, d_c=d_c,
+                u_cmd=u_cmd, k_eff=k_eff, k_eff_before=k_eff_before,
+                penalty_machine=penalty_machine, k_axial_after=k_axial_after,
+                dc_cap=dc_cap, d_c=d_c,
                 tau1=first["tau"] * 1e6, sn1=first["sn"] * 1e6,
                 ah0=ah[0], ah_lo=min(ah), ah_hi=max(ah), ah_loss=loss,
                 slip_damage_scale=loss if spec["slip_damage"] else 0.0,
@@ -1114,7 +1173,39 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
 # Built by scripts/build_110_kalantar_decks.py from
 # Examples/YeGhasemmi2018/{spec['parent']}.
 {OGT_WARNING}#
-# WHAT CHANGED FROM ROUND 3 (doc/KALANTAR2025_ROUND3_BACKANALYSIS.md, Part II)
+# WHAT CHANGED FROM ROUND 4 (doc/KALANTAR2025_ROUND4_BACKANALYSIS.md)
+#   ROUND 5 CHANGES ONE THING: THE FRAME. Round 4's four constants produced a split
+#   verdict -- OG-SC's aperture null PASSED (a_h 1.53 against a preregistered
+#   1.60 +/- 0.10; that channel went 39 -> 10 nRMSE) while OG-SH got worse, 17 -> 31.
+#   Chasing that failure found a defect upstream of every constitutive constant.
+#
+#   THE JOINT WAS UNLOADING AGAINST 0.59x THE EXPERIMENT'S STIFFNESS. The axial BC is
+#   a penalty spring of K_sys/A backed by an elastic core, and the two are in SERIES,
+#   so the stiffness the joint sees is 1/(1/penalty + C_ax). Measured across the
+#   round-3/round-4 pair -- which differ in D_c alone -- OG-SH's tau shed 82.5 MPa per
+#   mm of slip; K_sys/A predicts 150.5 and the series value predicts 88.8. An 8 %
+#   match to the series value.
+#
+#   Table 2's own dL_s/dtau identity verifies with K_sys ALONE to 0.4-4 % on all three
+#   specimens, so the paper's K_sys is the whole loading SYSTEM, sample included. The
+#   deck was counting the sample twice. Inverted: penalty = 1/(A/K_sys - C_ax), which
+#   is 3.27x on OG-SH and 2.37x on the other two, to raise the stiffness the JOINT
+#   sees by 1.695x and 1.579x. Those two ratios are different; do not confuse them.
+#
+#   CONSEQUENCE FOR EVERY CAP THIS CAMPAIGN HAS QUOTED: they used the machine-only
+#   k_eff and are all 1.7x too small.
+#
+#   AND OG-SH's D_c GOES BACK TO 150 um. Round 4 fitted it to Table 2's mu(s) path
+#   (59.3 um) and slip went +15 % -> +155 %, tau +9.7 % -> -19.6 %. The fit treated
+#   dL_s as an independent variable when the model has to SOLVE for it: shorter D_c ->
+#   weaker joint -> more slip -> weaker still. Interpolating the two runs splits (tau
+#   wants 110 um, slip 166), and a split means a second defect -- the frame. D_c is not
+#   re-bracketable against a soft frame, so it is reverted and held.
+#
+#   OG-SC keeps all three of its round-4 constants: the residual recovered two thirds
+#   of its post-burst gap and the aperture pair passed its null outright.
+#
+# WHAT CHANGED IN ROUND 4 (doc/KALANTAR2025_ROUND3_BACKANALYSIS.md, Part II)
 #   Round 3 completed on OG-SH and OG-SC. OG-SH went 62 -> 67 -> 17 mean nRMSE, by
 #   acting on ONE preregistered null. FOUR constants move in round 4, all on the two
 #   scoreable specimens, and everything else is held so the round stays attributable.
@@ -1449,6 +1540,13 @@ def main() -> int:
                   f"predicts {'bursting' if d['d_c'] < d['dc_cap'] else 'stable'}, "
                   f"paper reports {'bursting' if spec['bursts'] else 'stable'}. "
                   f"D_c source: {d['dc_source']}")
+        # ROUND 5. The whole point of the new penalty is that the stiffness the JOINT
+        # sees equals the paper's measured K_sys. Check it the long way round rather
+        # than trusting the algebra that produced it.
+        want = K_SYS / SAMPLE_AREA
+        assert abs(d["k_axial_after"] - want) / want < 1e-9, (
+            f"{name}: realised series axial stiffness {d['k_axial_after']:.6e} != "
+            f"K_sys/A {want:.6e} -- the penalty inversion is wrong")
         # A weakening law must weaken.
         assert d["phi_residual"] < d["phi_peak"], (
             f"{name}: slip-weakening residual {d['phi_residual']:.2f} >= phi_peak "
@@ -1497,6 +1595,11 @@ def main() -> int:
             lo, hi, fs = d["bracket"]
             print(f"    phi_r bracket from Table 2's dL_s jump at stage {fs}: "
                   f"[{lo:.3f}, {hi:.3f}] deg, deck {d['phi_r']:.3f}")
+        print(f"    frame:    penalty {d['penalty_machine']:.4e} -> {d['penalty']:.4e} Pa/m "
+              f"({d['penalty']/d['penalty_machine']:.2f}x), so the stiffness the joint "
+              f"sees goes\n              {d['k_eff_before']/1e12:.4f} -> "
+              f"{d['k_eff']/1e12:.4f} MPa/um ({d['k_eff']/d['k_eff_before']:.3f}x) "
+              f"= K_sys cos^2 sin / A, as measured")
         print(f"    envelope: {d['envelope_source']}")
         print(f"    residual: {d['res_source']}")
         print(f"    D_c:      {d['dc_source']}")

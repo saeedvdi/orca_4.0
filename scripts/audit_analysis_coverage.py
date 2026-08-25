@@ -31,6 +31,12 @@ def mapped_deck(path: Path) -> Path | None:
     try:
         return table2_gate.find_deck(path, "biot_ab_20260815")
     except SystemExit:
+        # Workstation repeats append ``_local`` to the CSV base while keeping
+        # the original input-deck name.
+        if path.stem.endswith("_local"):
+            candidate = path.parent.parent / f"{path.stem[:-6]}.i"
+            if candidate.is_file():
+                return candidate
         return None
 
 
@@ -49,6 +55,8 @@ def main() -> int:
     ranked_cases = {row["case"]: row for _, row in ranking.iterrows()}
     discussion = pd.read_csv(DEFAULT_OUTPUT / "DISCUSSION_101_RUN_INDEX.csv")
     discussion_cases = {row["case"]: row for _, row in discussion.iterrows()}
+    discussion_104 = pd.read_csv(DEFAULT_OUTPUT / "DISCUSSION_104_METRICS.csv")
+    discussion_104_cases = set(discussion_104["case"].astype(str))
 
     result_rows: list[dict] = []
     results_for_deck: dict[str, list[dict]] = {}
@@ -57,6 +65,7 @@ def main() -> int:
         deck = mapped_deck(path)
         deck_relative = str(deck.relative_to(ROOT)) if deck else ""
         stem = path.stem[:-4] if path.stem.endswith("_hpc") else path.stem
+        canonical_stem = stem[:-6] if stem.endswith("_local") else stem
         source_key = str(path.resolve())
 
         if source_key in ranked_sources:
@@ -67,6 +76,9 @@ def main() -> int:
             row = discussion_cases[stem]
             status = "discussion_101_" + str(row["analysis_status"])
             artifact = "DISCUSSION_101_RUN_INDEX.csv"
+        elif stem in discussion_104_cases:
+            status = "discussion_104_complete"
+            artifact = "DISCUSSION_104_METRICS.csv"
         elif stem.startswith(("97_", "98_")):
             status = "superseded_discussion_run"
             artifact = "CONSOLIDATED_ANALYSIS_2026-08-18.md"
@@ -78,7 +90,7 @@ def main() -> int:
         }:
             status = "derived_summary_not_simulation"
             artifact = ""
-        elif deck and deck.stem in ranked_cases:
+        elif deck and canonical_stem in ranked_cases:
             status = "duplicate_or_cross_machine_repeat"
             artifact = "CONSOLIDATED_ANALYSIS_2026-08-18.md"
         else:
@@ -109,6 +121,9 @@ def main() -> int:
                 row = discussion_cases[stem]
                 status = "discussion_101_" + str(row["analysis_status"])
                 artifact = "DISCUSSION_101_RUN_INDEX.csv"
+            elif stem in discussion_104_cases:
+                status = "discussion_104_complete"
+                artifact = "DISCUSSION_104_METRICS.csv"
             elif stem.startswith(("97_", "98_")) and linked:
                 status = "superseded_discussion_run"
                 artifact = "CONSOLIDATED_ANALYSIS_2026-08-18.md"
@@ -140,14 +155,17 @@ def main() -> int:
             continue
         relative = deck.relative_to(ROOT)
         is_test = relative.parts[:2] == ("test", "tests")
+        is_other_example = relative.parts[:1] == ("Examples",)
         deck_rows.append({
-            "sample": "TEST" if is_test else "NON_CAMPAIGN",
+            "sample": "TEST" if is_test else "OTHER_EXAMPLE" if is_other_example else "NON_CAMPAIGN",
             "input_deck": str(relative),
             "result_file_count": 0,
             "result_files": "",
             "analysis_status": (
                 "software_verification_test_not_campaign"
                 if is_test
+                else "other_example_campaign_not_yeg2018"
+                if is_other_example
                 else "unclassified_non_campaign_input"
             ),
             "analysis_artifact": "test/tests" if is_test else "",

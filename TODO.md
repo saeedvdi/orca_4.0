@@ -503,6 +503,47 @@ null 1's failure past the branch its own wording anticipated is what produced ev
 Nulls for round 5 in §6 of the write-up — the first is *OG-SH's slip at stage 9 falls from
 55.2 µm to 48 ± 5 µm at unchanged `D_c`*.
 
+### 1.8e Round 5 — BUILT 2026-08-25, ready for HPC. The frame fix, and nothing else.
+
+`110_10` OG-SH, `110_11` OG-T, `110_12` OG-SC, all `Syntax OK`. **Submit all three** — OG-T is
+included this time because the frame change is exactly what its preload defect is a candidate
+for, and its constitutive constants stay held so it remains interpretable.
+
+```bash
+sbatch Examples/Kalantar2025/OGSH/110_10_og_sh_bbfast_r5_hpc.sh
+sbatch Examples/Kalantar2025/OGSC/110_12_og_sc_bbfast_r5_hpc.sh
+sbatch Examples/Kalantar2025/OGT/110_11_og_t_bbfast_r5_hpc.sh
+```
+
+**One change.** `penalty = 1/(A/K_sys − C_ax)` so the stiffness the *joint* sees equals the
+paper's measured `K_sys`, instead of `K_sys` in series with the core:
+
+| | penalty | ×    | k_eff seen by the joint | × |
+|---|---|---|---|---|
+| OG-SH | 4.0572e11 → **1.3282e12** | 3.27 | 0.0888 → **0.1505** MPa/µm | 1.695 |
+| OG-SC | 4.0572e11 → **9.6319e11** | 2.37 | 0.0964 → **0.1521** MPa/µm | 1.579 |
+| OG-T | 4.0572e11 → **9.6319e11** | 2.37 | 0.0941 → **0.1485** MPa/µm | 1.579 |
+
+The two ratios are different — the penalty moves more than the stiffness does, because the core
+sits in series behind it. `axial_pres_initial`/`final` move with it (same σ₁ targets: verified,
+OG-SH still 94.65 MPa). Plus **OG-SH's `D_c` reverted 59.3 → 150 µm**. Verified by diff: nothing
+else changed on any deck; OG-SC keeps all three round-4 constants.
+
+**Preregistered nulls, one number each:**
+
+1. **OG-SH's slip at stage 9 falls from 55.2 µm to 48 ± 5 µm**, at an *unchanged* `D_c` of
+   150 µm. This is the whole claim. **If slip does not move, the penalty is not what sets the
+   joint's unloading stiffness and the diagnosis is wrong.**
+2. **τ sheds 140 ± 15 MPa/mm across the round-3/round-5 pair**, against round 4's measured 82.5.
+   Tests the *mechanism* rather than the outcome, so not redundant with (1).
+3. **OG-SC's `a_h` at stage 6 stays 1.60 ± 0.10 µm** — a null of *no change*. The closure fit is
+   independent of the frame; if a frame change moves the aperture channel, the two are coupled
+   through something not yet identified.
+
+**Watch, not yet actionable:** OG-SC's post-burst mobilised friction is 0.336, *below* the
+21.175° residual it was given. A sliding joint cannot do that — check the paper-frame τ against
+the constitutive σ'ₙ pairing before any further constitutive change.
+
 ### 1.9 Kalantar items not on the critical path
 
 * **111-series Mohr–Coulomb siblings** — after round 3 lands.

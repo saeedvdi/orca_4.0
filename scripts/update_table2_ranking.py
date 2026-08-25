@@ -281,6 +281,10 @@ def rebuild() -> pd.DataFrame:
         frame.at[idx, "run_end_s"] = result["t_end"]
         scores = table2_gate.normalised_scores(result)
         if complete:
+            # A delivered rerun can replace a truncated CSV in place. Do not
+            # retain the generated partial-run note after it becomes ranked.
+            if str(frame.at[idx, "notes"]).startswith("partial run;"):
+                frame.at[idx, "notes"] = ""
             for source_name, column in SCORE_COLUMNS.items():
                 frame.at[idx, column] = scores[source_name]
             frame.at[idx, "mean_nrmse_pct"] = scores["mean"]
