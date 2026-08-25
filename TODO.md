@@ -416,6 +416,47 @@ fell 3.7×. First time in either campaign. **Keep closing rounds this way.**
 preregistered nulls) → #120 OG-T preload probe with both predictions written first → #127
 manuscript wording → 111-series MC siblings, now unblocked.
 
+### 1.8c Round 4 — BUILT 2026-08-24, ready for HPC
+
+`110_07` OG-SH, `110_08` OG-T, `110_09` OG-SC, plus `110_08_og_t_preload_probe.i`. All four
+`Syntax OK`. SLURM scripts alongside each, 64 ranks / 64 GB, 1 d on OG-SH and OG-SC.
+
+```bash
+sbatch Examples/Kalantar2025/OGSH/110_07_og_sh_bbfast_r4_hpc.sh
+sbatch Examples/Kalantar2025/OGSC/110_09_og_sc_bbfast_r4_hpc.sh
+```
+
+**Do not submit `110_08` (OG-T)** — its constitutive constants are deliberately byte-identical
+to round 3 so it stays a clean control until the preload defect (#120) is closed.
+
+| specimen | key | round 3 → round 4 |
+|---|---|---|
+| OG-SC | `slip_weakening_residual_friction_angle_degrees` | 15.354° → **21.175°** |
+| OG-SH | `characteristic_slip_distance` | 150 µm → **59.3 µm** |
+| OG-SC | `bb_max_aperture_closure` (V_m) | 1.20 → **2.655 µm** |
+| OG-SC | `bb_initial_normal_stiffness` (K_ni) | 1.25e13 → **1.3698e13** |
+| OG-T | — | **nothing** (verified by diff) |
+
+Builder changes: `sliding_stages()`, `burst_index()`, `residual_angle()`,
+`fit_characteristic_slip()`, `fit_closure()`; the stability cap corrected to
+`0.7355·Δτ_μ/k_eff` and **reported rather than asserted**, because in its old form it blocked
+the right `D_c` for three rounds.
+
+**Two corrections the build itself forced.** §8's 26.5 µm estimate was wrong — it charged the
+whole τ drop to friction when the Barton–Bandis peak also falls with σ'ₙ; fitting the material's
+own law gives **59.3 µm** at 0.281 MPa RMS. And the new residual rule **condemned OG-SH too**
+(its stages 7, 8 and 9 all print `dL_s` = 0.042 mm), so OG-SH's residual is a *bound*, not a
+measurement — held, because a joint `(D_c, φ_res)` fit is degenerate over the 45 µm Table 2
+covers.
+
+**Preregistered nulls** (also in the deck headers): OG-SH τ error at stage 9 lands in **+3 % to
++7 %**; OG-SC τ at stage 7 is **9.73 ± 0.5 MPa**; OG-SC `a_h` at stage 6 is **1.60 ± 0.10 µm**;
+and — written as an expected **failure** — OG-SC still bursts at stage 6, not 7.
+
+**Local smoke test abandoned:** the workstation OOM-killed it during step 1's Jacobian (30 GB
+against a 64 GB HPC job). An environment limit, not a deck defect; `--check-input` passes on all
+four and the diffs are verified.
+
 ### 1.9 Kalantar items not on the critical path
 
 * **111-series Mohr–Coulomb siblings** — after round 3 lands.

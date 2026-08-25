@@ -460,11 +460,26 @@ precondition — *refit once the loading gate passes* — is now met on OG-SC's 
 
 ---
 
-## 8. OG-SH: the residual is right, the distance to it is 5.7× too long
+## 8. OG-SH: the residual stands, the distance to it is 2.5× too long
 
 The end state is right and the path to it is not. `slip_weakening_residual_friction_angle_degrees`
-= 25.930° reproduces Table 2's last stage exactly (`atan(18.97/39.01)` = 25.93°) and OG-SH is
-sliding there, so unlike OG-SC that derivation is sound. The model just never arrives:
+= 25.930° reproduces Table 2's last stage exactly (`atan(18.97/39.01)` = 25.93°). The model just
+never arrives:
+
+> **Correction, made while building round 4.** This section first justified keeping 25.930° by
+> saying OG-SH "is sliding there, so unlike OG-SC that derivation is sound." **It is not sliding
+> there** — Table 2 prints `dL_s` = 0.042 mm at stages 7, 8 *and* 9, so the same locked-stage
+> objection applies. The conclusion survives for a different and better reason: 25.930° is the
+> **lowest mobilised friction the specimen shows anywhere**, and a locked joint sits below its
+> limit, so that is a valid *lower bound* on the residual. OG-SH never reaches its residual
+> inside the test, so Table 2 **bounds** it (upper bound 28.979° from the last sliding stage)
+> and does not measure it. An unobserved constant is not a constant to change — hold it.
+>
+> Do not try to fit it jointly with `D_c` either. Tried: over the 45 µm of slip Table 2 covers,
+> only the early limb of `exp(−(s/D)^1.4)` is sampled, and a low floor with a long distance is
+> indistinguishable from a high floor with a short one. The fit runs to its 5° bound at
+> `D_c` = 165 µm with a *better* RMS (0.233 MPa) than the honest answer. **Table 2 constrains
+> the initial weakening rate, not the two constants separately.**
 
 | | measured | model |
 |---|---:|---:|
@@ -476,6 +491,21 @@ With `characteristic_slip_distance` = 150 µm and the law `μ = μ_r + (μ_p−�
 48 µm of slip is `s/D = 0.32`, worth **18 %** of the drop. The rest of the 67 % comes from
 `roughness_state` and from σ'ₙ falling. **D is the lever, and it is the only one — the slip is
 already right, so anything that adds slip makes the fit worse.**
+
+**How large should D be? Fit it, do not estimate it.** A first pass here asked what D delivers
+90 % of the drop at the measured slip and answered 26.5 µm. That is wrong, because it charges
+the *whole* τ drop to the friction law when the Barton–Bandis peak `μ_p(σ'ₙ)` also falls as
+σ'ₙ falls under injection. Fitting the material's own law — the deck's BB peak evaluated at each
+stage's σ'ₙ, μ_r held at 25.930° — against Table 2's τ over the six stages where the joint is
+demonstrably sliding gives
+
+```
+D_c = 59.3 um     RMS 0.281 MPa over 6 stages
+```
+
+with per-stage errors of −0.5 / −1.3 / −2.2 / −3.1 % on the pressurisation branch. That is the
+number in the round-4 deck. **Fit against the law that will actually run, not against a
+rule of thumb about the law.**
 
 ### 8.1 The build-time stability assertion is 1.36× too strict, and that matters here
 
@@ -559,28 +589,64 @@ variable that ranks the siblings differently, not for more evidence about the wo
 
 ---
 
-## 10. Round 4 — what to change, in order
+## 10. Round 4 — BUILT 2026-08-24
 
-| # | specimen | change | from → to | basis |
+`110_07` (OG-SH), `110_08` (OG-T), `110_09` (OG-SC), all `Syntax OK`. Built by
+`scripts/build_110_kalantar_decks.py`; the numbers below are what the builder derived, not what
+this section estimated first — where the two differ the estimate is struck through and the
+reason recorded, because both differences were instructive.
+
+| # | specimen | key | from → to | basis |
 |---|---|---|---|---|
-| 1 | OG-SC | `slip_weakening_residual_friction_angle_degrees` | 15.354° → **21.17°** | §7.3, measured at the one sliding stage |
-| 2 | OG-SH | `characteristic_slip_distance` | 150 µm → **26.5 µm** | §8, measured drop at measured slip, stable by 1.14× |
-| 3 | OG-SC | `bb_max_aperture_closure` (V_m) | 1.20 µm → **2.65 µm** | §7.4, 25 nm RMS on six points |
-| 4 | OG-SC | `bb_initial_normal_stiffness` (K_ni) | 1.25e13 → **1.369e13** | §7.4, same fit |
-| 5 | builder | correct the stability assertion to `0.7355·Δτ_μ/k_eff` | — | §8.1 |
-| 6 | builder | derive the slip-weakening residual **only from a stage with non-zero slip increment**, and assert it | — | §7.3 |
-| 7 | OG-T | run the preload probe with both predictions written first | — | §9 |
+| 1 | OG-SC | `slip_weakening_residual_friction_angle_degrees` | 15.354° → **21.175°** | §7.3, measured at the one sliding stage |
+| 2 | OG-SH | `characteristic_slip_distance` | 150 µm → **59.3 µm** ~~26.5~~ | §8, *fitted* to the μ(s) path, RMS 0.281 MPa |
+| 3 | OG-SC | `bb_max_aperture_closure` (V_m) | 1.20 → **2.655 µm** | §7.4, 25 nm RMS on six points |
+| 4 | OG-SC | `bb_initial_normal_stiffness` (K_ni) | 1.25e13 → **1.3698e13** | §7.4, same fit |
+| 5 | builder | stability cap → `0.7355·Δτ_μ/k_eff`, **reported not asserted** | — | §8.1 |
+| 6 | builder | residual derived from a **sliding** stage, asserted | — | §7.3 |
+| 7 | OG-T | everything **held** at round 3, probe still to run | — | §9 |
 
-**Do not** touch OG-SC's `φ_r` (§7.1 closes it), OG-SH's slip-weakening residual (§8 confirms
-it), or `use_mobilized_jrc` (§6). **Do not** treat OG-SC's burst stage as closed by items 1–4;
-it is a rate problem and it needs `tangential_viscosity` priced separately.
+Verified by diff: OG-SH changes one constant, OG-SC three, **OG-T none**.
 
-**Preregistered nulls for round 4**, one number each, per the round-2 lesson:
+**Two corrections the build forced, both worth more than the numbers.**
 
-1. *OG-SH's τ error at stage 9 falls from +9.7 % to under +3 %.* (item 2)
-2. *OG-SC's τ at stage 7 is 9.73 ± 0.5 MPa.* (item 1 — it is what the constant is fitted to,
-   so failure here means the burst dynamics, not the constant.)
-3. *OG-SC's `a_h` at stage 6 is 1.60 ± 0.10 µm.* (items 3–4)
-4. *OG-SC still bursts at stage 6, not 7.* Written as an expected **failure**: items 1–4 are
-   not aimed at burst timing, and if the burst moves to stage 7 anyway then §7.2's feedback
-   diagnosis is wrong and `tangential_viscosity` can be dropped from the plan.
+*§8's 26.5 µm was an estimate, and estimating was the error.* It asked what `D_c` delivers 90 %
+of the drop at the measured slip — which charges the whole τ drop to friction when the
+Barton–Bandis peak `μ_p(σ'ₙ)` also falls under injection. Fitting the material's own law against
+Table 2 gives **59.3 µm**, 2.2× larger. *Fit against the law that will run, not against a rule of
+thumb about it.*
+
+*The residual rule condemned OG-SH too, and that is a real finding.* Table 2 prints `dL_s` =
+0.042 mm at OG-SH's stages 7, 8 and 9, so its residual is read off a locked stage exactly as
+OG-SC's was. It survives as a **bound** rather than a measurement (§8's correction note), and a
+joint fit of `D_c` with `φ_res` is degenerate over the 45 µm Table 2 covers. So the builder now
+distinguishes the two cases explicitly: **measured** after a burst, **bounded** on a creep, with
+a different assertion for each. Writing a rule sharp enough to fire is how you find out which
+of your constants were never measured.
+
+**Do not** touch OG-SC's `φ_r` (§7.1 closes it), OG-SH's residual (§8), or `use_mobilized_jrc`
+(§6). **Do not** treat OG-SC's burst stage as closed by items 1–4 — it is a rate problem and
+`tangential_viscosity` has to be priced separately.
+
+### Preregistered nulls, written into the deck headers before submission
+
+1. **OG-SH: τ error at stage 9 falls from +9.7 % to between +3 % and +7 %.** The band is not
+   hedging — σ'ₙ runs +2.6 % high on the unloading branch and at the measured μ that alone puts
+   τ +2.6 % high whatever the friction law does. In band ⇒ the friction law is finished here and
+   the σ'ₙ bias is next. **Below +3 % ⇒ two errors cancelled and neither is closed. Above +7 %
+   ⇒ `D_c` is not the mechanism and the fit is wrong.**
+2. **OG-SC: τ at stage 7 is 9.73 ± 0.5 MPa** (round 3: 4.85). A consistency check, not a
+   discovery — it is what the constant is fitted to, so failure means the burst *dynamics*.
+3. **OG-SC: `a_h` at stage 6 is 1.60 ± 0.10 µm** (round 3: 0.86).
+4. **OG-SC still bursts at stage 6, not 7 — written as an expected FAILURE.** Nothing in round 4
+   targets burst timing. If it moves to stage 7 anyway, §7.2's feedback diagnosis is wrong and
+   `tangential_viscosity` comes off the round-5 plan.
+
+### One open flag, deliberately not silenced
+
+The corrected stability cap puts OG-SC at `D_c` 15.2 µm against a cap of 12.1 µm, i.e. it
+predicts **stable** where the paper reports a burst — a 1.26× miss on a linearised criterion.
+The builder prints this as a warning rather than failing, because the same criterion in its
+uncorrected form blocked the right `D_c` on OG-SH for three rounds. It does not stop OG-SC
+bursting in the model: at full weakening `τ_limit` = 9.73 MPa against a τ of 13.0, so the joint
+must slide ~21 µm regardless. **Watch it, do not tune to it.**
