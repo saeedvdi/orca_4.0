@@ -398,7 +398,6 @@ binaryoutput
 !doc/independent_analysis/DISCUSSION_101_CYCLIC_METRICS.csv
 !doc/independent_analysis/DISCUSSION_101_SHUTIN_METRICS.csv
 
-# Local rendered validation notebooks exceed GitHub's 100 MB object limit.
-# Keep them on the workstation; do not add them to repository history.
-/Examples/YeGhasemmi2018/All_fracture_samples_validation_comparison.ipynb
-/Examples/YeGhasemmi2018/All_fracture_samples_validation_comparison (Copy).ipynb
+# Generated aggregate fracture-analysis notebooks are large, reproducible outputs.
+# Keep every All_fracture*.ipynb variant local and out of repository history.
+**/[Aa]ll_fracture*.ipynb
