@@ -354,6 +354,37 @@ ADOrcaBartonBandisContactTractionFastAD::validParams()
                                     "mobilized_jrc_exponent > 0.0",
                                     "Shape exponent for the JRC mobilization ramp.");
 
+  // ---- Stress-dependent tangential stiffness (OPT-IN; default false = legacy) ----
+  params.addParam<bool>(
+      "use_stress_dependent_tangential_stiffness",
+      false,
+      "If true, scale the tangential stiffness with the start-of-step effective normal "
+      "stress: k_t = max(min_tangential_stiffness_fraction, (sigma'_n/sigma_ref)^m) * "
+      "penalty_tangent. Barton-Bandis shear stiffness for a rock joint scales with "
+      "sigma'_n, so a joint held at constant shear stress creeps forward as sigma'_n "
+      "falls; a CONSTANT tangential penalty cannot reproduce that at any value, because "
+      "the elastic shear jump then follows tau alone. With this enabled, penalty_tangent "
+      "is the stiffness AT tangential_stiffness_reference_stress, not a fixed stiffness. "
+      "WARNING: this CHANGES the mechanical solution and requires re-validation.");
+  params.addRangeCheckedParam<Real>(
+      "tangential_stiffness_reference_stress",
+      1.0e6,
+      "tangential_stiffness_reference_stress > 0.0",
+      "Effective normal stress [Pa] at which k_t equals penalty_tangent. Only read when "
+      "use_stress_dependent_tangential_stiffness = true; the natural choice is the "
+      "specimen's preload sigma'_n.");
+  params.addRangeCheckedParam<Real>("tangential_stiffness_exponent",
+                                    1.0,
+                                    "tangential_stiffness_exponent >= 0.0",
+                                    "Exponent m in k_t ~ sigma'_n^m. 1.0 is the Barton-Bandis "
+                                    "linear-in-sigma'_n form; 0.0 recovers the constant penalty.");
+  params.addRangeCheckedParam<Real>(
+      "min_tangential_stiffness_fraction",
+      0.05,
+      "min_tangential_stiffness_fraction > 0.0 & min_tangential_stiffness_fraction <= 1.0",
+      "Floor on k_t/penalty_tangent. Keeps the tangential penalty from collapsing (and the "
+      "stick condition from going soft) when sigma'_n approaches zero at the slip event.");
+
   return params;
 }
 
@@ -365,6 +396,12 @@ ADOrcaBartonBandisContactTractionFastAD::ADOrcaBartonBandisContactTractionFastAD
     _penalty_tangent_input(getParam<Real>("penalty_tangent")),
     _penalty_tangent(_penalty_tangent_input > 0.0 ? _penalty_tangent_input
                                                   : getParam<Real>("initial_normal_stiffness")),
+    _use_stress_dependent_tangential_stiffness(
+        getParam<bool>("use_stress_dependent_tangential_stiffness")),
+    _tangential_stiffness_reference_stress(getParam<Real>("tangential_stiffness_reference_stress")),
+    _tangential_stiffness_exponent(getParam<Real>("tangential_stiffness_exponent")),
+    _min_tangential_stiffness_fraction(getParam<Real>("min_tangential_stiffness_fraction")),
+    _tangential_stiffness_qp(_penalty_tangent),
     _max_plastic_slip_increment(getParam<Real>("max_plastic_slip_increment")),
     _max_dilation_increment(getParam<Real>("max_dilation_increment")),
     _max_return_mapping_iterations(getParam<unsigned int>("max_return_mapping_iterations")),
@@ -486,6 +523,7 @@ ADOrcaBartonBandisContactTractionFastAD::ADOrcaBartonBandisContactTractionFastAD
         declareProperty<Real>(_base_name + "bb_peak_friction_coefficient")),
     _bb_dilation_angle_degrees(declareProperty<Real>(_base_name + "bb_dilation_angle_degrees")),
     _bb_dilation_coefficient(declareProperty<Real>(_base_name + "bb_dilation_coefficient")),
+    _bb_tangential_stiffness(declareProperty<Real>(_base_name + "bb_tangential_stiffness")),
     _fault_pressure_area_coefficient(
         declareADProperty<Real>(_base_name + "fault_pressure_area_coefficient"))
 {
@@ -539,6 +577,7 @@ ADOrcaBartonBandisContactTractionFastAD::initQpStatefulProperties()
   _bb_peak_friction_coefficient[_qp] = std::tan(_residual_friction_angle_deg * M_PI / 180.0);
   _bb_dilation_angle_degrees[_qp] = 0.0;
   _bb_dilation_coefficient[_qp] = 0.0;
+  _bb_tangential_stiffness[_qp] = _penalty_tangent;
   _fault_pressure_area_coefficient[_qp] = ADReal(1.0);
 }
 
@@ -609,6 +648,20 @@ ADOrcaBartonBandisContactTractionFastAD::regularizedPositiveDerivativeReal(const
     return x > 0.0 ? Real(1.0) : Real(0.0);
   return Real(0.5) * (Real(1.0) + x / std::sqrt(x * x + _contact_gap_regularization *
                                                             _contact_gap_regularization));
+}
+
+Real
+ADOrcaBartonBandisContactTractionFastAD::computeTangentialStiffness(Real sigma_n_strength) const
+{
+  if (!_use_stress_dependent_tangential_stiffness)
+    return _penalty_tangent;
+
+  const Real ratio =
+      std::max(Real(0.0), sigma_n_strength) / _tangential_stiffness_reference_stress;
+  const Real scale = _tangential_stiffness_exponent == 0.0
+                         ? Real(1.0)
+                         : std::pow(ratio, _tangential_stiffness_exponent);
+  return _penalty_tangent * std::max(_min_tangential_stiffness_fraction, scale);
 }
 
 bool
@@ -1031,7 +1084,7 @@ ADOrcaBartonBandisContactTractionFastAD::computeReturnMappingDerivative(
   }
 
   const Real d_taulim_d_g = mu * d_sn_d_g + sigma_n * (d_mu_d_sn * d_sn_d_g + d_mu_d_cumslip);
-  return -Real(_penalty_tangent) - d_taulim_d_g;
+  return -Real(_tangential_stiffness_qp) - d_taulim_d_g;
 }
 
 // =============================================================================
@@ -1120,6 +1173,8 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
     _bb_peak_friction_coefficient[_qp] = std::tan(_residual_friction_angle_deg * M_PI / 180.0);
     _bb_dilation_angle_degrees[_qp] = 0.0;
     _bb_dilation_coefficient[_qp] = 0.0;
+    _bb_tangential_stiffness[_qp] = _penalty_tangent;
+  _bb_tangential_stiffness[_qp] = _penalty_tangent;
     // Fully open joint: no solid contact area to shield the fluid, so the entire nominal area
     // is pressure-exposed (alpha=1), matching the MC material's identical open-state value.
     _fault_pressure_area_coefficient[_qp] = ADReal(1.0);
@@ -1139,6 +1194,13 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
   Real sn_old_r, kn_old_r, jrc_old_r, ra_old_r, phi_old_r, mu_old_r, da_old_r, dc_old_r, tl_old_r;
   computeNormalStressAndTangentReal(closure_old_raw, sn_old_r, kn_old_r);
   const Real sn_strength_old_r = computeEffectiveNormalStressForStrengthReal(sn_old_r);
+
+  // Tangential stiffness for THIS step. Evaluated on the start-of-step effective normal
+  // stress so it is a constant inside the step: every return-map expression below keeps
+  // its existing algebra, and only the Jacobian's dependence of k_t on jump(0) is dropped
+  // (the value itself is exact). Identically _penalty_tangent unless the opt-in law is on.
+  _tangential_stiffness_qp = computeTangentialStiffness(sn_strength_old_r);
+  _bb_tangential_stiffness[_qp] = _tangential_stiffness_qp;
   const Real kn_strength_old_r = computeEffectiveNormalStressTangentScale(sn_old_r) * kn_old_r;
   computeBartonBandisPropertiesReal(sn_strength_old_r,
                                     cumslip_old,
@@ -1160,8 +1222,8 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
 
   ADRealVectorValue traction_trial;
   traction_trial(0) = -sn_old_ad;
-  traction_trial(1) = ADReal(_penalty_tangent) * (jump(1) - ADReal(ptj_old(1)));
-  traction_trial(2) = ADReal(_penalty_tangent) * (jump(2) - ADReal(ptj_old(2)));
+  traction_trial(1) = ADReal(_tangential_stiffness_qp) * (jump(1) - ADReal(ptj_old(1)));
+  traction_trial(2) = ADReal(_tangential_stiffness_qp) * (jump(2) - ADReal(ptj_old(2)));
 
   const ADReal tau_norm_trial =
       sqrt(traction_trial(1) * traction_trial(1) + traction_trial(2) * traction_trial(2));
@@ -1318,13 +1380,13 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
                                                 cl_new_r,
                                                 cumslip_old + gamma) -
                  d_extra_d_g_new - visc_rate;
-    return tau_norm_trial_raw - (_penalty_tangent + visc_rate) * gamma - tl_new_r - extra_new_r;
+    return tau_norm_trial_raw - (_tangential_stiffness_qp + visc_rate) * gamma - tl_new_r - extra_new_r;
   };
 
   Real derivative = 0.0;
   Real gamma_lo = 0.0;
   Real residual_lo = evaluate_return_map(gamma_lo, derivative);
-  const Real natural_upper = tau_norm_trial_raw / (_penalty_tangent + visc_rate);
+  const Real natural_upper = tau_norm_trial_raw / (_tangential_stiffness_qp + visc_rate);
   Real gamma_hi = natural_upper;
   if (_max_plastic_slip_increment > 0.0)
     gamma_hi = std::min(gamma_hi, _max_plastic_slip_increment);
@@ -1356,7 +1418,7 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
 
   dgp = std::max(
       gamma_lo,
-      std::min(gamma_hi, (tau_norm_trial_raw - tl_old_r) / (_penalty_tangent + visc_rate)));
+      std::min(gamma_hi, (tau_norm_trial_raw - tl_old_r) / (_tangential_stiffness_qp + visc_rate)));
   if (dgp <= gamma_lo || dgp >= gamma_hi)
     dgp = Real(0.5) * (gamma_lo + gamma_hi);
 
@@ -1455,7 +1517,7 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
   // residual. dgp is treated as a constant in the IFT pass (as elsewhere here), so this term
   // carries no DOF derivative; the full d(dgp)/d(DOF) sensitivity is recovered through
   // dR_dg_conv, which already includes -visc_rate.
-  const ADReal residual_ad = tau_norm_trial - ADReal(_penalty_tangent) * ADReal(dgp) - tl_ift -
+  const ADReal residual_ad = tau_norm_trial - ADReal(_tangential_stiffness_qp) * ADReal(dgp) - tl_ift -
                              extra_ift - ADReal(visc_rate) * ADReal(dgp);
 
   ADReal dgp_AD = ADReal(dgp);
@@ -1500,8 +1562,10 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
   // New traction (ADReal: dgp_AD carries the consistent tangent)
   ADRealVectorValue traction_new;
   traction_new(0) = -sn_final;
-  traction_new(1) = ADReal(_penalty_tangent) * (jump(1) - ADReal(ptj_old(1)) - dgp_AD * ADReal(n1));
-  traction_new(2) = ADReal(_penalty_tangent) * (jump(2) - ADReal(ptj_old(2)) - dgp_AD * ADReal(n2));
+  traction_new(1) =
+      ADReal(_tangential_stiffness_qp) * (jump(1) - ADReal(ptj_old(1)) - dgp_AD * ADReal(n1));
+  traction_new(2) =
+      ADReal(_tangential_stiffness_qp) * (jump(2) - ADReal(ptj_old(2)) - dgp_AD * ADReal(n2));
 
   // Committed Real values for stateful properties
   const Real ptj_new_1 = ptj_old(1) + dgp * n1;
@@ -1544,6 +1608,8 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
     _bb_peak_friction_coefficient[_qp] = mu_new_r;
     _bb_dilation_angle_degrees[_qp] = 0.0;
     _bb_dilation_coefficient[_qp] = 0.0;
+    _bb_tangential_stiffness[_qp] = _penalty_tangent;
+  _bb_tangential_stiffness[_qp] = _penalty_tangent;
     // Dilation drove the joint fully open: same alpha=1 open-state convention as above.
     _fault_pressure_area_coefficient[_qp] = ADReal(1.0);
     _interface_traction_inc[_qp] = ADRealVectorValue(0.0, 0.0, 0.0) - traction_old;

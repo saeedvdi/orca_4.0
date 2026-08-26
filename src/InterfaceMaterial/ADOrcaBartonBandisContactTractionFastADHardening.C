@@ -267,7 +267,7 @@ ADOrcaBartonBandisContactTractionFastADHardening::computeReturnMappingDerivative
   const Real d_taulim_d_g = mu * d_sn_d_g +
       sigma_n * (d_mu_eff_d_sn * d_sn_d_g + d_mu_eff_d_cumslip) +
       (_cohesion - _residual_cohesion) * dW_d_cumslip;
-  return -Real(_penalty_tangent) - d_taulim_d_g;
+  return -Real(_tangential_stiffness_qp) - d_taulim_d_g;
 }
 
 // =============================================================================

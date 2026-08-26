@@ -1,5 +1,38 @@
 # SW-S3 — final calibration and paper notes
 
+## SUPERSEDING NOTE (2026-08-26) — the deck of record is now `100_06`
+
+**Deck of record:** `100_06_sw3_resc1p30_unld0p00_ppfix.i` — **mean nRMSE 4.354 %**, against
+**4.574 %** for `93_05`. Rank 2 of 22, behind only `84_01`, which is flagged
+`historical_unphysical` (alpha below porosity) and is not selectable.
+
+Note the 3.59 % quoted below is **stale**: it predates the 2026-08-25 `d_n` channel correction,
+which re-pointed the gate at the global kinematic jump. Re-scored on the corrected channel,
+`93_05` is 4.574 %. The correction was a scoring change, not a model change, and no run needed
+re-running.
+
+`100_06` differs from `93_05` by two lines: `residual_cohesion` 1.40e6 -> 1.30e6 and
+`normal_unload_retention_fraction` **0.06 -> 0.00**, the physical lower bound. The second is a
+small move *on this specimen* — but the transferable fact is the level, not the step: SW-S3 runs
+its best score at essentially **zero** unload retention while SW-T1 and SW-T2 sit at **0.94** and
+**0.84**, and both of those show the over-open unloading signature SW-S3 does not.
+`106_03`/`106_06` test that reading.
+
+**Where SW-S3's remaining error is, and where it is not.** Worst channels are tau (7.392) and
+d_n (6.174); Q is its *best* (3.060). Refitting its hydraulic closure the way SW-T1/T2/S4 were
+refitted makes it **worse** (3.060 -> 3.453 %), because Table 2's SW-S3 pre-event apertures are
+flat inside their own scatter (1.22, 1.21, 1.20, 1.26, 1.25 um) and carry no closure signal.
+SW-S3 is deliberately excluded from the 106-series aperture work.
+
+> This block was added on 2026-08-26 after the 105-series post-mortem. It **supersedes the
+> "Final deck" line below it**; everything after it is left exactly as written so the earlier
+> selection stays auditable. The authoritative ranking is
+> `doc/independent_analysis/TABLE2_ERROR_ACCURACY_RANKING.csv`, regenerated the same day and now
+> complete through series 105. The next campaign is
+> `doc/independent_analysis/RUN_LIST_106_SERIES.md`.
+
+---
+
 **Final deck:** `93_05_sw3_final_resc1p40_ppfix.i` — constitutively identical to
 `92_03_sw3_final_paperjrc_resc1p40.i`, which is the run scored below, **except that the two
 output-only `d_n` reporting knobs are back at their library defaults**; see §9.

@@ -1,5 +1,45 @@
 # SW-S4 — final validation case and paper notes
 
+## SUPERSEDING NOTE (2026-08-26) — deck of record unchanged, diagnosis corrected
+
+**Deck of record:** `93_07_sw4_final_theta30_jrc5_ppfix.i`, **unchanged at mean nRMSE 6.139 %**.
+Nothing on disk beats it. It is now the **worst of the four specimens** — the other three moved
+and this one did not — and it carries the campaign's single worst channel, tau at 10.103 %.
+
+**The 105-series arms all regressed:** `105_04` (D_c 74.5 -> 45 um) 13.93, `105_05`
+(weakening floor 6.50 -> 3.15 deg) 9.10, `105_06` (both) 20.35, and the two MC transfer arms
+`105_07`/`105_08` 8.84 / 11.46 against the 94_07 baseline's 7.07.
+
+**Two earlier readings are corrected.**
+
+1. *The residual is not delayed onset.* The tau error is one spike at hold stage 4 (+2.74 MPa),
+   and there `limit_tau_pp` is 12.291 MPa against a model tau of 12.121 — the joint is **on its
+   own yield surface**, having slipped just enough to reach it (0.0034 mm against Table 2's
+   0.017). The lever is the *level* of the envelope, not whether the joint is allowed to reach it.
+   Inverting Table 2 at its own stage-4 slip gives a required peak of 11.039 MPa, i.e.
+   phi_peak = 25.717 deg where this deck gives 26.799 -- **1.083 deg too high**. `106_08`/`106_09`
+   bracket that. phi_r is the only lever: the JRC that would lower phi at 22.92 MPa while holding
+   it at 26.5 solves to -16.8, and JCS is algebraically identical to phi_r over a span this narrow.
+
+2. *D_c and the unloading floor were already right.* Fitting Table 2's own tau / d_s pairs implies
+   D_c = 55-98 um and this deck's 74.5 um is inside that bracket; the unloading tau error already
+   decays to +0.05 MPa by stage 11. `105_04` and `105_05` tested both and both regressed. The
+   earlier "residual floor too high" reading is withdrawn.
+
+**One real hydraulic gain remains.** Unlike the mode-I specimens SW-S4's stress-aperture term is
+live and roughly the right size, but its *shape* is wrong: at p = 2.0 it over-opens through the
+loading stages and under-opens at the event, leaving Q 15 % low at stage 6. Refitting p to 3.28 and
+sigma_0 to the deck's own mechanical K_ni*V_m predicts Q 5.005 -> 2.183 %. See `106_10`.
+
+> This block was added on 2026-08-26 after the 105-series post-mortem. It **supersedes the
+> "Final deck" line below it**; everything after it is left exactly as written so the earlier
+> selection stays auditable. The authoritative ranking is
+> `doc/independent_analysis/TABLE2_ERROR_ACCURACY_RANKING.csv`, regenerated the same day and now
+> complete through series 105. The next campaign is
+> `doc/independent_analysis/RUN_LIST_106_SERIES.md`.
+
+---
+
 **Status: FINAL. No further sweep — the remaining error is model-form, and it has been bracketed
 in both directions.**
 Deck of record (mesh 5): `93_07_sw4_final_theta30_jrc5_ppfix.i` — constitutively identical to

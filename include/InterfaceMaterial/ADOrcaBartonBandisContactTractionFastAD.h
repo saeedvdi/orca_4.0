@@ -134,6 +134,29 @@ protected:
   const Real _tangential_traction_tolerance;
   const Real _penalty_tangent_input;
   const Real _penalty_tangent;
+
+  // ---- Stress-dependent tangential stiffness (OPT-IN; default false = legacy) ----
+  // Barton's shear stiffness for a rock joint scales with the effective normal stress
+  // (k_s ~ (100/L)*sigma'_n*tan(phi_peak) in BB-1985), so a joint held at constant shear
+  // stress creeps forward as sigma'_n falls.  A constant tangential penalty CANNOT
+  // reproduce that: with k_t fixed the elastic shear jump follows tau alone, and tau is
+  // very nearly flat through the pre-event hold stages.  When enabled,
+  //     k_t(sigma'_n) = max( f_min, (sigma'_n / sigma_ref)^m ) * penalty_tangent,
+  // evaluated on the START-OF-STEP effective normal stress, so within a step k_t is a
+  // constant and every existing return-map expression is untouched.  penalty_tangent is
+  // then the stiffness AT sigma_ref, not a fixed stiffness.
+  const bool _use_stress_dependent_tangential_stiffness;
+  const Real _tangential_stiffness_reference_stress;
+  const Real _tangential_stiffness_exponent;
+  const Real _min_tangential_stiffness_fraction;
+
+  /// Tangential stiffness in force this qp.  Identically _penalty_tangent unless the
+  /// opt-in law above is enabled.  Written by computeInterfaceTractionIncrement() before
+  /// any use, read by the const return-mapping helpers (including subclass overrides).
+  Real _tangential_stiffness_qp;
+
+  /// k_t for a given start-of-step effective normal stress [Pa].
+  Real computeTangentialStiffness(Real sigma_n_strength) const;
   const Real _max_plastic_slip_increment;
   const Real _max_dilation_increment;
   const unsigned int _max_return_mapping_iterations;
@@ -350,6 +373,7 @@ protected:
   MaterialProperty<Real> & _bb_peak_friction_coefficient;
   MaterialProperty<Real> & _bb_dilation_angle_degrees;
   MaterialProperty<Real> & _bb_dilation_coefficient;
+  MaterialProperty<Real> & _bb_tangential_stiffness;
 
   // Must remain AD: consumed by OrcaCZMFluidPressureInterfaceKernel::alpha_property_name as AD.
   ADMaterialProperty<Real> & _fault_pressure_area_coefficient;

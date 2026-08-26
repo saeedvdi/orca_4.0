@@ -1,5 +1,37 @@
 # SW-T1 — final calibration and paper notes
 
+## SUPERSEDING NOTE (2026-08-26) — the deck of record is now `100_01`
+
+**Deck of record:** `100_01_swt1_vm55um_ppfix.i` — **mean nRMSE 2.689 %**, against the 4.435 %
+of `93_01` recorded below. It is rank 1 of 22 ranked SW-T1 runs.
+
+It differs from `93_01` by **two constitutive lines** — `maximum_closure` 4.591e-5 → 5.500e-5 m
+and the `normal_closure_offset` recomputed at 31 MPa to preserve seating — plus output-only flux
+wiring. Every channel improves: Q 7.376 → 4.511, sigma'_n 1.984 → 1.440, tau 2.731 → 1.978,
+d_n 9.062 → 4.584, d_s 1.022 → 0.930.
+
+**The V_m bracket is closed.** 45.91 / 50 / 55 / 70 / 90 / 110 um score
+4.44 / 3.68 / 2.69 / 5.09 / 59.70 / 59.38. At 90 and 110 um the slip event never fires at all
+(0.0156 / 0.0120 mm of slip against 0.537 measured) — the joint is too compliant to reach its
+limit. 55 um is the interior minimum, and this specimen's event lives on a **1.31 MPa margin,
+1.9 % of the limit**, at hold stage 5. Treat that margin as a gate on every future SW-T1 arm.
+
+**Known open defect in this deck.** `normal_stress_aperture_compliance` is 0.0 *and*
+`use_nonlinear_normal_closure` is false, and the two branches of `computeStressAperture` are
+mutually exclusive — so `normal_stress_aperture_pp` is identically zero at every timestep and the
+hydraulic aperture is frozen at 1.630 um through hold stages 1-5 while Table 2 opens to 1.72.
+Post-event the aperture is 0.12-0.20 um too open and the flow 9-18 % high. Both are addressed by
+`106_01`-`106_04`.
+
+> This block was added on 2026-08-26 after the 105-series post-mortem. It **supersedes the
+> "Final deck" line below it**; everything after it is left exactly as written so the earlier
+> selection stays auditable. The authoritative ranking is
+> `doc/independent_analysis/TABLE2_ERROR_ACCURACY_RANKING.csv`, regenerated the same day and now
+> complete through series 105. The next campaign is
+> `doc/independent_analysis/RUN_LIST_106_SERIES.md`.
+
+---
+
 **Final deck:** `93_01_swt1_final_c26p9_resc9p19_ppfix.i` — constitutively identical to
 `91_02_swt1_bbfast_c26p9_resc9p19_kernel_SV_biot0p6.i`, which is the run scored below; see §8.
 **Mesh:** `mesh/ye2018_sw_T1_mesh_size_5.e` (convergence check at size 3: `93_02_swt1_final_c26p9_resc9p19_ppfix_mesh3.i`)

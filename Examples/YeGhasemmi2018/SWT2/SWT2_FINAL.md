@@ -1,5 +1,39 @@
 # SW-T2 — final validation case and paper notes
 
+## SUPERSEDING NOTE (2026-08-26) — the deck of record is now `100_04`
+
+**Deck of record:** `100_04_swt2_apscale0p0177_ppfix.i` — **mean nRMSE 2.132 %**, against the
+2.428 % of `93_03` recorded below. Rank 1 of 18 ranked SW-T2 runs.
+
+It differs by **one line**: `aperture_scale` 0.0165 -> 0.0177 (via 99_04's 0.0170). The gain is
+entirely in Q, 5.873 -> 4.336; the other four channels are unchanged to three digits, which is
+itself the cleanest orthogonality demonstration in the campaign.
+
+**This specimen was never bracketed on the axis that matters.** Its 99/100-series arms moved only
+`residual_cohesion` and `aperture_scale`. Its mechanical closure quadruple
+(K_ni 2.443e11, V_m 4.591e-5, p 3.28, offset 4.433e-5) is shared verbatim with all three other
+specimens across JRC 1.19-15.32, and SW-T1 — the only specimen where it *was* bracketed — found it
+**20 % off**.
+
+**Known open defect in this deck.** The hydraulic closure is saturated:
+sigma_0 = V_h*K_h = 1.2e-6 * 1.25e13 = **15.0 MPa** against a **58-67 MPa** pre-event operating
+range, so the stress-aperture term delivers 0.0023 um where Table 2 opens 0.58. Stage-5 flow is
+0.730 against 1.505 ml/min, **-51.5 %**, this deck's single worst point. Addressed by `106_05`.
+
+**And one thing no aperture law can fix.** Table 2 has SW-T2 creeping 0.015 mm in shear by stage 5
+where this model has 0.003, and its aperture kinks 2.31 -> 2.69 um between stages 4 and 5 while
+sigma'_n falls only 2.1 MPa. That is pre-peak creep, not closure. See `106_14`/`106_15` and the
+opt-in stress-dependent tangential stiffness added on branch `orca_v9`.
+
+> This block was added on 2026-08-26 after the 105-series post-mortem. It **supersedes the
+> "Final deck" line below it**; everything after it is left exactly as written so the earlier
+> selection stays auditable. The authoritative ranking is
+> `doc/independent_analysis/TABLE2_ERROR_ACCURACY_RANKING.csv`, regenerated the same day and now
+> complete through series 105. The next campaign is
+> `doc/independent_analysis/RUN_LIST_106_SERIES.md`.
+
+---
+
 **Status: FINAL. No further sweep.**
 Deck of record (mesh 5): `93_03_swt2_final_theta30_resc9p71_ppfix.i` — constitutively identical to
 `91_04_swt2_bbfast_theta30_resc9p71_kernel_SV_biot0p6.i`, which is the run scored below; see §8.
