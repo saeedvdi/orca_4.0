@@ -1173,8 +1173,8 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
     _bb_peak_friction_coefficient[_qp] = std::tan(_residual_friction_angle_deg * M_PI / 180.0);
     _bb_dilation_angle_degrees[_qp] = 0.0;
     _bb_dilation_coefficient[_qp] = 0.0;
-    _bb_tangential_stiffness[_qp] = _penalty_tangent;
-  _bb_tangential_stiffness[_qp] = _penalty_tangent;
+    _tangential_stiffness_qp = computeTangentialStiffness(0.0);
+    _bb_tangential_stiffness[_qp] = _tangential_stiffness_qp;
     // Fully open joint: no solid contact area to shield the fluid, so the entire nominal area
     // is pressure-exposed (alpha=1), matching the MC material's identical open-state value.
     _fault_pressure_area_coefficient[_qp] = ADReal(1.0);
@@ -1608,8 +1608,8 @@ ADOrcaBartonBandisContactTractionFastAD::computeInterfaceTractionIncrement()
     _bb_peak_friction_coefficient[_qp] = mu_new_r;
     _bb_dilation_angle_degrees[_qp] = 0.0;
     _bb_dilation_coefficient[_qp] = 0.0;
-    _bb_tangential_stiffness[_qp] = _penalty_tangent;
-  _bb_tangential_stiffness[_qp] = _penalty_tangent;
+    _tangential_stiffness_qp = computeTangentialStiffness(0.0);
+    _bb_tangential_stiffness[_qp] = _tangential_stiffness_qp;
     // Dilation drove the joint fully open: same alpha=1 open-state convention as above.
     _fault_pressure_area_coefficient[_qp] = ADReal(1.0);
     _interface_traction_inc[_qp] = ADRealVectorValue(0.0, 0.0, 0.0) - traction_old;
