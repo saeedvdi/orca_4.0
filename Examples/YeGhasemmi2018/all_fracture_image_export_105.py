@@ -28,7 +28,7 @@ import pandas as pd
 SAMPLES = ("SWT1", "SWS3", "SWS4")
 SERIES_GLOB = "105_*"
 PAPER_SAMPLE_NAMES = {
-    "SWT1": "SW-T1",
+    "SWT1": "SW-T1",b
     "SWT2": "SW-T2",
     "SWS3": "SW-S3",
     "SWS4": "SW-S4",
