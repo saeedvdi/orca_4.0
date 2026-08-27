@@ -349,6 +349,16 @@ NEW_CASES = [
         "source_csv": "Examples/YeGhasemmi2018/SWS3/results_csv_hpc_rorqual/105_10_sw3_mc_calib_rsf_ppfix_hpc.csv",
         "notes": "MC transfer arm with calibrated strength plus rate-and-state; the least bad of the two SW-S3 MC arms but still a regression",
     },
+    {
+        "sample": "SWT1",
+        "case": "107_01_swt1_coh27p2_apscale0p01512_ppfix",
+        "series": "107",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "authoritative_validation",
+        "source_csv": "Examples/YeGhasemmi2018/SWT1/results_csv_local/107_01_swt1_coh27p2_apscale0p01512_ppfix.csv",
+        "notes": "final SWT1 calibration: cohesion 27.2 MPa with the 106_01 aperture scale; best balanced score while retaining accurate paper-frame effective normal stress",
+    },
 ]
 
 SCORE_COLUMNS = {
