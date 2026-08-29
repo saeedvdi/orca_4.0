@@ -1,0 +1,438 @@
+"""Generate the 108 series -- does a stimulated fracture stay open?
+
+Three arms, one question. Every deck is derived MECHANICALLY from a parent that is
+already in the ranking, so each is auditable as a diff against a finished run.
+
+  arm A  reconfinement      raise sigma_3 after the protocol and find the effective
+                            normal stress at which the retained aperture rejoins the
+                            virgin closure curve.  No new physics, no rebuild.
+  arm B  retention lag      switch on normal_unload_retention_time, which is implemented
+                            in ADOrcaBartonBandisContactTractionFastAD and set to 0.0 in
+                            all 164 decks in the repository.  No rebuild.
+  arm C  closure creep      switch on use_closure_creep, the orca_v11 term in
+                            ADOrcaRoughnessDamageFracturePermeability.  Needs orca_v11.
+
+  control                   parent, unchanged, run for the same 1e6 s as arm C.  Without
+                            this the arm-C decks measure nothing: the control is what
+                            establishes that the flat line is the alternative.
+
+Usage:  python scripts/make_108_series.py [--dry-run]
+Idempotent: re-running overwrites the generated decks and scripts in place.
+"""
+import argparse, re, sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+STUDY = ROOT / "Examples/YeGhasemmi2018"
+HPC_ROOT = "/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0"
+
+# parent stem, protocol end time T_p (s), a_h0 (m), retained gain a_h(T_p) - a_h0 (m),
+# reference effective normal stress (Pa) -- the deck's own datum, used as sigma_ref for creep.
+PARENT = {
+    "SWT1": dict(stem="100_01_swt1_vm55um_ppfix",            t_p=3500.0,    a_h0=1.63e-6, gain=1.9132e-6, sig_ref="65.47e6"),
+    "SWT2": dict(stem="100_04_swt2_apscale0p0177_ppfix",      t_p=2852.53,   a_h0=2.11e-6, gain=2.3038e-6, sig_ref="66.74e6"),
+    "SWS3": dict(stem="100_06_sw3_resc1p30_unld0p00_ppfix",   t_p=4802.0,    a_h0=1.22e-6, gain=3.590e-7,  sig_ref="32.1e6"),
+    "SWS4": dict(stem="93_07_sw4_final_theta30_jrc5_ppfix",   t_p=3500.0,    a_h0=0.74e-6, gain=2.070e-8,  sig_ref="31.0e6"),
+}
+
+# arm A reconfinement ladder, as MULTIPLES of each deck's own confining_pressure so the
+# SW-S4 side-unload relaxation already in sigma3_x/y is preserved rather than overwritten.
+RECONFINE_FACTORS = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+RECONFINE_HOLD, RECONFINE_RAMP = 350.0, 150.0
+RECONFINE_SETTLE = 200.0     # hold at the original confinement first, to establish the datum
+
+HOLD_DT = dict(A=2.0, B=100.0, C=2000.0, CTRL=2000.0)
+HOLD_LEN = dict(B=6.0e4, C=1.0e6, CTRL=1.0e6)
+
+CASES = [
+    # (n, specimen, arm, tag, description, extras)
+    (1,  "SWT1", "CTRL", "ctrl_hold1e6",       "control: parent unchanged, held 1e6 s", {}),
+    (2,  "SWS4", "CTRL", "ctrl_hold1e6",       "control: parent unchanged, held 1e6 s", {}),
+    (3,  "SWT1", "A",    "reconf3p5x",         "reconfinement to 3.5x sigma_3",         {}),
+    (4,  "SWT2", "A",    "reconf3p5x",         "reconfinement to 3.5x sigma_3",         {}),
+    (5,  "SWS3", "A",    "reconf3p5x",         "reconfinement to 3.5x sigma_3",         {}),
+    (6,  "SWS4", "A",    "reconf3p5x",         "reconfinement to 3.5x sigma_3",         {}),
+    (7,  "SWT1", "B",    "unldtau150",         "retention lag tau = 150 s",             dict(tau=150.0)),
+    (8,  "SWT1", "B",    "unldtau1500",        "retention lag tau = 1500 s",            dict(tau=1500.0)),
+    (9,  "SWT1", "B",    "unldtau15000",       "retention lag tau = 15000 s",           dict(tau=15000.0)),
+    (10, "SWT2", "B",    "unldtau1500",        "retention lag tau = 1500 s",            dict(tau=1500.0)),
+    (11, "SWT1", "C",    "creeptc1e5",         "closure creep tau_c = 1e5 s",           dict(tau_c=1.0e5)),
+    (12, "SWT2", "C",    "creeptc1e5",         "closure creep tau_c = 1e5 s",           dict(tau_c=1.0e5)),
+    (13, "SWS3", "C",    "creeptc1e5",         "closure creep tau_c = 1e5 s",           dict(tau_c=1.0e5)),
+    (14, "SWS4", "C",    "creeptc1e5",         "closure creep tau_c = 1e5 s",           dict(tau_c=1.0e5)),
+    (15, "SWT1", "C",    "creeptc1e4",         "closure creep tau_c = 1e4 s",           dict(tau_c=1.0e4)),
+    (16, "SWT1", "C",    "creeptc1e6",         "closure creep tau_c = 1e6 s",           dict(tau_c=1.0e6)),
+]
+
+SHORT = {"SWT1": "swt1", "SWT2": "swt2", "SWS3": "sw3", "SWS4": "sw4"}
+
+
+def fnum(v):
+    """Format a float for an input file without exponent-notation surprises."""
+    return repr(float(v)) if abs(v) < 1e6 else "%.7g" % v
+
+
+def banner(n, spec, arm, desc, parent_stem, t_p, t_end, extras):
+    lines = [
+        "# =============================================================================",
+        f"# 108_{n:02d} -- {spec} -- {desc}",
+        "#",
+        f"# Parent: {parent_stem}.i  (unchanged except where listed below)",
+        "# Generated by scripts/make_108_series.py -- do not hand-edit; edit the generator.",
+        "#",
+        "# WHY THIS SERIES EXISTS",
+        "#   Every term in the hydraulic-aperture budget is a function of the CURRENT",
+        "#   effective normal stress, the CURRENT mechanical gap, or a history variable that",
+        "#   is monotone in slip. Measured on the parent run, over the last 300 s of its 8 MPa",
+        "#   hold: cumulative slip identical to 10 significant figures, a_h 3.54317 -> 3.54316",
+        "#   um (3 ppm), Q 0.542246 -> 0.542244 mL/min. So 'how long until the fracture",
+        "#   returns to its initial state?' is answered by the input file, not by the physics:",
+        "#   the model reaches its final state as soon as pressure equilibrates and holds it",
+        "#   forever. This series supplies the three things that could change that answer.",
+        "#",
+        "# NOT A TABLE-2 CALIBRATION. Like the 101 and 104 decks these extend or alter the",
+        "# paper protocol, so they carry no nRMSE and must not be scored against Table 2.",
+        "#",
+        "# CHANGES FROM PARENT",
+        f"#   1. end_time {t_p:g} -> {t_end:g} s (the paper protocol is untouched up to {t_p:g} s;",
+        "#      injection_pressure is extended by one point at its own final value, which is",
+        "#      what PiecewiseLinear already clamps to, so the schedule is unchanged).",
+        "#   2. The time-step cap is raised AFTER the protocol only, through a FunctionDT that",
+        f"#      returns the parent's cap up to t = {t_p:g} s. The calibrated window is stepped",
+        "#      exactly as the parent stepped it.",
+        "#   3. mesh_file is made relative to Sweeps/ (../mesh/...) so the deck resolves its",
+        "#      mesh from the directory it is archived and submitted in.",
+    ]
+    if arm == "A":
+        lines += [
+            f"#   4. sigma3_x/sigma3_y are multiplied by a reconfinement factor that is 1.0 for",
+            f"#      t <= {t_p:g} s and then steps 1.5 / 2.0 / 2.5 / 3.0 / 3.5 in {RECONFINE_HOLD:g} s holds.",
+            "#      Written as a CompositeFunction over the parent's own sigma3 expression, so any",
+            "#      time dependence already in it (e.g. SW-S4's side-unload relaxation) survives.",
+            "#",
+            "# WHAT IT MEASURES",
+            "#   a_h against sigma'_n on the way back up, against the virgin closure curve",
+            "#   a_h0 + stress_aperture(sigma'_n). Kalantar et al. (2025) find that tensile and",
+            "#   saw-cut fractures self-prop but LOSE the gain on depressurisation because the",
+            "#   post-slip stress-sensitivity coefficient roughly doubles. That is a stress-path",
+            "#   mechanism, not a time one, and this is the arm that can see it.",
+            "#",
+            "# READ IT WITH THIS CAVEAT",
+            "#   At the parent's final hold the piston has not moved (axial_command identical to",
+            "#   the first 8 MPa hold) yet the differential stress has fallen 150.19 -> 62.01 MPa,",
+            "#   because 0.54 mm of slip unloaded the machine spring. sigma'_n at the last 8 MPa",
+            "#   hold is 40.91 MPa against 65.68 MPa at the first one. MOST OF THE APPARENT",
+            "#   PROPPING IS RETAINED FRAME UNLOADING, not retained aperture. Quote the",
+            "#   matched-sigma'_n comparison this arm produces, never the raw 8 MPa-to-8 MPa ratio.",
+        ]
+    elif arm == "B":
+        lines += [
+            f"#   4. normal_unload_retention_time 0.0 -> {extras['tau']:g} s.",
+            "#",
+            "# WHAT IT MEASURES",
+            "#   How fast the propping ESTABLISHES, not whether it is lost. Read the source",
+            "#   before interpreting: updateNormalUnloadState relaxes the retained opening toward",
+            "#   fraction * recovered_closure, and that target is set by the CURRENT stress. So a",
+            "#   positive time constant is a LAG TOWARD the propped state, never a decay away",
+            "#   from it. At constant stress the aperture still ends where tau = 0 puts it; it",
+            "#   just takes ~3 tau to get there. tau = 15000 s against a 1e5 s hold separates",
+            "#   'the lag is irrelevant' from 'the unloading limb was too fast to prop fully'.",
+        ]
+    elif arm == "C":
+        lines += [
+            "#   4. use_closure_creep = true in the permeability material, with",
+            f"#      closure_creep_time = {extras['tau_c']:g} s at the specimen's own reference stress.",
+            "#",
+            "# WHAT IT MEASURES",
+            "#   The only term in the aperture budget that advances with time alone:",
+            "#     da_c/dt = (1/tau_c) (<N_eff>/sigma_ref)^q (a_c_max - a_c)",
+            "#   modelling pressure solution / asperity indentation, which close a loaded joint",
+            "#   at constant stress over 1e5-1e7 s. This is the one mechanism the 2026-08-25",
+            "#   cyclic-realism back-analysis identified as GENUINELY absent (shear creep is",
+            "#   present via the Perzyna term; normal/closure creep is not).",
+            "#",
+            "# HOW a_c_max WAS CHOSEN, AND WHY THE ARM IS HONEST ABOUT IT",
+            f"#   a_c_max = {extras['a_c_max']*1e6:.4f} um = this run's own retained gain, a_h(T_p) - a_h0.",
+            "#   So the asymptote is EXACTLY the pre-stimulation aperture and the deck answers a",
+            "#   pure timing question -- 'how long', not 'how much'. The 'how much' is imposed,",
+            "#   not predicted, and must be reported that way. Calibrating a_c_max would need a",
+            "#   long-duration experiment; Ye & Ghassemi's protocol is 3500 s and cannot supply it.",
+            "#",
+            "# THIS IS A HYDRAULIC TERM ONLY",
+            "#   It subtracts from a_h and does not feed back on the traction, exactly like the",
+            "#   existing gouge-fill. It models the loss of connected void space, not a mechanical",
+            "#   convergence of the two surfaces. Creep also runs during the protocol itself (it",
+            "#   does not switch on at T_p), which perturbs the calibrated match slightly -- a",
+            "#   further reason these decks are not Table-2 scoreable.",
+        ]
+    else:
+        lines += [
+            "#",
+            "# WHAT IT MEASURES",
+            "#   Nothing, deliberately. It is the null against which arms B and C are read. If",
+            "#   this deck does not hold a_h flat to a few ppm over 1e6 s then the arm-B and",
+            "#   arm-C signals are numerical, not physical, and nothing else in this series",
+            "#   can be believed.",
+        ]
+    lines += ["# =============================================================================", ""]
+    return "\n".join(lines)
+
+
+def piecewise(xs, ys):
+    return ("    x = '" + " ".join("%g" % v for v in xs) + "'\n"
+            "    y = '" + " ".join("%g" % v for v in ys) + "'\n")
+
+
+def build(text, n, spec, arm, tag, desc, extras, dry):
+    p = PARENT[spec]
+    t_p, parent_stem = p["t_p"], p["stem"]
+    hold = HOLD_LEN.get(arm)
+    if arm == "A":
+        hold = RECONFINE_SETTLE + len(RECONFINE_FACTORS[1:]) * (RECONFINE_RAMP + RECONFINE_HOLD)
+    t_end = t_p + hold
+    stem = f"108_{n:02d}_{SHORT[spec]}_{tag}"
+
+    # --- 1. mesh path, relative to Sweeps/ ---
+    text, k = re.subn(r"^(mesh_file\s*=\s*)mesh/", r"\1../mesh/", text, flags=re.M)
+    assert k == 1, f"{stem}: mesh_file"
+
+    # --- 2. output file bases ---
+    text, k = re.subn(re.escape(parent_stem) + r"(_hpc)?\b", stem, text)
+    assert k >= 3, f"{stem}: file bases ({k})"
+
+    # --- 3. extend the injection schedule by one point at its own final value ---
+    m = re.search(r"(\[injection_pressure\].*?\n\s*x = ')([^']*)('\n\s*y = ')([^']*)(')", text, re.S)
+    assert m, f"{stem}: injection_pressure"
+    xs, ys = m.group(2).split(), m.group(4).split()
+    assert float(xs[-1]) < t_end
+    text = text[:m.start()] + (m.group(1) + " ".join(xs + ["%g" % t_end]) + m.group(3)
+                               + " ".join(ys + [ys[-1]]) + m.group(5)) + text[m.end():]
+
+    # --- 4. end_time / dtmax ---
+    orig_dtmax = float(re.search(r"^\s*dtmax\s*=\s*([\d.eE+-]+)", text, re.M).group(1))
+    hold_dt = HOLD_DT[arm]
+    text, k = re.subn(r"^(\s*)end_time\s*=.*$",
+                      lambda mm: f"{mm.group(1)}end_time = {t_end:g}"
+                                 f"   # 108: protocol ends at {t_p:g} s; the rest is the hold",
+                      text, count=1, flags=re.M)
+    assert k == 1, f"{stem}: end_time"
+    text, k = re.subn(r"^(\s*)dtmax\s*=.*$",
+                      lambda mm: f"{mm.group(1)}dtmax = {hold_dt:g}"
+                                 f"   # 108: parent {orig_dtmax:g}; the FunctionDT in [TimeSteppers]"
+                                 f" still enforces {orig_dtmax:g} up to t = {t_p:g} s",
+                      text, count=1, flags=re.M)
+    assert k == 1, f"{stem}: dtmax"
+
+    # --- 5. keep the parent's step cap over the calibrated window ---
+    if "[event_dt_cap]" in text:
+        # SW-T1 already composes a FunctionDT; its last breakpoint IS the protocol end.
+        m = re.search(r"(\[event_dt_cap\].*?\n\s*x = ')([^']*)('\n\s*y = ')([^']*)(')", text, re.S)
+        assert m, f"{stem}: event_dt_cap"
+        xs, ys = m.group(2).split(), m.group(4).split()
+        assert abs(float(xs[-1]) - t_p) < 1e-6, f"{stem}: event_dt_cap does not end at T_p"
+        ys[-1] = "%g" % hold_dt
+        text = text[:m.start()] + (m.group(1) + " ".join(xs) + m.group(3)
+                                   + " ".join(ys) + m.group(5)) + text[m.end():]
+    else:
+        fn = ("  [protocol_dt_cap]\n"
+              "    # 108: the parent's cap over the calibrated protocol, then the hold cap.\n"
+              "    type = PiecewiseConstant\n"
+              + piecewise([0.0, t_p], [orig_dtmax, hold_dt]) +
+              "  []\n")
+        text, k = re.subn(r"^\[Functions\]\n", "[Functions]\n" + fn, text, count=1, flags=re.M)
+        assert k == 1, f"{stem}: [Functions]"
+        m = re.search(r"^(  \[TimeStepper\]\n)(.*?)^(  \[\]\n)", text, re.S | re.M)
+        assert m, f"{stem}: [TimeStepper]"
+        body = "".join(("  " + ln if ln.strip() else ln) + "\n" for ln in m.group(2).split("\n")[:-1])
+        text = text[:m.start()] + (
+            "  [TimeSteppers]\n    [adaptive]\n" + body + "    []\n"
+            "    [protocol_window_cap]\n      type = FunctionDT\n"
+            "      function = protocol_dt_cap\n    []\n  []\n") + text[m.end():]
+
+    # --- 6. arm-specific ---
+    if arm == "A":
+        xs, ys, t = [0.0, t_p, t_p + RECONFINE_SETTLE], [1.0, 1.0, 1.0], t_p + RECONFINE_SETTLE
+        for f in RECONFINE_FACTORS[1:]:
+            xs += [t + RECONFINE_RAMP, t + RECONFINE_RAMP + RECONFINE_HOLD]
+            ys += [f, f]
+            t += RECONFINE_RAMP + RECONFINE_HOLD
+        assert abs(t - t_end) < 1e-6, (t, t_end)
+        for c in ("x", "y"):
+            m = re.search(r"^  \[sigma3_%s\]\n(.*?)^  \[\]\n" % c, text, re.S | re.M)
+            assert m, f"{stem}: sigma3_{c}"
+            text = text[:m.start()] + (
+                f"  [sigma3_{c}_base]\n{m.group(1)}  []\n"
+                f"  [sigma3_{c}]\n"
+                f"    # 108 arm A: the parent's own sigma3_{c}, scaled by the reconfinement\n"
+                f"    # ladder. Composing rather than rewriting preserves any time dependence\n"
+                f"    # the parent already had in this function.\n"
+                f"    type = CompositeFunction\n"
+                f"    functions = 'reconfine_factor sigma3_{c}_base'\n  []\n") + text[m.end():]
+        fn = ("  [reconfine_factor]\n"
+              "    # 108 arm A: dimensionless multiplier on the deck's own confining pressure.\n"
+              "    # 1.0 through the whole calibrated protocol, then 1.5 / 2.0 / 2.5 / 3.0 / 3.5.\n"
+              "    type = PiecewiseLinear\n" + piecewise(xs, ys) + "  []\n")
+        text, k = re.subn(r"^\[Functions\]\n", "[Functions]\n" + fn, text, count=1, flags=re.M)
+        assert k == 1
+
+    elif arm == "B":
+        text, k = re.subn(r"^(\s*)normal_unload_retention_time\s*=\s*0\.0.*$",
+                          lambda mm: f"{mm.group(1)}normal_unload_retention_time = {extras['tau']:g}"
+                                     f"   # 108 arm B: 0.0 in the parent (and in every other deck)",
+                          text, count=1, flags=re.M)
+        assert k == 1, f"{stem}: normal_unload_retention_time"
+
+    elif arm == "C":
+        blk = ("\n    # ---- 108 arm C: time-dependent closure creep (orca_v11, opt-in) ----\n"
+               "    # da_c/dt = (1/tau_c) (<N_eff>/sigma_ref)^q (a_c_max - a_c), integrated implicitly.\n"
+               "    # a_c_max is this run's own retained gain, so the asymptote is exactly a_h0.\n"
+               "    use_closure_creep = true\n"
+               f"    closure_creep_max_aperture = {extras['a_c_max']:.6g}\n"
+               f"    closure_creep_time = {extras['tau_c']:g}\n"
+               f"    closure_creep_reference_stress = {p['sig_ref']}\n"
+               "    closure_creep_stress_exponent = 1.0\n")
+        text, k = re.subn(r"^(\s*type = ADOrcaRoughnessDamageFracturePermeability\s*)$",
+                          lambda mm: mm.group(1) + blk, text, count=1, flags=re.M)
+        assert k == 1, f"{stem}: permeability material"
+        # Export the creep term itself. Without it the arm is only observable through a_h,
+        # where it is one of six additive contributions and cannot be separated from the rest.
+        pps = ("  [closure_creep_aperture_pp]\n"
+               "    type = ADSideAverageMaterialProperty\n"
+               "    property = closure_creep_aperture\n"
+               "    boundary = fracture_interface\n  []\n"
+               "  [closure_creep_aperture_um_pp]\n"
+               "    type = ParsedPostprocessor\n"
+               "    pp_names = closure_creep_aperture_pp\n"
+               "    expression = 'closure_creep_aperture_pp * 1e6'\n  []\n")
+        text, k = re.subn(r"^\[Postprocessors\]\n", "[Postprocessors]\n" + pps, text,
+                          count=1, flags=re.M)
+        assert k == 1, f"{stem}: [Postprocessors]"
+
+    text = banner(n, spec, arm, desc, parent_stem, t_p, t_end, extras) + text
+
+    out = STUDY / spec / "Sweeps" / f"{stem}.i"
+    sh = STUDY / spec / "Sweeps" / f"{stem}_hpc_nochk.sh"
+    if not dry:
+        out.write_text(text)
+        sh.write_text(f"""#!/bin/bash
+
+#SBATCH --job-name={stem}
+#SBATCH --chdir={HPC_ROOT}/Examples/YeGhasemmi2018/{spec}/Sweeps
+#SBATCH --account=def-biaoli66
+#SBATCH --time=24:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=32
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=32G
+#SBATCH --output=logs/{stem}_%j.out
+#SBATCH --error=logs/{stem}_%j.err
+
+cd {HPC_ROOT}/Examples/YeGhasemmi2018/{spec}/Sweeps
+
+# Alliance injects SLURM_MEM_PER_CPU; --mem sets SLURM_MEM_PER_NODE. Clear both.
+unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
+mkdir -p results_csv_hpc_rorqual results_exodus_hpc_rorqual logs
+
+srun --mpi=pmi2 -n 32 {HPC_ROOT}/orca-opt -i {stem}.i \\
+    Outputs/chk/enable=false \\
+    csv_file_base=results_csv_hpc_rorqual/{stem}_hpc \\
+    exodus_file_base=results_exodus_hpc_rorqual/{stem}_hpc
+""")
+        sh.chmod(0o755)
+    return stem, spec, arm, t_end, out
+
+
+def write_wave(name, entries, note):
+    """One SLURM array per wave. Arm C cannot share an array with arms A/B: it needs a
+    different executable, and a single array would launch it against whatever build the
+    cluster happens to have."""
+    cases = "\n".join(
+        f"  {i})\n    case_dir={spec}\n    stem={stem}\n    ;;" for i, (stem, spec) in enumerate(entries))
+    (STUDY / name).write_text(f"""#!/bin/bash
+# =============================================================================
+# 108-series, {name.replace('submit_', '').replace('.sh', '').replace('_', ' ')} -- {len(entries)} decks.
+#
+#   sbatch {name}
+#
+# {note}
+#
+# These decks extend or alter the paper protocol. They are NOT scoreable against
+# Table 2 and carry no nRMSE -- see Docs/Memory/RUN_LIST_108_SERIES.md.
+# =============================================================================
+
+#SBATCH --job-name={name.replace('submit_', 'series_').replace('.sh', '')}
+#SBATCH --chdir={HPC_ROOT}/Examples/YeGhasemmi2018
+#SBATCH --account=def-biaoli66
+#SBATCH --time=24:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=32
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=32G
+#SBATCH --array=0-{len(entries) - 1}
+#SBATCH --output={name.replace('submit_', 'series_').replace('.sh', '')}_%A_%a.out
+#SBATCH --error={name.replace('submit_', 'series_').replace('.sh', '')}_%A_%a.err
+
+set -euo pipefail
+
+project_root={HPC_ROOT}
+study_root=${{project_root}}/Examples/YeGhasemmi2018
+
+case "${{SLURM_ARRAY_TASK_ID}}" in
+{cases}
+  *)
+    echo "Unexpected SLURM_ARRAY_TASK_ID=${{SLURM_ARRAY_TASK_ID}}" >&2
+    exit 2
+    ;;
+esac
+
+case_root=${{study_root}}/${{case_dir}}/Sweeps
+cd "${{case_root}}"
+
+if [[ ! -f "${{stem}}.i" ]]; then
+  echo "Missing input deck: ${{case_root}}/${{stem}}.i" >&2
+  exit 3
+fi
+
+# Alliance injects SLURM_MEM_PER_CPU; --mem sets SLURM_MEM_PER_NODE. Clear both.
+unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
+mkdir -p results_csv_hpc_rorqual results_exodus_hpc_rorqual logs
+
+echo "Starting array task ${{SLURM_ARRAY_TASK_ID}}: ${{case_dir}}/${{stem}}.i"
+
+srun --mpi=pmi2 -n 32 "${{project_root}}/orca-opt" -i "${{stem}}.i" \\
+  Outputs/chk/enable=false \\
+  csv_file_base="results_csv_hpc_rorqual/${{stem}}_hpc" \\
+  exodus_file_base="results_exodus_hpc_rorqual/${{stem}}_hpc"
+""")
+    (STUDY / name).chmod(0o755)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dry-run", action="store_true")
+    a = ap.parse_args()
+    made = []
+    for n, spec, arm, tag, desc, extras in CASES:
+        extras = dict(extras)
+        if arm == "C":
+            extras["a_c_max"] = PARENT[spec]["gain"]
+        src = STUDY / spec / "Sweeps" / f"{PARENT[spec]['stem']}.i"
+        made.append(build(src.read_text(), n, spec, arm, tag, desc, extras, a.dry_run))
+    if not a.dry_run:
+        w1 = [(m[0], m[1]) for m in made if m[2] in ("CTRL", "A", "B")]
+        w2 = [(m[0], m[1]) for m in made if m[2] == "C"]
+        write_wave("submit_108_wave1.sh", w1,
+                   "Controls plus arms A and B. Every parameter these use exists in the "
+                   "current build -- no rebuild required.")
+        write_wave("submit_108_wave2.sh", w2,
+                   "Arm C (closure creep). REQUIRES an orca_v11 orca-opt built on the "
+                   "cluster. Submitting this against an older build will fail at input "
+                   "parse on use_closure_creep, which is the intended failure mode.")
+    w = max(len(m[0]) for m in made)
+    for stem, spec, arm, t_end, out in made:
+        print(f"  arm {arm:4s} {spec}  {stem:{w}s}  end_time = {t_end:>10.6g} s")
+    print(f"\n{len(made)} decks {'(dry run)' if a.dry_run else 'written'}")
+
+
+if __name__ == "__main__":
+    main()

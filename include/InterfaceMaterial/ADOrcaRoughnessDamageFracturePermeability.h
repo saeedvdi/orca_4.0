@@ -14,6 +14,7 @@
  *       + dilation_scale * cumulative_dilation * retention_factor(R)
  *       + self_propping_scale * R^m_sp
  *       - slip_damage_scale * (1 - exp(-cumulative_plastic_slip / slip_damage_characteristic_slip))
+ *       - closure_creep_aperture(t)   [OPT-IN, see below]
  *
  * where R is the roughness state from the coupled contact material, for example
  * ADOrcaBartonBandisContactTractionFastADHardening.
@@ -25,6 +26,21 @@
  * stops tracking the sigma'_n-driven mechanical re-opening 1:1. This decouples the
  * reported permeability from the closure (effective-stress) response without changing the
  * baseline (the term is zero at zero slip).
+ *
+ * The optional closure-creep term (use_closure_creep=true) is the ONLY term in this budget
+ * that advances with time alone. Every other term is a function of the current effective
+ * normal stress, the current mechanical gap, or a history variable that is monotone in slip,
+ * so a joint held at constant pressure is stationary to machine precision and a long-hold
+ * experiment returns a flat line by construction. The creep term supplies the missing
+ * time scale -- pressure solution / asperity indentation closing a loaded joint at constant
+ * stress over 1e5-1e7 s:
+ *
+ *   da_c/dt = (1/closure_creep_time) * (<N_eff>_+ / closure_creep_reference_stress)^q
+ *             * (closure_creep_max_aperture - a_c),   a_c(0) = 0
+ *
+ * Like the gouge-fill it is HYDRAULIC only: it subtracts from a_h and does not feed back on
+ * the traction, so it models the loss of connected void space rather than a mechanical
+ * convergence of the two surfaces. Default off, in which case a_c is identically zero.
  */
 class ADOrcaRoughnessDamageFracturePermeability : public InterfaceMaterial
 {
@@ -62,6 +78,10 @@ protected:
   // --- outputs / stateful ---
   ADMaterialProperty<Real> & _cumulative_dilation;
   const MaterialProperty<Real> & _cumulative_dilation_old;
+  /// Accumulated time-dependent closure creep (m). Stateful: integrated implicitly from its
+  /// own old value each step. Identically zero unless use_closure_creep is set.
+  ADMaterialProperty<Real> & _closure_creep_aperture;
+  const MaterialProperty<Real> & _closure_creep_aperture_old;
   ADMaterialProperty<Real> & _hydraulic_aperture;
   ADMaterialProperty<Real> & _fracture_permeability;
   ADMaterialProperty<Real> * _transmissivity;
@@ -108,4 +128,11 @@ protected:
   const Real _slip_damage_scale;       // max gouge-fill aperture reduction (m)
   const Real _slip_damage_char_slip;   // characteristic cumulative slip for saturation (m)
   const Real _slip_damage_onset_slip;  // cumulative-slip threshold s* below which no gouge accrues (m)
+
+  // ---- Time-dependent closure creep (OPT-IN; default false = legacy, bit-identical) ----
+  const bool _use_closure_creep;
+  const Real _closure_creep_max_aperture;      // asymptotic creep closure a_c_max (m)
+  const Real _closure_creep_time;              // tau_c at the reference stress (s)
+  const Real _closure_creep_reference_stress;  // sigma_ref in the rate law (Pa)
+  const Real _closure_creep_stress_exponent;   // q in rate ~ (N_eff/sigma_ref)^q
 };

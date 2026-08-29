@@ -256,7 +256,7 @@
 #       whenever the mesh, penalty, elastic properties, or boundary setup changes.
 ################################################################################
 
-mesh_file = mesh/ye2018_sw_T2_theta30_mesh_size_5.e
+mesh_file = ../mesh/ye2018_sw_T2_theta30_mesh_size_5.e
 sample_radius = 0.02526
 sample_area = 0.00200454848465
 bulk_sin_theta = 0.4999999999999999          # 93-series: sin(30.0 deg), THIS specimen's fracture angle.

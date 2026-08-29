@@ -453,7 +453,7 @@
 ######################################################################################
 
 # --- mesh / geometry ---
-mesh_file = mesh/ye2018_sw_s4_theta30_size5_mesh.e   # Orca_2.0 reference SW-S4 mesh (pre-tagged top/bottom/sides/pins)
+mesh_file = ../mesh/ye2018_sw_s4_theta30_size5_mesh.e   # Orca_2.0 reference SW-S4 mesh (pre-tagged top/bottom/sides/pins)
 sample_radius = 0.025255             # m, SW-S4 radius (D = 50.51 mm); cylinder radius used by the confining BC
 sample_area = 2.00375499689e-3        # m^2, pi*sample_radius^2
 bulk_sin_theta = 0.5

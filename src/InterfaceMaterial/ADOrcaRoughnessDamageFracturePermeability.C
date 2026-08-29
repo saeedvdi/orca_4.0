@@ -240,6 +240,49 @@ ADOrcaRoughnessDamageFracturePermeability::validParams()
       "slip_damage_aperture",
       "Diagnostic output property for the gouge-fill aperture reduction (m).");
 
+  // --- time-dependent closure creep (pressure solution / asperity indentation) ---
+  params.addParam<bool>(
+      "use_closure_creep",
+      false,
+      "OPT-IN (default false). When true, subtract a TIME-dependent closure from the hydraulic "
+      "aperture: da_c/dt = (1/closure_creep_time) * (<N_eff>_+/closure_creep_reference_stress)^q * "
+      "(closure_creep_max_aperture - a_c), integrated implicitly. This is the only term in the "
+      "aperture budget that advances with time alone -- every other term is a function of the "
+      "current stress or of a history variable monotone in slip, so without it a joint held at "
+      "constant pressure is stationary to machine precision. Models pressure solution / asperity "
+      "indentation progressively closing a loaded joint over 1e5-1e7 s. Zero at t=0 and frozen "
+      "(not reversed) whenever the joint is open, so it leaves the baseline unchanged.");
+  params.addRangeCheckedParam<Real>(
+      "closure_creep_max_aperture",
+      0.0,
+      "closure_creep_max_aperture >= 0.0",
+      "Asymptotic creep closure a_c_max (m) the aperture loses at long time. Used only when "
+      "use_closure_creep=true; zero makes the term a no-op even when the flag is set.");
+  params.addRangeCheckedParam<Real>(
+      "closure_creep_time",
+      1.0e5,
+      "closure_creep_time > 0.0",
+      "Creep time constant tau_c (s) AT THE REFERENCE STRESS. The effective time constant is "
+      "tau_c * (closure_creep_reference_stress/N_eff)^q, so a joint held above the reference "
+      "stress creeps faster. Used only when use_closure_creep=true.");
+  params.addRangeCheckedParam<Real>(
+      "closure_creep_reference_stress",
+      1.0e6,
+      "closure_creep_reference_stress > 0.0",
+      "Effective normal stress (Pa) at which the creep time constant equals closure_creep_time. "
+      "Used only when use_closure_creep=true.");
+  params.addRangeCheckedParam<Real>(
+      "closure_creep_stress_exponent",
+      1.0,
+      "closure_creep_stress_exponent >= 0.0",
+      "Exponent q in rate ~ (N_eff/sigma_ref)^q. 1.0 is the linear pressure-solution scaling "
+      "(rate proportional to the stress at the contacts); 0.0 removes the stress dependence and "
+      "leaves a pure first-order relaxation. Used only when use_closure_creep=true.");
+  params.addParam<MaterialPropertyName>(
+      "closure_creep_aperture_name",
+      "closure_creep_aperture",
+      "Diagnostic (and stateful) output property for the accumulated creep closure (m).");
+
   params.addParam<bool>(
       "compute_transmissibility",
       true,
@@ -290,7 +333,8 @@ ADOrcaRoughnessDamageFracturePermeability::ADOrcaRoughnessDamageFracturePermeabi
     _effective_normal_traction(
         (getParam<Real>("normal_stress_aperture_compliance") > 0.0 ||
          getParam<bool>("use_nonlinear_normal_closure") ||
-         getParam<bool>("compute_effective_normal_compression"))
+         getParam<bool>("compute_effective_normal_compression") ||
+         getParam<bool>("use_closure_creep"))
             ? &getADMaterialPropertyByName<Real>(
                   _base_name + getParam<MaterialPropertyName>("effective_normal_traction_name"))
             : nullptr),
@@ -298,6 +342,10 @@ ADOrcaRoughnessDamageFracturePermeability::ADOrcaRoughnessDamageFracturePermeabi
         declareADPropertyByName<Real>(getParam<MaterialPropertyName>("cumulative_dilation_name"))),
     _cumulative_dilation_old(
         getMaterialPropertyOldByName<Real>(getParam<MaterialPropertyName>("cumulative_dilation_name"))),
+    _closure_creep_aperture(declareADPropertyByName<Real>(
+        getParam<MaterialPropertyName>("closure_creep_aperture_name"))),
+    _closure_creep_aperture_old(getMaterialPropertyOldByName<Real>(
+        getParam<MaterialPropertyName>("closure_creep_aperture_name"))),
     _hydraulic_aperture(
         declareADPropertyByName<Real>(getParam<MaterialPropertyName>("hydraulic_aperture_name"))),
     _fracture_permeability(
@@ -342,7 +390,12 @@ ADOrcaRoughnessDamageFracturePermeability::ADOrcaRoughnessDamageFracturePermeabi
     _use_slip_damage(getParam<bool>("use_slip_damage")),
     _slip_damage_scale(getParam<Real>("slip_damage_scale")),
     _slip_damage_char_slip(getParam<Real>("slip_damage_characteristic_slip")),
-    _slip_damage_onset_slip(getParam<Real>("slip_damage_onset_slip"))
+    _slip_damage_onset_slip(getParam<Real>("slip_damage_onset_slip")),
+    _use_closure_creep(getParam<bool>("use_closure_creep")),
+    _closure_creep_max_aperture(getParam<Real>("closure_creep_max_aperture")),
+    _closure_creep_time(getParam<Real>("closure_creep_time")),
+    _closure_creep_reference_stress(getParam<Real>("closure_creep_reference_stress")),
+    _closure_creep_stress_exponent(getParam<Real>("closure_creep_stress_exponent"))
 {
   if (_use_nonlinear_normal_closure)
   {
@@ -361,6 +414,7 @@ void
 ADOrcaRoughnessDamageFracturePermeability::initQpStatefulProperties()
 {
   _cumulative_dilation[_qp] = 0.0;
+  _closure_creep_aperture[_qp] = 0.0;
   _normal_stress_aperture[_qp] = 0.0;
   _effective_normal_compression[_qp] = 0.0;
 
@@ -451,9 +505,38 @@ ADOrcaRoughnessDamageFracturePermeability::computeQpProperties()
   _effective_normal_compression[_qp] = effective_normal_compression;
   _normal_stress_aperture[_qp] = stress_aperture;
 
+  // Time-dependent closure creep (pressure solution / asperity indentation), OPT-IN.
+  //   da_c/dt = r * (a_c_max - a_c),   r = (1/tau_c) * (<N_eff>_+ / sigma_ref)^q
+  // Integrated IMPLICITLY over the step -- a_c = (a_c_old + r dt a_c_max)/(1 + r dt) -- because a
+  // long-hold deck spans dt from 0.05 s inside the slip event to hundreds of seconds during the
+  // hold, and the explicit update is unstable once r*dt > 2. The implicit form is unconditionally
+  // stable and monotone, and reproduces the exact exponential to O(r dt).
+  //
+  // Read explicitly from the RAW effective normal stress (no Jacobian term), the same treatment
+  // the gouge-fill above gets and for the same reason: it is a slow history variable, so the
+  // dropped coupling costs Newton nothing on the time scale over which it moves.
+  //
+  // The rate vanishes for an open joint (N_eff = 0), so creep FREEZES rather than reverses when
+  // the fracture is pressurised back open. Pressure solution does not undo.
+  Real closure_creep = 0.0;
+  if (_use_closure_creep && _closure_creep_max_aperture > 0.0)
+  {
+    const Real n_eff = std::max(0.0, MetaPhysicL::raw_value(effective_normal_compression));
+    const Real rate =
+        (_closure_creep_stress_exponent == 0.0
+             ? 1.0
+             : std::pow(n_eff / _closure_creep_reference_stress, _closure_creep_stress_exponent)) /
+        _closure_creep_time;
+    const Real r_dt = std::max(0.0, rate * _dt);
+    const Real a_c_old = std::max(0.0, _closure_creep_aperture_old[_qp]);
+    closure_creep = (a_c_old + r_dt * _closure_creep_max_aperture) / (1.0 + r_dt);
+    closure_creep = std::min(closure_creep, _closure_creep_max_aperture);
+  }
+  _closure_creep_aperture[_qp] = ADReal(closure_creep);
+
   ADReal a_h = ADReal(_a_h0) + stress_aperture +
                ADReal(_aperture_scale) * _mechanical_aperture[_qp] + dilation_term + self_prop -
-               ADReal(slip_damage_fill);
+               ADReal(slip_damage_fill) - ADReal(closure_creep);
 
   if (MetaPhysicL::raw_value(a_h) < _min_aperture)
     a_h = ADReal(_min_aperture);
