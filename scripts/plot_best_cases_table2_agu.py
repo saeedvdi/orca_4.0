@@ -93,9 +93,7 @@ def score_selected_cases(
 ) -> dict[str, dict]:
     scored: dict[str, dict] = {}
     for sample in best.SAMPLE_ORDER:
-        csv_path = PROJECT_ROOT / str(selected[sample]["source_csv"])
-        if not csv_path.is_file():
-            raise FileNotFoundError(csv_path)
+        csv_path, _deck = best.result_and_deck(selected[sample])
         scored[sample] = gate.score_run(
             csv_path=csv_path,
             sample=sample,

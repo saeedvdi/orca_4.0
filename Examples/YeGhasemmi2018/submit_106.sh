@@ -105,10 +105,11 @@ case "${SLURM_ARRAY_TASK_ID}" in
     ;;
 esac
 
-cd "${study_root}/${case_dir}"
+case_root=${study_root}/${case_dir}/Sweeps
+cd "${case_root}"
 
 if [[ ! -f "${stem}.i" ]]; then
-  echo "Missing input deck: ${study_root}/${case_dir}/${stem}.i" >&2
+  echo "Missing input deck: ${case_root}/${stem}.i" >&2
   exit 3
 fi
 

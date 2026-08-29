@@ -1,5 +1,11 @@
 # Discussion: best-case BBFast versus matched Mohr–Coulomb baselines
 
+> **Status (2026-08-28): historical baseline discussion.** The 94/102-series
+> conclusions below remain useful as controlled model-form history, but they are
+> superseded for final figures by the equal-budget winners: SWT1 `pb04`, SWT2
+> `pb04`, SWS3 `pb06`, and SWS4 `center`. See
+> `FINAL_AUDIT_2026-08-28.md` and `MC_EQUAL_BUDGET_SWEEP_AUG27.md`.
+
 ## Scope of the comparison
 
 The 102-series simulations test whether the preference for the Barton–Bandis/BBFast formulation

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Build the five result figures used by the Ye--Ghassemi AGU manuscript.
 
-The public entry point is :func:`export_all`.  The companion notebook
-``Examples/YeGhasemmi2018/AGU_manuscript_figure_exports.ipynb`` exposes the
-case lists and calls these functions one figure at a time.
+The public entry point is :func:`export_all`. The companion notebook under
+``Examples/YeGhasemmi2018/Output_Image_Comparison`` exposes the case lists and
+calls these functions one figure at a time.
 
 All comparisons are reconstructed from the result CSV files and the digitized
 Ye & Ghassemi (2018) Table 2 values in ``scripts/table2_gate.py``.  Hydraulic
@@ -35,8 +35,10 @@ import table2_gate as gate  # noqa: E402
 
 RANKING_PATH = (
     PROJECT_ROOT
-    / "doc"
-    / "independent_analysis"
+    / "Examples"
+    / "YeGhasemmi2018"
+    / "Docs"
+    / "Memory"
     / "TABLE2_ERROR_ACCURACY_RANKING.csv"
 )
 
@@ -48,7 +50,7 @@ DISPLAY_NAME = {
     "SWS4": "SW-S4",
 }
 
-# Authoritative final selections recorded in Final_ye_ghaseemi_simulations.txt.
+# Authoritative final selections after the 2026-08-27 equal-budget MC sweep.
 FINAL_BB_CASES = {
     "SWT1": "107_01_swt1_coh27p2_apscale0p01512_ppfix",
     "SWT2": "100_04_swt2_apscale0p0177_ppfix",
@@ -57,10 +59,18 @@ FINAL_BB_CASES = {
 }
 
 FINAL_MC_CASES = {
-    "SWT1": "94_01_swt1_mc_final",
-    "SWT2": "94_03_swt2_mc_final",
-    "SWS3": "94_05_sw3_mc_final",
-    "SWS4": "94_07_sw4_mc_final",
+    "SWT1": "SWT1_OrcaMohrCoulombContactTraction_pb04",
+    "SWT2": "SWT2_OrcaMohrCoulombContactTraction_pb04",
+    "SWS3": "SWS3_OrcaMohrCoulombContactTraction_pb06",
+    "SWS4": "SWS4_OrcaMohrCoulombContactTraction_center",
+}
+
+FINAL_MC_RESULT_PATHS = {
+    sample: (
+        PROJECT_ROOT / "Examples" / "YeGhasemmi2018" / sample
+        / "results_csv_mc_sweep_hpc" / f"{case}.csv"
+    )
+    for sample, case in FINAL_MC_CASES.items()
 }
 
 MESH_CASES = {
@@ -182,6 +192,29 @@ def resolve_case(
     """Resolve one named case and verify that its result CSV exists."""
     ranking = _ranking() if ranking is None else ranking
     rows = ranking.loc[ranking["sample"].eq(sample) & ranking["case"].eq(case)]
+    if rows.empty and FINAL_MC_CASES.get(sample) == case:
+        path = FINAL_MC_RESULT_PATHS[sample]
+        if verify_result and not path.is_file():
+            raise FileNotFoundError(path)
+        scored = gate.score_run(
+            csv_path=path,
+            sample=sample,
+            tag=case.rsplit("_", 1)[-1],
+            tol_mpa=0.15,
+            datum="stage1",
+            preload_time=55.0,
+            dn_channel="kinematic",
+        )
+        normalised = gate.normalised_scores(scored)
+        return pd.Series(
+            {
+                "sample": sample,
+                "case": case,
+                "mean_nrmse_pct": normalised["mean"],
+                "stages_reached": scored["reached"],
+                "source_csv": str(path.relative_to(PROJECT_ROOT)),
+            }
+        )
     if len(rows) != 1:
         raise ValueError(f"{sample}: expected exactly one row for {case!r}; found {len(rows)}")
     row = rows.iloc[0]
@@ -193,13 +226,15 @@ def resolve_case(
 def score_case(sample: str, case: str, ranking: pd.DataFrame | None = None) -> dict:
     """Extract and score all eleven ordered Table 2 stages for one result."""
     row = resolve_case(sample, case, ranking)
+    tag = case.rsplit("_", 1)[-1] if FINAL_MC_CASES.get(sample) == case else "hpc"
     result = gate.score_run(
         csv_path=result_path(sample, row),
         sample=sample,
-        tag="hpc",
-        tol_mpa=0.35,
+        tag=tag,
+        tol_mpa=0.15,
         datum="stage1",
         preload_time=55.0,
+        dn_channel="kinematic",
     )
     if int(result["reached"]) != 11:
         raise ValueError(f"{sample} / {case}: reached {result['reached']}/11 stages")

@@ -16,23 +16,25 @@ what was concluded. When a claim here is shown wrong, correct it **in place and 
 — §5 exists because the wrong round-1 assumptions were worth more than the right ones.
 Add a line to §12.
 
-**Last updated:** 2026-08-28 (rounds 6–8 analysed / round 9 built). **Branch:** `orca_v8`,
-commit `353faf3` + later results and decks.
+**Last updated:** 2026-08-28 (final audit complete / round 10 built). **Branch:** `orca_v10`,
+commit `353faf3` + later results, decks, and audit artifacts.
 
 > **State in one line, 2026-08-28.** Rounds 6–8 closed the remaining scalar arms:
 > OG-SH's best complete mean nRMSE is **19.06%**, but neither weakening exponent passed;
 > OG-SC coefficient 0.80 moved the burst to stage 7 but overshot slip; OG-T's traction
-> probe retained the negative normal-stress slope and ran away. Round 9 is a bounded
-> mechanism set: pending graded OG-T preload (`110_23`), uniform paper-mean pressure
-> traction on OG-SC (`110_24`), and OG-SH rate-only/aging-state pair (`110_25`/`110_26`).
-> All four are `Syntax OK`; submit with `submit_110_round9_array_hpc.sh`.
+> probe retained the negative normal-stress slope and ran away. Round 9 closed the
+> OG-SC paper-mean arm without promotion, completed the OG-SH `b=0` control, left the
+> `b=0.006` arm incomplete, and returned no OG-T `110_23` CSV. Round 10 brackets the
+> OG-SH aging effect at `b=0.002`/`0.004` (`110_27`/`110_28`) through the full 3600 s
+> cycle and runs graded OG-T `110_29` through the full 6800 s cycle; use
+> `submit_110_round10_array_hpc.sh`.
 >
 > **Superseded state, 2026-08-24 22:48.** Round 3 finished on OG-SH and OG-SC. **OG-SH mean
 > nRMSE 62 → 67 → 17**, from acting on round 2's one preregistered null. OG-SC's force channel
 > is exact for five stages then breaks on a single mis-derived constant. OG-T is unchanged and
 > still blocked on its preload. TODO #121 (`bb_jrc_mobilized`) is **closed — it is a deck flag,
 > not a bug**. Round-4 change list, with preregistered nulls:
-> `doc/KALANTAR2025_ROUND3_BACKANALYSIS.md` **Part II §10**. Read Part II before Part I.
+> `Doc/Memory/KALANTAR2025_ROUND3_BACKANALYSIS.md` **Part II §10**. Read Part II before Part I.
 
 ---
 
@@ -40,9 +42,9 @@ commit `353faf3` + later results and decks.
 
 | item | path | status |
 |---|---|---|
-| Reading notes (69 kB) | `doc/reading_kalantar2025_self_propping_granodiorite.md` | done |
-| Validation plan / method | `doc/KALANTAR2025_VALIDATION_PLAN.md` | done, 5 sections |
-| Round-1 back-analysis | `doc/KALANTAR2025_ROUND2_BACKANALYSIS.md` | done, 8 sections |
+| Reading notes (69 kB) | `Doc/reading_kalantar2025_self_propping_granodiorite.md` | done |
+| Validation plan / method | `Doc/Memory/KALANTAR2025_VALIDATION_PLAN.md` | done, 5 sections |
+| Round-1 back-analysis | `Doc/Memory/KALANTAR2025_ROUND2_BACKANALYSIS.md` | done, 8 sections |
 | Digitized Table 2 (39 hold stages, 3 specimens) | `validation/kalantar2025_table2.csv` | done |
 | Figure 8 Pedrosa fits, incl. their reanalysis of our four specimens | `validation/kalantar2025_figure8_pedrosa_fits.csv` | done |
 | Parameter audit (runs before any deck) | `scripts/kalantar_parameter_audit.py` | done, 7 sections |
@@ -61,6 +63,7 @@ commit `353faf3` + later results and decks.
 | **Round-5 results, 2026-08-25** | `*/results_csv_hpc/110_1{0,1,2}_*.csv` | **OG-SH/OG-SC complete; OG-T snapshot 48.6%, not scoreable. Frame mechanism passed; outcome re-bracketed** |
 | **Round-6 decks, BUILT 2026-08-25** | `OGSH/110_13`, `OGT/110_14_*probe`, `OGSC/110_15` + `_hpc.sh` | **all `Syntax OK`; submit at 64 ranks / 64 GB / 24 h; do not submit full OG-T deck** |
 | **Round-9 diagnostics, BUILT 2026-08-28** | `OGT/110_23`, `OGSC/110_24`, `OGSH/110_25`/`110_26` + round-9 array script | **all `Syntax OK`; pressure-definition and rate/state mechanism tests, no scalar continuation** |
+| **Round-10 full-cycle diagnostics, BUILT 2026-08-28** | `OGSH/110_27`/`110_28`, `OGT/110_29` + round-10 array script | **3600 s aging bracket at `b=0.002`/`0.004`; 6800 s graded OG-T; OG-SC deliberately omitted after its failed promotion gate** |
 | Round-1 results | (superseded in place) | scored, see §5 |
 | 111-series Mohr–Coulomb siblings | — | **unblocked** — round 3 landed clean on two of three |
 
@@ -689,8 +692,9 @@ twins — never as a speed hack mid-calibration.
 reached; the channel figures grey out the unreached span on every panel. Before this,
 `stage_table` re-read the run's final row once per unreached stage, so a truncated run
 produced a full-length table that looked merely *wrong* rather than *absent* — the same
-mechanism that produced `kalantar_gate.py`'s phantom scores of 54 and 85 (§6.8). The gate
-still lacks the guard.
+mechanism that produced `kalantar_gate.py`'s phantom scores of 54 and 85 (§6.8). The direct
+gate now stops at the last reached hold, reports `reached_stages`, and withholds its aggregate
+score when the CSV does not reach the full schedule.
 
 **The lesson is worth more than the fix.** Hiding the two incomplete runs cost a day: OG-SC's
 two-sided friction bracket and OG-T's preload defect were both sitting in CSVs that had been
@@ -769,7 +773,7 @@ At Kalantar's stress levels the closure term contributes ~0.03 µm
 > `p` held at 4: **V_m 1.20 → 2.651 µm, σ₀ 15.0 → 36.29 MPa**, K_ni essentially unchanged at
 > 1.369e13. RMS 25 nm on a 570 nm swing. `K_ni` was never wrong; `V_m` was, and with it the
 > placement of σ₀ *below* the operating range instead of inside it. Details:
-> `doc/KALANTAR2025_ROUND3_BACKANALYSIS.md` §7.4.
+> `Doc/Memory/KALANTAR2025_ROUND3_BACKANALYSIS.md` §7.4.
 
 `tangential_viscosity` deserves separate attention: it is not a numerical regulariser, it
 is the hidden rate law, worth 0.035–3.5 MPa in τ, and SW-S4 needed 9× the others.
@@ -787,10 +791,10 @@ is the hidden rate law, worth 0.035–3.5 MPa in τ, and SW-S4 needed 9× the ot
 
 **The notebook refuses to *score* a truncated run but does *show* it** (`MIN_COMPLETE_PCT =
 99.9`; `LOADED` drives the scorecard, `SHOWN` drives every diagnostic section — see §6.11).
-It currently reports `scored (complete only): OG-SH` and `plotted (all with CSV): OG-SH,
-OG-T, OG-SC`. It imports `kalantar_gate` rather than reimplementing the stage walk, so the
-two cannot drift — except that **the gate still has no completeness guard of its own** and
-must not be called directly on a truncated CSV.
+As of the 2026-08-28 audit, the scorecard includes every complete full cycle explicitly
+listed in `RUNS`, while truncated and bounded diagnostic cases are plotted but not scored.
+The notebook imports `kalantar_gate` rather than reimplementing the stage walk, and the gate
+also stops at the last reached hold and withholds aggregate scores for incomplete full cycles.
 
 Run it with the **base** python (the `moose` env has netCDF4 but no `jupyter_client`; base
 has jupyter but no netCDF4 — the notebook needs only the former):
@@ -801,7 +805,7 @@ has jupyter but no netCDF4 — the notebook needs only the former):
 
 ---
 
-## 9. The plan
+## 9. The plan (historical sequence; current status is in §12)
 
 Series **110** for Kalantar BBFast, **111** for the Mohr–Coulomb siblings — nothing
 collides with Ye2018's 93–104.
@@ -907,4 +911,6 @@ is a direct check on a single number and could not have been misread.
 | 2026-08-25 (round 4 run + round 5 built) | `orca_v8` | **Round 4 ran: all three complete for the first time.** OG-SC **77 → 29** (a_h channel **39 → 10**, bias +0.002 µm — its preregistered null *a_h at stage 6 = 1.60 ± 0.10 µm* returned **1.53**, so the saturated-closure diagnosis is CLOSED). OG-SH **17 → 31**, worse: `D_c` 150 → 59.3 µm sent slip from +15 % to **+155 %** and τ from +9.7 % to **−19.6 %**. Cause: **the fit treated Table 2's `dL_s` as an independent variable when the model has to solve for it** — shorter `D_c` → weaker joint → more slip → weaker still; the fit priced the first step of that loop only. **Never fit a constant against a channel the model predicts.** Interpolating the two completed runs SPLIT (τ wants 110 µm, slip 166) and the split found the real defect: **the frame stiffness is counted twice**. Across the two runs τ sheds **82.5 MPa/mm of slip** where `k_eff = K_sys cos²θ sinθ/A` says 150.5; the joint unloads against the penalty spring **in series with the elastic core**, 88.8 MPa/mm — an **8 % match**. Table 2's own `ΔL_s`/`Δτ` identity verifies with `K_sys` ALONE (0.4–4 %), so the paper's `K_sys` is the whole SYSTEM and the deck adds the sample a second time: the joint saw **0.59×** (OG-SH) / 0.63× the experiment's stiffness. **Every stability cap this campaign quoted was 1.7× too small.** `C_ax` was calibrated on our own round-1 run to make the axial GATE land σ₁ — legitimate for that, and it has been read ever since as a property of the experiment. OG-T ran 6800 s for the first time with round-3 constants held: sheds **518 µm before injection**, ends at 639 vs the paper's 275, preload inversion and tip-clearance ordering unchanged. **Round-5 decks `110_10`/`110_11`/`110_12` BUILT, all `Syntax OK`** — `penalty = 1/(A/K_sys − C_ax)` (3.27× OG-SH, 2.37× others, raising the stiffness the JOINT sees by 1.695×/1.579× — different ratios, do not confuse), OG-SH's `D_c` reverted to 150 µm, everything else held. Three preregistered nulls |
 | 2026-08-25 (round 5 analysed + round 6 built) | `orca_v8` | **OG-SH and OG-SC complete; OG-T available only to 3305.5/6800 s and not scored.** OG-SH mean nRMSE 31 -> **21.87**. Its outcome null failed (stage-5/end slip **23.18/23.14 um** vs 44.6/48 measured), but the direct mechanism passed: within-run stage-1-to-5 unloading **84.11 -> 165.61 MPa/mm**, target 172.0. Frame fix CLOSED; `D_c` can now be re-bracketed. OG-SC stays **28.95**, aperture nRMSE **10.48**, stage-6 a_h **1.53 um**; closure fix remains closed. It still bursts at stage 6 with 3.75 um pre-burst plastic slip, so tangential viscosity is isolated next. The direct gate's truncated-run bug was fixed: it no longer repeats the last CSV row into unreached holds or prints an aggregate score. **Round 6 built:** OG-SH `D_c=100 um`; OG-SC `tangential_viscosity=2e12` (5x only); OG-T verified 26-degree/1-mm-clearance 60 s probe. All `Syntax OK`; all scripts 64 ranks, 64 GB, 24 h |
 | 2026-08-28 (rounds 6–8 analysed + round 9 built) | `orca_v8` | **Round 6:** OG-SH mean nRMSE **19.06%**, but stage-5 slip/tau gate failed; OG-SC unchanged and viscosity arm closed. **Round 7:** both stiffness probes failed before a hold; OG-T traction probe completed but failed all physical preload gates. **Round 8:** neither OG-SH exponent nor OG-SC pressure-coefficient arm passed its full gate. **Round 9:** `110_24` replaces fitted pressure coefficients with uniform `Pp=(Pi+Po)/2`; `110_25`/`110_26` isolate direct-rate versus Dieterich aging at physical `a=0.010`; pending graded OG-T `110_23` is included. All four `Syntax OK`, with explicit preregistered headers and one array launcher. |
+| 2026-08-28 (final audit) | `orca_v10` | Round 9 landed partially: `110_24` and `110_25` reach their designed horizons but fail 1 and 2 preregistered gates respectively; `110_26` stops at 408.189/2000 s; `110_23` has no CSV. Notebook manifest/outputs updated. Effective-normal-stress rebound was independently checked with the paper-frame reaction channel: model minus measured rebound is +0.151 MPa OG-SH, -3.675 OG-T, -0.787 OG-SC, so there is no common excessive-rebound or source-bug signature. Full evidence: `FINAL_AUDIT_2026-08-28.md`. |
+| 2026-08-28 (round 10 built) | `orca_v10` | Built full-cycle OG-SH aging-bracket decks `110_27` (`b=0.002`) and `110_28` (`b=0.004`) from the Round-9 `b=0.006` arm, holding all other physics, loading, and solver controls fixed while extending the horizon to all nine stages (3600 s). Built separately named graded OG-T full-cycle deck `110_29` from probe `110_23`, restoring the established 6800 s segment schedule and production output cadence. The three-task launcher requests 72 h. OG-SC is omitted because `110_24` failed its written promotion gate. Rationale and pass criteria: `Doc/Memory/KALANTAR2025_ROUND9_BACKANALYSIS.md`. |
 | 2026-08-24 (mesh) | `orca_v8` | Graded meshing **tried, measured, rejected** — the spacing-vs-distance profile is flat at ~0.98 mm out to 100 mm, `scheme polyhedron` yields HEX8 and propagates surface intervals through the whole volume, OG-SH came out **+8.2 % larger**. Then the real mechanism: **§6.12, source pinning is `round(0.79992·N)/N`** for the interval count on the fracture's major-axis curve — all six meshes predicted to 0.1 µm, OG-SH's famous 4.1 µm pin is 25 being divisible by 5. Borehole **vertex imprint** written into all three journals (`split curve … location position`, exporting to a new `_size3_pin.e`), with `curve … interval 25` as the commented fallback; `scripts/check_axis_intervals.py` and `mesh_probe_axis_curves.jou` added. **Unrun — no Cubit on the workstation** |

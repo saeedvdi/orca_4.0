@@ -39,8 +39,10 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RANKING_PATH = (
     PROJECT_ROOT
-    / "doc"
-    / "independent_analysis"
+    / "Examples"
+    / "YeGhasemmi2018"
+    / "Docs"
+    / "Memory"
     / "TABLE2_ERROR_ACCURACY_RANKING.csv"
 )
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "doc" / "independent_analysis" / "figures"
@@ -193,12 +195,32 @@ def select_best_cases(
 def result_and_deck(row: pd.Series) -> tuple[Path, Path]:
     csv_path = PROJECT_ROOT / str(row["source_csv"])
     if not csv_path.is_file():
-        raise FileNotFoundError(csv_path)
-    stem = csv_path.stem.removesuffix("_hpc")
-    deck = csv_path.parent.parent / f"{stem}.i"
-    if not deck.is_file():
+        sample_root = PROJECT_ROOT / "Examples" / "YeGhasemmi2018" / str(row["sample"])
+        matches = sorted(
+            (
+                path for path in sample_root.rglob(csv_path.name)
+                if "partial_every_step" not in path.parts
+            ),
+            key=lambda path: (
+                0 if "Sweeps" in path.parts else 1,
+                len(path.parts),
+                str(path),
+            ),
+        )
+        if not matches:
+            raise FileNotFoundError(csv_path)
+        csv_path = matches[0]
+    sample_root = PROJECT_ROOT / "Examples" / "YeGhasemmi2018" / str(row["sample"])
+    stem = str(row["case"])
+    deck_candidates = (
+        csv_path.parent.parent / f"{stem}.i",
+        sample_root / "Sweeps" / f"{stem}.i",
+        sample_root / f"{stem}.i",
+    )
+    deck = next((path for path in deck_candidates if path.is_file()), None)
+    if deck is None:
         raise FileNotFoundError(
-            f"Could not map ranked result {csv_path.name} to input deck {deck}"
+            f"Could not map ranked result {csv_path.name} to input deck {stem}.i"
         )
     return csv_path, deck
 

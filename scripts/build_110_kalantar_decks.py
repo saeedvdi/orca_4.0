@@ -64,7 +64,7 @@ it is no longer a factor-1.7 guess.
 ROUND 4 -- WHAT CHANGED AND WHY
 ===============================
 Round 3 completed on OG-SH and OG-SC (110_02, 110_06). OG-SH went 62 -> 67 -> 17
-mean nRMSE. Full evidence: doc/KALANTAR2025_ROUND3_BACKANALYSIS.md Part II. Four
+mean nRMSE. Full evidence: Examples/Kalantar2025/Doc/Memory/KALANTAR2025_ROUND3_BACKANALYSIS.md Part II. Four
 constants move and two derivations are replaced. Everything else is held, so the
 round stays attributable.
 
@@ -1183,7 +1183,7 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
 # Built by scripts/build_110_kalantar_decks.py from
 # Examples/YeGhasemmi2018/{spec['parent']}.
 {OGT_WARNING}#
-# WHAT CHANGED FROM ROUND 5 (doc/KALANTAR2025_ROUND5_BACKANALYSIS.md)
+# WHAT CHANGED FROM ROUND 5 (Examples/Kalantar2025/Doc/Memory/KALANTAR2025_ROUND5_BACKANALYSIS.md)
 {
 '''#   OG-SH: corrected-frame D_c bracket, 150 -> 100 um.  Round 5 verified the
 #   stiffness mechanism (84 -> 165 MPa/mm within-run, expected 172), but its outcome
@@ -1203,7 +1203,7 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
 #   bb_effective_normal_stress versus the paper-frame value becomes more negative.'''
 }
 #
-# WHAT CHANGED FROM ROUND 4 (doc/KALANTAR2025_ROUND4_BACKANALYSIS.md)
+# WHAT CHANGED FROM ROUND 4 (Examples/Kalantar2025/Doc/Memory/KALANTAR2025_ROUND4_BACKANALYSIS.md)
 #   ROUND 5 CHANGES ONE THING: THE FRAME. Round 4's four constants produced a split
 #   verdict -- OG-SC's aperture null PASSED (a_h 1.53 against a preregistered
 #   1.60 +/- 0.10; that channel went 39 -> 10 nRMSE) while OG-SH got worse, 17 -> 31.
@@ -1235,7 +1235,7 @@ def build(name: str, spec: dict, rows: list[dict]) -> Path:
 #   OG-SC keeps all three of its round-4 constants: the residual recovered two thirds
 #   of its post-burst gap and the aperture pair passed its null outright.
 #
-# WHAT CHANGED IN ROUND 4 (doc/KALANTAR2025_ROUND3_BACKANALYSIS.md, Part II)
+# WHAT CHANGED IN ROUND 4 (Examples/Kalantar2025/Doc/Memory/KALANTAR2025_ROUND3_BACKANALYSIS.md, Part II)
 #   Round 3 completed on OG-SH and OG-SC. OG-SH went 62 -> 67 -> 17 mean nRMSE, by
 #   acting on ONE preregistered null. FOUR constants move in round 4, all on the two
 #   scoreable specimens, and everything else is held so the round stays attributable.

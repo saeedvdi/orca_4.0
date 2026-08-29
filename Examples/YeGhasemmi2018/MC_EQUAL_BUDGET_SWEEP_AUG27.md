@@ -94,3 +94,18 @@ The defensible final comparison should report both:
 1. the aligned center MC cases, which are the controlled constitutive transfer; and
 2. the best physically admissible screened/refined MC cases, which are the equal-budget best-effort controls.
 
+## Completed selection (audited 2026-08-28)
+
+All 36 CSVs are finite, time-monotonic, and reach all eleven Table 2 stages.
+The independently reproduced minimum mean five-channel nRMSE in each specimen is:
+
+| Sample | Selected MC run | Mean nRMSE |
+|---|---|---:|
+| SWT1 | `SWT1_OrcaMohrCoulombContactTraction_pb04` | 6.900% |
+| SWT2 | `SWT2_OrcaMohrCoulombContactTraction_pb04` | 3.780% |
+| SWS3 | `SWS3_OrcaMohrCoulombContactTraction_pb06` | 5.148% |
+| SWS4 | `SWS4_OrcaMohrCoulombContactTraction_center` | 7.000% |
+
+These are the MC cases of record for validation, comparison, and manuscript
+figures. The 94-series names below or in older documents identify the center
+deck provenance, not the final selected MC result.

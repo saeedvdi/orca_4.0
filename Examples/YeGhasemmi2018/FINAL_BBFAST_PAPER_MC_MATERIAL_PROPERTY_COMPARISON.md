@@ -2,7 +2,7 @@
 
 **Prepared:** 2026-08-27  
 **Experimental reference:** Ye, Z., and A. Ghassemi (2018), *Injection-Induced Shear Slip and Permeability Enhancement in Granite Fractures*, JGR Solid Earth, 123, 9009–9032, [doi:10.1029/2018JB016045](https://doi.org/10.1029/2018JB016045).  
-**Scope:** the four selected BBFast cases and their fixed 94-series Mohr–Coulomb (MC) controls. Values are active input-deck values, not historical values left in comments.
+**Scope:** the four selected BBFast cases and the common Mohr–Coulomb (MC) center decks from which the equal-budget sweep was launched. Values are active input-deck values, not historical values left in comments. Final figures use the selected sweep members SWT1 `pb04`, SWT2 `pb04`, SWS3 `pb06`, and SWS4 `center`; their five varied shear parameters are supplied by the corresponding submission-script array row.
 
 ## 1. Essential interpretation
 
@@ -38,12 +38,12 @@ For vector entries below, the order is always **[SWT1, SWT2, SWS3, SWS4]**.
 
 ## 3. Cases included
 
-| Sample | Final BBFast deck | Matched MC deck |
-|---|---|---|
-| SWT1 | [`SWT1_OrcaBartonBandisContactTractionFastADHardening.i`](SWT1/SWT1_OrcaBartonBandisContactTractionFastADHardening.i) | [`SWT1_OrcaMohrCoulombContactTraction.i`](SWT1/SWT1_OrcaMohrCoulombContactTraction.i), derived from `94_01` |
-| SWT2 | [`SWT2_OrcaBartonBandisContactTractionFastADHardening.i`](SWT2/SWT2_OrcaBartonBandisContactTractionFastADHardening.i) | [`SWT2_OrcaMohrCoulombContactTraction.i`](SWT2/SWT2_OrcaMohrCoulombContactTraction.i), derived from `94_03` |
-| SWS3 | [`SWS3_OrcaBartonBandisContactTractionFastADHardening.i`](SWS3/SWS3_OrcaBartonBandisContactTractionFastADHardening.i) | [`SWS3_OrcaMohrCoulombContactTraction.i`](SWS3/SWS3_OrcaMohrCoulombContactTraction.i), renamed from `94_05` |
-| SWS4 | [`SWS4_OrcaBartonBandisContactTractionFastADHardening.i`](SWS4/SWS4_OrcaBartonBandisContactTractionFastADHardening.i) | [`SWS4_OrcaMohrCoulombContactTraction.i`](SWS4/SWS4_OrcaMohrCoulombContactTraction.i), renamed from `94_07` |
+| Sample | Final BBFast deck | MC center deck | Final MC run |
+|---|---|---|---|
+| SWT1 | [`SWT1_OrcaBartonBandisContactTractionFastADHardening.i`](SWT1/SWT1_OrcaBartonBandisContactTractionFastADHardening.i) | [`SWT1_OrcaMohrCoulombContactTraction.i`](SWT1/SWT1_OrcaMohrCoulombContactTraction.i), derived from `94_01` | `SWT1_OrcaMohrCoulombContactTraction_pb04` |
+| SWT2 | [`SWT2_OrcaBartonBandisContactTractionFastADHardening.i`](SWT2/SWT2_OrcaBartonBandisContactTractionFastADHardening.i) | [`SWT2_OrcaMohrCoulombContactTraction.i`](SWT2/SWT2_OrcaMohrCoulombContactTraction.i), derived from `94_03` | `SWT2_OrcaMohrCoulombContactTraction_pb04` |
+| SWS3 | [`SWS3_OrcaBartonBandisContactTractionFastADHardening.i`](SWS3/SWS3_OrcaBartonBandisContactTractionFastADHardening.i) | [`SWS3_OrcaMohrCoulombContactTraction.i`](SWS3/SWS3_OrcaMohrCoulombContactTraction.i), renamed from `94_05` | `SWS3_OrcaMohrCoulombContactTraction_pb06` |
+| SWS4 | [`SWS4_OrcaBartonBandisContactTractionFastADHardening.i`](SWS4/SWS4_OrcaBartonBandisContactTractionFastADHardening.i) | [`SWS4_OrcaMohrCoulombContactTraction.i`](SWS4/SWS4_OrcaMohrCoulombContactTraction.i), renamed from `94_07` | `SWS4_OrcaMohrCoulombContactTraction_center` |
 
 ## 4. Experimentally reported specimen and rock properties
 
