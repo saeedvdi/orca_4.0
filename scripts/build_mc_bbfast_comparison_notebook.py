@@ -534,7 +534,7 @@ for sample, spec in PAIR_SPECS.items():
    they act on a roughness description MC does not carry, so their failure to
    help is expected. This is **not** evidence that MC cannot be calibrated. An
    archived campaign of 52 independently fitted MC runs
-   (`orca_3.0_full`, see `doc/independent_analysis/MC_ARCHIVE_RECOVERY_2026-08-25.md`)
+   (`orca_3.0_full`, see `Examples/YeGhasemmi2018/Docs/Memory/MC_ARCHIVE_RECOVERY_2026-08-25.md`)
    reaches 4.40% on SW-S4 -- better than the BBFast final -- and 6.07% on
    SW-S3, using roughly eight fitted parameters per specimen against this
    baseline's zero. The claim these runs support is parameter economy and

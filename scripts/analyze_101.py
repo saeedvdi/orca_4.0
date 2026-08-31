@@ -12,7 +12,7 @@ machine-readable files:
 
 Usage:
     python scripts/analyze_101.py
-    python scripts/analyze_101.py --output-dir doc/independent_analysis
+    python scripts/analyze_101.py --output-dir Examples/YeGhasemmi2018/Docs/Memory
 """
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ from build_101_decks import (
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "Examples/YeGhasemmi2018"
-DEFAULT_OUTPUT = ROOT / "doc/independent_analysis"
+DEFAULT_OUTPUT = ROOT / "Examples/YeGhasemmi2018/Docs/Memory"
 SWS4_SETTLING_SLIP_LIMIT_MM = 1.0e-4
 
 DAMAGE = {

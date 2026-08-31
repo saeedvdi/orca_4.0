@@ -85,6 +85,16 @@ virgin closure curve `a_h0 + stress_aperture(sigma'_n)`, which is analytic and n
 second run. The crossing stress — if there is one — is the propping-resilience number,
 directly comparable to the Pedrosa fit Kalantar report.
 
+> **CORRECTION, 2026-08-31, after wave 1.** This design overshoots a model-form limit it
+> did not account for. computeStressAperture clamps the closure term to zero above
+> reference_effective_normal_stress, so the aperture cannot close further beyond it. The
+> reference stresses are 65.47 / 66.74 / 32.1 / 31.0 MPa, so only rungs 1-2 are usable on
+> the tensile pair and **the entire ladder is in the dead zone for SW-S3 and SW-S4**,
+> which returned nothing (SW-S4 pinned at its aperture floor). The usable result is real
+> -- retained a_h is x2.03-2.09 the virgin value at matched sigma'_n, stable all the way
+> back to the datum stress -- but the saw-cut arms must be redesigned to sweep *below*
+> their reference stress. See SELF_PROPPING_AND_CYCLIC_CAMPAIGN.md section 4.3.
+
 **Stated limitation:** the ladder reaches 105 MPa of confinement, beyond what a triaxial
 cell would apply. The independent variable is sigma'_n and the deck's job is to sweep
 it; whether a real cell could reach the crossing is a separate question and must be
@@ -116,6 +126,20 @@ and **cannot** produce a closing fracture at any value of tau. It is included be
 tau = 15 000 s against SW-T1's ~1470 s unloading limb separates *the lag is irrelevant*
 from *the unloading limb was too fast to prop fully* — and the second would change how
 the retention fraction should be calibrated.
+
+> **CORRECTION, 2026-08-31, after wave 1.** "Cannot produce a closing fracture at any
+> value of tau" is wrong. Arm B *does* produce one: SW-T1 at tau = 15 000 s goes
+> 4.114 -> 3.962 um over 6e4 s and is still falling. What survives is the claim about the
+> *destination* -- all three tau converge back to the tau = 0 state, so it is a delayed
+> approach, not a healing mechanism, and it cannot close below the propped equilibrium.
+> What was wrong is the *rate*: measured effective relaxation times are 3.0e3 / 2.0e4 /
+> 1.8e5 s for tau = 150 / 1500 / 15000, i.e. **12-21x the input parameter**. The source
+> reading above is correct about updateNormalUnloadState in isolation but missed the
+> feedback: the retained opening holds the joint more open, which raises sigma'_n against
+> the frame (46.2383 / 46.2389 / 46.2608 / 46.3431 MPa at t = 6e4), which raises its own
+> target. Consequence for anyone calibrating this parameter:
+> **normal_unload_retention_time is not the observed decay time, it is ~1/15th of it.**
+> Numbers in SELF_PROPPING_AND_CYCLIC_CAMPAIGN.md section 4.2.
 
 ---
 

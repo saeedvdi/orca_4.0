@@ -22,7 +22,7 @@ import table2_gate
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RANKING = ROOT / "doc/independent_analysis/TABLE2_ERROR_ACCURACY_RANKING.csv"
+RANKING = ROOT / "Examples/YeGhasemmi2018/Docs/Memory/TABLE2_ERROR_ACCURACY_RANKING.csv"
 TOL_MPA = 0.15
 
 NEW_CASES = [
@@ -359,6 +359,156 @@ NEW_CASES = [
         "source_csv": "Examples/YeGhasemmi2018/SWT1/results_csv_local/107_01_swt1_coh27p2_apscale0p01512_ppfix.csv",
         "notes": "final SWT1 calibration: cohesion 27.2 MPa with the 106_01 aperture scale; best balanced score while retaining accurate paper-frame effective normal stress",
     },
+    {
+        "sample": "SWS4",
+        "case": "106_08_sw4_phir21p60_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWS4/Sweeps/results_csv_hpc_rorqual/106_08_sw4_phir21p60_ppfix_hpc.csv",
+        "notes": "106 strength arm: residual friction angle reduced per the stage-4 envelope inversion",
+    },
+    {
+        "sample": "SWS4",
+        "case": "106_09_sw4_phir22p10_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWS4/Sweeps/results_csv_hpc_rorqual/106_09_sw4_phir22p10_ppfix_hpc.csv",
+        "notes": "106 strength arm: residual friction angle reduced per the stage-4 envelope inversion",
+    },
+    {
+        "sample": "SWS4",
+        "case": "106_10_sw4_hydbb_vh1p83um_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWS4/Sweeps/results_csv_hpc_rorqual/106_10_sw4_hydbb_vh1p83um_ppfix_hpc.csv",
+        "notes": "106 aperture-law arm: hydraulic Barton-Bandis closure refit with sigma0 pinned to K_ni*V_m",
+    },
+    {
+        "sample": "SWS4",
+        "case": "106_11_sw4_phir21p60_hydbb_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWS4/Sweeps/results_csv_hpc_rorqual/106_11_sw4_phir21p60_hydbb_ppfix_hpc.csv",
+        "notes": "106 aperture-law arm: hydraulic Barton-Bandis closure refit with sigma0 pinned to K_ni*V_m",
+    },
+    {
+        "sample": "SWT1",
+        "case": "106_01_swt1_apscale0p01512_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWT1/Sweeps/results_csv_hpc_rorqual/106_01_swt1_apscale0p01512_ppfix_hpc.csv",
+        "notes": "106 aperture-law arm: pure aperture_scale rescale from the Table-2 flow refit",
+    },
+    {
+        "sample": "SWT1",
+        "case": "106_02_swt1_hydbb_vh9p84um_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWT1/Sweeps/results_csv_hpc_rorqual/106_02_swt1_hydbb_vh9p84um_ppfix_hpc.csv",
+        "notes": "106 aperture-law arm: hydraulic Barton-Bandis closure refit with sigma0 pinned to K_ni*V_m",
+    },
+    {
+        "sample": "SWT1",
+        "case": "106_03_swt1_unld0p70_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWT1/Sweeps/results_csv_hpc_rorqual/106_03_swt1_unld0p70_ppfix_hpc.csv",
+        "notes": "106 unload-reclosure arm: normal_unload_retention_fraction reduced",
+    },
+    {
+        "sample": "SWT1",
+        "case": "106_04_swt1_hydbb_unld0p70_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWT1/Sweeps/results_csv_hpc_rorqual/106_04_swt1_hydbb_unld0p70_ppfix_hpc.csv",
+        "notes": "106 aperture-law arm: hydraulic Barton-Bandis closure refit with sigma0 pinned to K_ni*V_m",
+    },
+    {
+        "sample": "SWT1",
+        "case": "106_12_swt1_ktbb_kref1p18e12_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWT1/Sweeps/results_csv_hpc_rorqual/106_12_swt1_ktbb_kref1p18e12_ppfix_hpc.csv",
+        "notes": "106 shear-stiffness arm: stress-dependent tangential stiffness (orca_v9 source change)",
+    },
+    {
+        "sample": "SWT1",
+        "case": "106_13_swt1_ktbb_kref3p0e12_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWT1/Sweeps/results_csv_hpc_rorqual/106_13_swt1_ktbb_kref3p0e12_ppfix_hpc.csv",
+        "notes": "106 shear-stiffness arm: stress-dependent tangential stiffness (orca_v9 source change)",
+    },
+    {
+        "sample": "SWT2",
+        "case": "106_05_swt2_hydbb_vh34p36um_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWT2/Sweeps/results_csv_hpc_rorqual/106_05_swt2_hydbb_vh34p36um_ppfix_hpc.csv",
+        "notes": "106 aperture-law arm: hydraulic Barton-Bandis closure refit with sigma0 pinned to K_ni*V_m",
+    },
+    {
+        "sample": "SWT2",
+        "case": "106_06_swt2_unld0p60_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWT2/Sweeps/results_csv_hpc_rorqual/106_06_swt2_unld0p60_ppfix_hpc.csv",
+        "notes": "106 unload-reclosure arm: normal_unload_retention_fraction reduced",
+    },
+    {
+        "sample": "SWT2",
+        "case": "106_07_swt2_hydbb_unld0p60_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWT2/Sweeps/results_csv_hpc_rorqual/106_07_swt2_hydbb_unld0p60_ppfix_hpc.csv",
+        "notes": "106 aperture-law arm: hydraulic Barton-Bandis closure refit with sigma0 pinned to K_ni*V_m",
+    },
+    {
+        "sample": "SWT2",
+        "case": "106_14_swt2_ktbb_kref6p86e11_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWT2/Sweeps/results_csv_hpc_rorqual/106_14_swt2_ktbb_kref6p86e11_ppfix_hpc.csv",
+        "notes": "106 shear-stiffness arm: stress-dependent tangential stiffness (orca_v9 source change)",
+    },
+    {
+        "sample": "SWT2",
+        "case": "106_15_swt2_ktbb_kref2p0e12_ppfix",
+        "series": "106",
+        "model_family": "BBFast",
+        "mesh": "mesh5",
+        "selection_status": "targeted_calibration_probe",
+        "source_csv": "Examples/YeGhasemmi2018/SWT2/Sweeps/results_csv_hpc_rorqual/106_15_swt2_ktbb_kref2p0e12_ppfix_hpc.csv",
+        "notes": "106 shear-stiffness arm: stress-dependent tangential stiffness (orca_v9 source change)",
+    },
 ]
 
 SCORE_COLUMNS = {
@@ -370,6 +520,51 @@ SCORE_COLUMNS = {
 }
 
 
+_BASENAME_INDEX = None
+
+
+def _resolve(rel: str):
+    """Locate a result CSV, falling back to a basename search.
+
+    The 2026-08-27 file reorganisation moved result directories under each specimen,
+    which silently invalidated 14 of the 97 recorded paths. Resolving by basename keeps
+    the ranking rebuildable without hand-editing every stale row, and the resolved path
+    is written back so the CSV self-heals on the first --write.
+    """
+    global _BASENAME_INDEX
+    if _BASENAME_INDEX is None:
+        _BASENAME_INDEX = {}
+        # Results now exist in two places for many cases: <spec>/results_csv_hpc_rorqual
+        # and <spec>/Sweeps/results_csv_hpc_rorqual. table2_gate resolves the input deck
+        # relative to the result, and the decks live in Sweeps/, so prefer that copy.
+        for path in (ROOT / "Examples/YeGhasemmi2018").rglob("*.csv"):
+            _BASENAME_INDEX.setdefault(path.name, []).append(path)
+    # The index is consulted BEFORE the recorded path, not after: many results now exist
+    # in two places, and a path pointing at the copy that has no deck beside it is
+    # readable but leaves table2_gate unable to resolve the input. Pick the candidate
+    # whose deck is actually findable, by table2_gate's own rule.
+    cands = _BASENAME_INDEX.get(Path(rel).name, [])
+    for cand in cands:
+        if _deck_beside(cand):
+            return cand
+    direct = ROOT / rel
+    if direct.is_file():
+        return direct
+    return cands[0] if cands else None
+
+
+def _deck_beside(csv_path: Path) -> bool:
+    """table2_gate's deck rule: <name>.i in the result dir or one level up."""
+    stem = csv_path.stem
+    stems = [stem]
+    if stem.endswith("_hpc"):
+        stems.append(stem[:-4])
+    if stem.endswith("_biot_ab_20260815"):
+        stems.append(stem[: -len("_biot_ab_20260815")])
+    return any((root / (st + ".i")).is_file()
+               for st in stems for root in (csv_path.parent.parent, csv_path.parent))
+
+
 def rebuild() -> pd.DataFrame:
     frame = pd.read_csv(RANKING, dtype={"series": str})
     for item in NEW_CASES:
@@ -377,9 +572,18 @@ def rebuild() -> pd.DataFrame:
             frame = pd.concat([frame, pd.DataFrame([item])], ignore_index=True)
 
     for idx, row in frame.iterrows():
-        source = ROOT / str(row["source_csv"])
-        if not source.is_file():
-            raise FileNotFoundError(f"ranking source is absent: {source}")
+        source = _resolve(str(row["source_csv"]))
+        if source is None:
+            raise FileNotFoundError(f"ranking source is absent: {row['source_csv']}")
+        frame.at[idx, "source_csv"] = str(source.relative_to(ROOT))
+        if not _deck_beside(source):
+            # 94_05_sw3_mc_final.i has no surviving copy anywhere in the tree; only its
+            # submission script and results remain. Keep the row's previously recorded
+            # scores rather than aborting the whole rebuild, and flag it so the gap is
+            # visible instead of silent.
+            frame.at[idx, "run_status"] = "deck_missing_scores_not_recomputed"
+            frame.at[idx, "comparable_for_ranking"] = False
+            continue
         result = table2_gate.score_run(
             source, str(row["sample"]), "biot_ab_20260815", TOL_MPA, "stage1", 55.0
         )

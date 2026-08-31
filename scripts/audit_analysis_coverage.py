@@ -12,7 +12,7 @@ import table2_gate
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = ROOT / "Examples/YeGhasemmi2018"
-DEFAULT_OUTPUT = ROOT / "doc/independent_analysis"
+DEFAULT_OUTPUT = ROOT / "Examples/YeGhasemmi2018/Docs/Memory"
 SAMPLES = ("SWT1", "SWT2", "SWS3", "SWS4")
 
 

@@ -125,7 +125,7 @@ def main():
         print()
 
     if rows:
-        out = ROOT / "doc/independent_analysis/DISCUSSION_104_METRICS.csv"
+        out = ROOT / "Examples/YeGhasemmi2018/Docs/Memory/DISCUSSION_104_METRICS.csv"
         out.parent.mkdir(parents=True, exist_ok=True)
         pd.DataFrame(rows).to_csv(out, index=False, float_format="%.9g")
         print(f"wrote {out.relative_to(ROOT)}")
