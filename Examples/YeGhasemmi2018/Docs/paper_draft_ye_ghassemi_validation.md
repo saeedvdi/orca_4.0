@@ -44,6 +44,20 @@ Fractures: A Cohesive-Zone Hydromechanical Model Validated Across a Roughness Ra
 > reanalyses these same four specimens; it validates on the saw cuts and is shown to be
 > unusable on the tensile pair, for a reason that lies in the target rather than the model.
 > §6.8 records that SW-S3 and SW-S4 are frozen at a model-form limit, not a calibration deficit.
+>
+> **4. The permeability model and its coupling are now stated in full, and the self-propping
+> mechanism is decomposed rather than asserted.** The draft previously described the aperture law
+> and the coupling in pieces, across §3.2, §3.6 and §3.9. §3.6.2 now gives the hydromechanical
+> coupling channel by channel — the shared pressure field and its two fracture traces, the
+> interface Reynolds equation and its wall tie, why leak-off is not a separate term, why the
+> fracture's effective normal stress is not counted twice, and which three terms are read
+> explicitly rather than differentiated — and §3.6.3 states what is not coupled at all.
+> §5.6 is a new Results subsection that decomposes the hydraulic-aperture budget term by term at
+> the eleven stages (`scripts/aperture_budget_decomposition.py`), and §6.11 discusses what the
+> decomposition does and does not establish. The substantive finding is that retained
+> enhancement has **two mechanisms, selected by roughness**, and that no explicit propping term
+> is active on any specimen. The substantive limitation is that the law's only saturating term is
+> the negative one, so retained aperture is unbounded in slip; §6.11.3 and §6.8 record it.
 
 The audit pass compared every physical property in the decks, meshes and this draft against
 Ye & Ghassemi (2018) directly, and inserted `[bracketed]` correction notes wherever the draft
@@ -186,6 +200,9 @@ not yet measured is marked `[PENDING]`; nothing is invented.
 | T10 | Exhaustion of each channel at the end of cycle 1 | Arithmetic on calibrated parameters, stated before the runs — the pre-registration of §6.6. |
 | T11 | Barton block-size corrections evaluated at 1, 10, 100 m | Bounds the field-scale extrapolation (§6.9.1). Must be labelled *not used in any run reported here*. |
 | T12 | Verification results (mesh convergence, mass balance, preload gate) | Can go to supporting information if space is tight. |
+| T13 | Hydraulic-aperture budget decomposed term by term at the eleven stages, one specimen, plus a four-specimen attribution of the retained aperture | The mechanism table for §5.6. **Keep**: it is the only place the paper says *which* term props the fracture open, and the tensile/saw-cut split is the result. |
+| T14 | Peak and retained enhancement, model against Table 2, with the transmissivity ratio | Pairs with F7. Must carry the caveat that $a_h$ is derived from $Q$, so this is the flow channel re-expressed, not an independent comparison. |
+| F7 | Aperture budget through the injection cycle as a stacked area — $a_{h0}$, $a_\sigma$, $\chi a_m$, dilation feed, gouge — one panel per specimen, with Table 2's $a_h$ overlaid | Shows the pressurisation limb controlled by reversible closure and the depressurisation limb by retained dilation, which no scalar score conveys. |
 
 ## 0.4 Drafting cautions specific to this study
 
@@ -228,9 +245,8 @@ not yet measured is marked `[PENDING]`; nothing is invented.
 
 ## Key Points
 
-`[NOTE: AGU wants exactly 3 (≤140 char each) — this now lists 4 since adding the MC-baseline point;
-trim before submission, likely by folding the new #3 into #1 or dropping the flow-rate point to
-Results-only.]`
+`[NOTE: AGU wants exactly 3 (≤140 char each) — this now lists 5. Trim before submission: #1 and #4`
+`are the load-bearing pair, #3 is the methodological result, and #5 belongs in Results only.]`
 
 1. A cohesive-zone hydromechanical model with a Barton–Bandis interface law reproduces
    injection-induced shear slip in four granite fractures to 1.5–6.1 % normalised RMS error
@@ -239,14 +255,16 @@ Results-only.]`
 3. At equal calibration budget the Barton–Bandis law reduces mean error by 38 % relative to a
    linear Mohr–Coulomb baseline, and the advantage is monotone in roughness — 1.14× at JRC 1.19
    rising to 4.7× at JRC 15.32
-4. Simulated flow is about half the reported rate at matching aperture, a geometry-factor
+4. Retained enhancement is propped by two different mechanisms: irreversible dilation on rough
+   fractures, and a near-cancellation of dilation against gouge fill on saw cuts
+5. Simulated flow is about half the reported rate at matching aperture, a geometry-factor
    difference rather than a constitutive error
 
 ---
 
 ## Abstract
 
-*(target ≤250 words; current draft 238)*
+*(target ≤250 words; **current draft 383 — over target; the "238" this note previously claimed was stale by an earlier revision.** Trim before submission: the geometry-factor sentence and the compliance-recovery detail are the two most compressible.)*
 
 Fluid injection reduces the effective normal stress on a pre-existing fracture, drives shear
 slip, and enhances permeability through dilation. Reproducing that sequence quantitatively
@@ -254,10 +272,9 @@ requires a model in which mechanical and hydraulic responses are solved together
 aperture couples them in both directions. We present a three-dimensional finite-element
 hydromechanical model in which the fracture is represented as a zero-thickness cohesive
 interface embedded in a Biot poroelastic matrix, and validate it against the laboratory
-experiments of Ye and Ghassemi (2018) on four Sierra White granite cores. The four specimens
-span a wide roughness range — two tensile fractures and two saw cuts, with joint roughness
-coefficients from 1.96 to 15.32 — and each was subjected to an eleven-stage injection cycle
-under 30 MPa confinement at constant piston displacement. We show that the published data
+experiments of Ye and Ghassemi (2018) on four Sierra White granite cores — two tensile
+fractures and two saw cuts, joint roughness coefficients 1.19 to 15.32, each taken through an
+eleven-stage injection cycle under 30 MPa confinement at constant piston displacement. We show that the published data
 over-determines two quantities usually treated as free: the fracture orientation and the series
 compliance of the loading column are both recoverable from the tabulated stress and displacement
 histories alone, to within 0.03° and 3 % respectively. This removes the geometric parameters from
@@ -269,9 +286,11 @@ relative to a linear Mohr–Coulomb baseline, and the advantage is monotone in j
 rising from 1.14× on the polished saw cut — where the two envelopes should and do coincide — to
 4.7× on the roughest tensile fracture. An out-of-sample comparison against an independent
 published reanalysis of the same specimens reproduces the retained-permeability gain on both saw
-cuts. We also show
-that this loading path cannot separate cohesion from joint roughness, so the two must be reported as
-one constrained combination. Simulated flow rates fall consistently below the reported values at
+cuts. Decomposing the aperture budget shows that the enhancement surviving depressurisation —
+ninefold in transmissivity on the rough fractures, absent on the polished saw cut — is supplied by
+two distinct mechanisms: irreversible dilation on the tensile fractures, and a near-cancellation of
+dilation against gouge fill on the saw cuts. We also show that this loading path cannot separate
+cohesion from joint roughness, so the two must be reported as one constrained combination. Simulated flow rates fall consistently below the reported values at
 matching hydraulic aperture; we show this reflects the difference between a one-dimensional slab
 reduction and the three-dimensional flow field, and quantify it.
 
@@ -1069,6 +1088,9 @@ term by term:
   the mechanical aperture on unloading: a fracture that has slipped does not recover its original
   conductivity when re-clamped.
 
+Which of these terms actually supplies the retained aperture on each specimen is not obvious from
+the list, and it is the question §5.6 answers by evaluating them one at a time on the solutions.
+
 The clamps are not cosmetic. Because transmissivity goes as $a_h^3$, a transient mechanical
 excursion before contact is established — during the confinement ramp, for instance — would raise
 the permeability by orders of magnitude and wreck the coupled Newton solve; $a_{\max}$ bounds it,
@@ -1171,6 +1193,132 @@ $\alpha \approx 0.6$: $\alpha$ answers what fraction of the matrix's porosity is
 connected, a property of the rock; $\alpha_f$ answers what fraction of the fracture plane is not in
 load-bearing contact, a property of the joint's current mechanical state. Neither should be called
 "the effective-stress coefficient" unqualified (§0.4).
+
+#### 3.6.2 The hydromechanical coupling, channel by channel
+
+The permeability model above is only half of what the fracture does. The other half is the way it
+is wired into the rest of the problem, and because the central claim of this paper is about
+injection-induced permeability enhancement — a quantity that exists only in the coupled system —
+we state that wiring completely rather than by reference.
+
+**The unknowns.** The solve carries one displacement field $\boldsymbol{u}$ and one pore pressure
+field $p$ over the whole domain. There is no separate fracture pressure unknown. The mesh is split
+along $\Gamma$ (§3.3), so $p$ has two traces there, $p^{+}$ and $p^{-}$, and the pressure the
+fracture uses is their average,
+
+$$
+p_f = \tfrac{1}{2}\left(p^{+} + p^{-}\right).
+$$
+
+The two traces are tied by a penalty conductance formed from the fracture's own mobility,
+
+$$
+\kappa_p = \frac{\rho_f\,T}{a_h\,\ell_p},
+\qquad \ell_p = 5\times10^{-4}\ \text{m},
+$$
+
+which enters the interface residual as $\kappa_p\,(p^{+}-p^{-})$ with opposite signs on the two
+sides. This is a statement that both faces bound the same body of fluid: a fracture 2 µm across is
+hydraulically thin, so a pressure difference between its walls is a discretisation artefact, not
+physics. Writing $\kappa_p$ from $T$ rather than from a fixed number makes the tie scale with the
+fracture's conductivity, so it does not become the transport bottleneck when the joint closes.
+
+**The fracture's own equation.** The element side of the interface carries
+
+$$
+\underbrace{\frac{\partial}{\partial t}\left(\rho_f a_h\right)}_{\text{storage}}
+\;+\;\underbrace{\nabla_t\cdot\left(-\rho_f T\,\nabla_t p\right)}_{\text{in-plane transport}}
+\;+\;\underbrace{\kappa_p\,(p^{+}-p^{-})}_{\text{wall tie}} \;=\; 0,
+$$
+
+with $\nabla_t = (\boldsymbol{I} - \boldsymbol{n}\otimes\boldsymbol{n})\nabla$ the projection onto
+the fracture plane, so that transport is strictly in-plane no matter how the interface is oriented
+relative to the mesh. The storage term is assembled as the difference of $\rho_f a_h$ between
+consecutive steps rather than split into an aperture part and a compressibility part; that keeps
+both exactly, and in particular keeps the aperture-rate storage that a dilating fracture generates.
+
+**Leak-off is not a separate term.** Because the matrix and the fracture share the field $p$, the
+normal exchange between them is already carried by the bulk Darcy kernels evaluated on the two
+elements adjacent to $\Gamma$. Nothing needs to be added, and — more to the point — nothing may be
+added, since a separate leak-off term written on top of a shared field double-counts the exchange.
+The consequence worth checking is global mass conservation, and it is checked: the run reports
+`flow_mass_imbalance_fraction` every step, formed from the tagged nodal reactions of Appendix B.
+
+**The two directions, explicitly.** Mechanics acts on flow through exactly three quantities, all of
+them functions of the interface state:
+
+| channel | carrier | where it enters |
+|---|---|---|
+| M $\to$ H | $a_h\big(a_m,\ \sigma'_n,\ s,\ R\big)$ | transmissivity $T = a_h^3/12\mu_f$ |
+| M $\to$ H | $\partial(\rho_f a_h)/\partial t$ | fracture storage |
+| M $\to$ H | $\alpha\,\dot{\varepsilon}_v$ | matrix storage (§3.2) |
+
+and flow acts on mechanics through exactly two:
+
+| channel | carrier | where it enters |
+|---|---|---|
+| H $\to$ M | $-\alpha_f\,p_f\,\boldsymbol{n}$ | interface momentum residual, both sides |
+| H $\to$ M | $-\alpha\,p\,\boldsymbol{I}$ | bulk effective stress (§3.2) |
+
+**Why the fracture's effective normal stress is not counted twice.** This is the one place in the
+formulation where a plausible-looking implementation is wrong by a factor that matters, so we state
+what is done. The fluid pressure is applied to the walls as a *separate additive residual* on the
+momentum equation, not inside the constitutive law. The traction that reaches the contact law is
+therefore already the skeleton traction, and its normal component is already
+$\sigma'_n = \sigma_n - \alpha_f p_f$ in compression-positive terms. Subtracting the pressure again
+inside the strength envelope would remove it twice. All four decks accordingly set the interface
+law's own pore-pressure-in-strength coefficient to zero, and every $\sigma'_n$ reported in §5 and
+§6 is the effective stress obtained this way. The check that this is right is not internal: the
+recovered $\sigma'_n$ is one of the five scored channels, and it matches Table 2 to 0.41–0.43 MPa
+(§5.2).
+
+**The loop, and what closes it.** Put together, the channels form one positive feedback and three
+negative ones. Injection raises $p_f$, which lowers $\sigma'_n$, which does two things at once: it
+reverses the closure term $a_\sigma$, and it lowers the strength limit $\tau_{\rm lim} =
+c + \mu\,\sigma'_n$ until the joint slips. Slip dilates it, raising $a_m$ and hence $a_h$; because
+$T \propto a_h^3$, a modest opening is a large conductivity change, which spreads pressure further
+along the fracture and lowers $\sigma'_n$ over a larger area. That is the mechanism the experiment
+is about, and left alone it is unstable.
+
+Three terms stop it. The closure law of §3.4 saturates, so $a_\sigma$ cannot keep returning
+aperture indefinitely; the gouge term $a_{\rm gouge}(s)$ subtracts from $a_h$ as slip accumulates;
+and the loading frame (§3.5.5) sheds differential stress as the joint slips on an inclined plane,
+so the driving shear stress falls toward the limit rather than the limit falling toward it. The
+third is the strongest of them here, and §6.6.8 shows it is what makes repeated pressurisation
+reproduce itself exactly. It is also the one that is a boundary condition rather than a
+constitutive property, which is why §6.6.6 is careful about which of these transfers to depth.
+
+This is also the concrete reason the Bakhtar substitution discussed above cannot be dropped in as a
+one-line replacement. Substituting $a_h \propto a_m^2/\mathrm{JRC}^{2.5}$ removes the first two
+negative terms simultaneously, leaving the cubic-law positive feedback opposed only by the frame.
+
+**What is exact in the Jacobian and what is not.** The system is solved monolithically in
+$(\boldsymbol{u}, p)$ with a tangent obtained by automatic differentiation through the interface
+constitutive solve (§3.9.4). Every channel in the two tables above is therefore differentiated
+exactly, including the $a_h^3$ sensitivity of transmissivity to the displacement jump, which is the
+stiffest of them. Three terms are deliberately read explicitly — evaluated from converged
+start-of-step state, with no Jacobian contribution:
+
+* the gouge fill $a_{\rm gouge}(s)$, a function of accumulated plastic slip;
+* the closure creep $a_c(t)$, disabled in every run reported here;
+* the stress-dependent tangential stiffness of the optional law, likewise disabled here.
+
+All three are slow history variables: they move over the duration of a hold, not within a Newton
+iteration, so the dropped coupling costs convergence nothing. It is worth naming them anyway,
+because "consistent tangent" and "consistent tangent except for three terms" are different claims,
+and only the second is true.
+
+#### 3.6.3 What is not coupled
+
+For completeness, and because each of these is a mechanism that a reader may expect to find: there
+is no temperature field, so no thermal contraction and no thermally driven aperture change (§2.4
+explains why the experiment does not require one); there is no chemistry beyond the lumped
+gouge-fill and the optional closure creep, so no dissolution, precipitation or pressure-solution
+kinetics; the matrix permeability is a constant $5\times10^{-19}$ m², not a function of strain or
+damage; and the fracture is a fixed surface, so the model cannot propagate it, branch it, or open a
+new one. The last is not a limitation for these four experiments, in which the fracture pre-exists
+and the loading is well below the tensile strength of the intact rock, but it does bound what §6.9
+may claim at field scale.
 
 ### 3.7 Characteristic distances and what each one does to the plastic response
 
@@ -2063,7 +2211,8 @@ Simulated hydraulic aperture at the first hold stage agrees with Table 2 to 1.3 
 nRMSE across the four specimens — the best-fitted of the five observables on SW-S3 and among the
 worst on SW-T1. Hydraulic aperture and permeability are not scored, because Table 2 obtains them
 from $Q$ through the cubic law rather than measuring them (§2.2), so comparing them adds no
-independent information.
+independent information. §5.6 nevertheless decomposes the simulated aperture term by term, because
+*which* mechanism supplies the enhancement is a question about the model that no score can answer.
 
 **The flow channel does not report the same thing on every specimen.** Under the aperture model of
 §3.6 the hydraulic aperture is sourced from the mechanical opening for the two tensile fractures,
@@ -2275,6 +2424,152 @@ Mohr–Coulomb weakness is $d_n$ on SW-T1 (12.63 %) and SW-S3 (11.02 %); the lin
 normal-displacement recovery remains its worst channel even when freely fitted.
 
 ---
+
+### 5.6 Permeability enhancement and self-propping
+
+Sections 5.4 and 5.5 report how well the model reproduces the measured channels. This section asks
+a different question of the same runs: *where the enhanced permeability comes from, and which term
+holds it after the pressure is taken away.* It is the quantity the study is ultimately about, and
+because the aperture budget of §3.6 is additive and every term is exported, it can be answered by
+arithmetic on the solution rather than by inference.
+
+**A caveat that governs how much this can claim.** The hydraulic aperture is not an independent
+observable. Ye and Ghassemi obtain their $a_h$ from the measured $Q$ through the cubic law, exactly
+as §5.4 establishes, so a comparison of apertures is the flow-rate comparison of Table 5 written in
+different units. Nothing below is additional validation. What it *is* is a decomposition: the model
+matches the measured enhancement (that much is the $Q$ score), and the budget says which mechanism
+in the constitutive law supplied it. The mechanism attribution is a property of the model alone and
+is not constrained by the data at all, which is precisely why it is worth stating explicitly rather
+than leaving implicit in a fitted parameter set.
+
+`scripts/aperture_budget_decomposition.py` performs the reconstruction, sampling the same eleven
+stages the scorer uses. It is worth noting what it does *not* assume: the terms are read from the
+run's own exported postprocessors, and the two products $\chi a_m$ and
+$\lambda\Delta_{\rm cum}r(R)$ are formed from the deck constants, so the reconstructed sum can be
+compared against the solved $a_h$ as a check on the whole account. The residual column in Table 17
+is that check, and §5.6.3 reports how tightly it closes.
+
+#### 5.6.1 How much enhancement, and how much survives
+
+**Table 16.** Hydraulic aperture at the pre-injection floor (stage 1), the peak (stage 6) and the
+post-injection floor (stage 11), model against Ye & Ghassemi Table 2. *Peak gain* is
+$a_h^{(6)}/a_h^{(1)}$; *retained* is $(a_h^{(11)}-a_h^{(1)})/(a_h^{(6)}-a_h^{(1)})$, the fraction of
+the enhancement that survives re-clamping; $T^{(11)}/T^{(1)}$ is the cube of the aperture ratio and
+is the quantity a stimulation is performed to obtain.
+
+| | $a_h^{(1)}$ (µm) | $a_h^{(6)}$ (µm) | $a_h^{(11)}$ (µm) | peak gain | retained | $T^{(11)}/T^{(1)}$ |
+|---|---:|---:|---:|---:|---:|---:|
+| SW-T1 model | 1.630 | 4.031 | 3.439 | 2.47 | 0.75 | 9.39 |
+| SW-T1 Table 2 | 1.630 | 4.050 | 3.360 | 2.49 | 0.72 | 8.76 |
+| SW-T2 model | 2.110 | 4.778 | 4.414 | 2.26 | 0.86 | 9.15 |
+| SW-T2 Table 2 | 2.110 | 4.920 | 4.210 | 2.33 | 0.75 | 7.94 |
+| SW-S3 model | 1.222 | 2.062 | 1.579 | 1.69 | 0.43 | 2.16 |
+| SW-S3 Table 2 | 1.220 | 2.100 | 1.640 | 1.72 | 0.48 | 2.43 |
+| SW-S4 model | 0.740 | 1.009 | 0.761 | 1.36 | 0.075 | 1.08 |
+| SW-S4 Table 2 | 0.740 | 1.070 | 0.740 | 1.45 | 0.00 | 1.00 |
+
+Three things are worth reading off this table.
+
+*The enhancement is strongly ordered by roughness, and the model reproduces the ordering without
+being asked to.* Peak gain falls 2.47, 2.26, 1.69, 1.36 across JRC 15.32, 14.63, 1.96, 1.19; the
+measured sequence is 2.49, 2.33, 1.72, 1.45. Each specimen was calibrated separately, so the
+ordering is not imposed by a shared parameter — it follows from each joint's own roughness entering
+both the dilation angle and the strength envelope.
+
+*Retention separates the specimens more sharply than peak gain does.* The two tensile fractures keep
+three-quarters or more of what they gained; SW-S3 keeps about half; the polished saw cut keeps
+essentially nothing, 7.5 % in the model against 0 % measured — where 0 % is itself a statement at
+the two-digit resolution of Table 2, since SW-S4's stage-1 and stage-11 apertures are both printed
+as 0.74 µm. This is the specimen that sets the floor on any self-propping argument: a joint with
+almost no roughness to dilate on cannot prop itself open, and neither the experiment nor the model
+says it can.
+
+*In transmissivity the same result is a factor of nine.* Because $T \propto a_h^3$, retaining 75 %
+of a 2.5-fold aperture gain is a ninefold permanent conductivity increase, and the model gives 9.39
+and 9.15 against measured 8.76 and 7.94. The model over-predicts the retained transmissivity on both
+tensile fractures, by 7 % on SW-T1 and 15 % on SW-T2 — the direction matters for §6.11, because a
+model used to design a stimulation would be optimistic about what survives shut-in.
+
+#### 5.6.2 Which term holds the fracture open
+
+**Table 17.** Attribution of the stage-11 hydraulic aperture to the terms of §3.6, in µm. The
+*excess* is $a_h^{(11)} - a_{h0}$, the aperture retained above the reference state. *Residual* is
+the solved $a_h$ minus the reconstructed sum; it is not a term of the model but a measure of how
+completely the budget accounts for the answer (see §5.6.3).
+
+| | $a_{h0}$ | $a_\sigma$ | $\chi a_m$ | $\lambda\Delta_{\rm cum}r(R)$ | $-a_{\rm gouge}$ | residual | $a_h^{(11)}$ | excess |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| SW-T1 | 1.630 | 0.000 | **1.725** | 0.000 | 0.000 | 0.084 | 3.439 | 1.809 |
+| SW-T2 | 2.110 | 0.010 | **2.319** | 0.000 | 0.000 | −0.025 | 4.414 | 2.304 |
+| SW-S3 | 1.220 | 0.053 | 0.038 | **0.568** | **−0.310** | 0.010 | 1.579 | 0.359 |
+| SW-S4 | 0.740 | 0.074 | 0.032 | **0.159** | **−0.245** | 0.001 | 0.761 | 0.021 |
+
+**The two fracture types are propped by different terms, and this is a result rather than a
+choice of presentation.** On the tensile fractures the entire retained aperture — 95 % and 101 % of
+the excess — is $\chi a_m$: the solved mechanical opening, which after the slip event is
+irreversible plastic dilation that the joint cannot take back. No fitted hydraulic term contributes
+anything. On the saw cuts the retained aperture is instead a near-cancellation between the fitted
+dilation feed and the gouge term: $+0.568$ against $-0.310$ µm on SW-S3, and $+0.159$ against
+$-0.245$ µm on SW-S4. SW-S4's net excess is 0.021 µm — smaller than either of the two terms that
+produce it by an order of magnitude — so its percentages are not meaningful and are not quoted.
+
+That cancellation is the model's account of the measured zero retention on SW-S4, and it is a
+falsifiable one: it says the polished saw cut does dilate, and does so by a quarter of a micron,
+but fills the void it opens at very nearly the same rate. A model that reproduced SW-S4's zero
+retention by not dilating at all would fit the same aperture column and be wrong about the
+mechanism. The two are distinguishable by the $d_n$ channel, which is scored separately and
+independently in Table 5, and which SW-S4 matches to 1.1 µm mean absolute error.
+
+**No explicit self-propping term is active anywhere.** The budget's $a_{\rm prop}(R) =
+a_{\rm prop,0}R^{n}$ is set to zero in all four calibrations. Everything reported above is
+therefore emergent: the fracture props itself open because plastic dilation is irreversible and
+because the retention factor $r(R)$ preserves part of the accumulated dilation as roughness
+degrades, not because a term was added to make it do so. This is worth stating plainly, because
+"self-propping" is a term the literature also uses for an explicit residual-aperture parameter, and
+a reader entitled to ask which one this paper means should not have to infer it from a table.
+
+#### 5.6.3 The budget through the cycle, and how completely it closes
+
+SW-S3 is the only specimen on which all four aperture terms are simultaneously live, so its full
+history is the informative one.
+
+**Table 18.** SW-S3 hydraulic-aperture budget at the eleven stages, in µm, with the effective
+normal stress and cumulative plastic slip that drive it. Stages 1–6 are the pressurisation limb,
+7–11 the depressurisation limb.
+
+| stage | $\sigma'_n$ (MPa) | slip (µm) | $R$ | $a_\sigma$ | $\chi a_m$ | $\lambda\Delta_{\rm cum}r(R)$ | $-a_{\rm gouge}$ | $a_h$ | Table 2 |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 32.04 | 0.0 | 0.640 | 0.001 | 0.000 | 0.000 | 0.000 | 1.222 | 1.22 |
+| 2 | 30.29 | 0.0 | 0.640 | 0.014 | 0.000 | 0.000 | 0.000 | 1.234 | 1.21 |
+| 3 | 28.46 | 0.0 | 0.640 | 0.033 | 0.001 | 0.000 | 0.000 | 1.254 | 1.20 |
+| 4 | 26.44 | 0.0 | 0.640 | 0.062 | 0.001 | 0.000 | 0.000 | 1.284 | 1.26 |
+| 5 | 23.87 | 0.7 | 0.631 | 0.117 | 0.003 | 0.010 | 0.000 | 1.351 | 1.25 |
+| 6 | 15.26 | 74.4 | 0.183 | 0.542 | 0.048 | 0.568 | −0.310 | 2.062 | 2.10 |
+| 7 | 17.81 | 74.4 | 0.183 | 0.368 | 0.044 | 0.568 | −0.310 | 1.897 | 1.81 |
+| 8 | 20.31 | 74.4 | 0.183 | 0.234 | 0.041 | 0.568 | −0.310 | 1.767 | 1.72 |
+| 9 | 22.75 | 74.4 | 0.183 | 0.142 | 0.039 | 0.568 | −0.310 | 1.674 | 1.68 |
+| 10 | 24.84 | 74.4 | 0.183 | 0.088 | 0.038 | 0.568 | −0.310 | 1.617 | 1.66 |
+| 11 | 26.79 | 74.4 | 0.183 | 0.053 | 0.038 | 0.568 | −0.310 | 1.579 | 1.64 |
+
+The structure of the cycle is legible term by term. Through stages 1–4 the joint does not slip at
+all and the entire aperture change is $a_\sigma$, the reversible closure responding to falling
+$\sigma'_n$ — 0.06 µm of it, against a measured change of 0.04 µm. The slip event between stages 5
+and 6 adds 0.56 µm of retained dilation and 0.31 µm of gouge within a single stage, because the
+gouge characteristic distance $L_g = 30$ µm is short against the 74 µm of slip the event produces
+(§6.6.4). From stage 6 onward slip is frozen — the joint does not slip again on the
+depressurisation limb — so the dilation and gouge terms are constant to the digit, and the entire
+subsequent decline of 0.48 µm is $a_\sigma$ closing reversibly as $\sigma'_n$ recovers from 15.3 to
+26.8 MPa. The model's aperture is therefore not merely the right size at the two floors; it takes
+the right path between them, with each limb controlled by a different term.
+
+**How completely the budget closes.** The reconstruction reproduces the solved $a_h$ to within
+0.087 µm on SW-T1, 0.025 µm on SW-T2, 0.015 µm on SW-S3 and 0.008 µm on SW-S4 — at most 2.5 % of
+$a_h$, and largest on SW-T1's depressurisation limb. The gap is expected in kind rather than in
+size: the reconstruction is formed from interface-averaged postprocessors, while the model applies
+the budget pointwise and then clamps it to $[a_{\min}, a_{\max}]$, and averaging does not commute
+with a clamp. We report the residual as a column rather than absorbing it, because it bounds how
+much of the aperture the attribution above does not explain, and 2.5 % is small against the
+95–101 % attribution it is being used to support.
 
 ## 6. Discussion
 
@@ -3333,6 +3628,20 @@ polished joints in general.
     on first loading, where the quasi-static formulation is least reliable (item 5), even though
     the joint is far above the boundary by the time cycling begins.
 
+1. **The aperture law has no upper bound on retained opening.** The one negative term in the
+   budget, the gouge fill, saturates at $a_g$ and is 76–86 % spent within the first cycle; the two
+   positive dilation terms do not saturate at all. The retained hydraulic aperture is therefore
+   monotone and unbounded in cumulative slip, and the only thing that limits it is $a_{\max}$, a
+   numerical clamp. Over the 74–566 µm of slip these experiments produce this costs nothing, and
+   the model lands within 7 % and 15 % of the measured retained transmissivity on the two
+   specimens where retention is large — but both residuals are over-predictions, which is the
+   direction the structure predicts. §6.11.3 states what would supply the missing bound. No
+   extrapolation to field-scale slip is made on this law.
+1. The retained apertures of §5.6 are the aperture at the fixed point the loading frame defines
+   (§6.6.8, §6.11.2), not a property of the joint alone. They should be read as a lower bound on
+   what the same law gives in a more compliant system, and the ×2/×0.5 frame bracket of §6.6.9 is
+   the measured sensitivity.
+
 ### 6.9 Implications
 
 The load frame is not a laboratory inconvenience to be calibrated away; it performs physical work
@@ -3540,9 +3849,122 @@ $\alpha \approx 0.010$–0.016 MPa⁻¹ requires roughly **0.36 µm** of stress-
 26–66 MPa range. This is a known and quantified gap, not a repaired one: the first attempt supplied
 9.84 µm — about 27× too much — and drove the $Q$ error from 1.16 % to 42 %. It is the clearest
 single target for the next revision of the aperture law, and it does not affect any result in §5,
-where $Q$ is scored over the full cycle and SW-T1's is the best of the four.
+where $Q$ is scored over the full cycle and SW-T1's is the best of the four. §6.11.4 places this
+check beside the mechanism attribution of §5.6, and notes that the two are strongest on opposite
+pairs of specimens.
 
 ---
+
+### 6.11 What holds a stimulated fracture open
+
+The decomposition of §5.6 lets the central question of this study be asked in the form an operator
+would ask it: after the pressure is taken away, what is holding the fracture open, and how far can
+the model be trusted about it? Three answers follow from Tables 16–18, and they are of decreasing
+strength.
+
+#### 6.11.1 There are two mechanisms, not one, and roughness selects between them
+
+On the two tensile fractures the retained aperture is entirely the solved mechanical opening
+(Table 17: 95 % and 101 % of the excess). Slip on a rough surface rides up asperities, the plastic
+part of that opening cannot be undone by reversing the load, and the hydraulic aperture inherits a
+fixed fraction $\chi$ of it. Nothing else contributes: the reversible closure term returns to
+approximately zero as $\sigma'_n$ recovers, and the gouge term is not active. This is
+self-propping in its simplest form — the fracture is held open by its own geometry.
+
+On the two saw cuts it is a balance rather than a mechanism. The retained aperture is the small
+difference of two terms of comparable size: a dilation feed of $+0.57$ and $+0.16$ µm against
+gouge of $-0.31$ and $-0.25$ µm. SW-S4 is the extreme case, where the two cancel to 0.021 µm —
+about 3 % of the reference aperture — and the specimen returns to where it started. Ye and
+Ghassemi measured exactly that, to the resolution of their table.
+
+The transition between the two regimes is not gradual in these four specimens; it is the
+difference between a surface with asperities to ride and a surface without. That gives the
+roughness dependence of Table 16 a mechanism rather than a correlation, and it is the same
+roughness ordering that appears independently in the strength comparison of §5.5.2 — the
+Barton–Bandis advantage over a linear envelope is monotone in JRC, and the retained enhancement is
+monotone in JRC, for related reasons.
+
+#### 6.11.2 The loading frame is a third actor, and it does not transfer to depth
+
+§6.6.8 established that after the first excursion the joint sits *on* its yield surface in neutral
+plastic equilibrium, not below it, and that repeating the excursion reproduces the same slip to
+five significant figures. The reason is the series compliance of the loading column: slip on an
+inclined joint sheds the differential stress that drives it, and the joint parks at the fixed point
+where those two effects balance. **The retained aperture reported in Table 16 is therefore the
+aperture at that fixed point, and the fixed point is a property of the testing machine as much as
+of the rock.**
+
+This matters for how the numbers are read. A laboratory specimen in a servo-hydraulic frame is
+loaded far more stiffly, relative to the fracture, than a fault is loaded by the surrounding rock
+mass. A more compliant system sheds less stress per unit slip, so the same pressure change produces
+more slip, and the model says more slip produces more retained aperture. The retention fractions of
+Table 16 are consequently a *lower* bound on what the same constitutive law predicts at depth,
+not a transferable number — and §6.6.9's stiffness arms are the experiment that measures the
+sensitivity rather than asserting it.
+
+#### 6.11.3 The law has no upper bound on retained aperture, and that is its weakest feature
+
+This is the limitation we would most want a reader to carry away, because it is structural rather
+than a mis-set constant.
+
+Of the terms in the aperture budget, the negative one saturates and the positive ones do not. The
+gouge fill is bounded above by $a_g$ — 0.40 and 0.28 µm on the two saw cuts — and reaches 76 % and
+86 % of that bound within the first cycle (Table 10). The dilation terms have no such bound:
+$\chi a_m$ grows with the accumulated plastic opening, and the separate feed
+$\lambda\Delta_{\rm cum}r(R)$ grows with cumulative dilation times a retention factor that is
+floored at $r_{\rm res} > 0$, so it also grows without limit. Even where the dilation *angle*
+decays — SW-S4 is the only specimen where it does — the cumulative dilation still increases,
+asymptotically at $\tan\psi_r$.
+
+The consequence is that in this law the retained hydraulic aperture increases monotonically and
+without bound in cumulative slip, and the only thing that stops it is $a_{\max}$, a numerical clamp
+introduced to keep the cubic transmissivity from wrecking the Newton solve (§3.6). **A numerical
+bound is standing in for a physical one.** Over the slip range these experiments visit — 74 to
+566 µm — that costs nothing, and Table 16 shows the model landing within 7 % and 15 % of the
+measured retained transmissivity on the two specimens where retention is large. But those two
+residuals are both over-predictions, and they are the largest in the aperture comparison, which is
+the direction and the location one would expect if an unbounded positive term is beginning to
+outrun a saturating negative one. Extrapolating this calibration to metres of fault slip would be
+extrapolating that behaviour, and we do not do it.
+
+What the missing physics is can be named even though it is not implemented: asperity comminution
+that continues past the gouge term's characteristic distance, and the transport of gouge out of the
+flow channel, which is what would make the fill capacity a function of the flow rather than a
+constant. Either would supply the bound. Adding one and recalibrating is the single change we would
+make to this aperture law next, ahead of the stress-aperture repair that §6.10 identifies for
+SW-T1.
+
+#### 6.11.4 What this study does not establish about self-propping
+
+Four qualifications, stated together so that none of them has to be reconstructed from a parameter
+table.
+
+*No explicit propping term is used.* The budget's $a_{\rm prop}(R)$ is zero on all four specimens
+(§5.6.2). The retained aperture reported here is emergent from irreversible dilation, not supplied
+by a residual-aperture parameter. A reader comparing against work that fits an explicit propping
+aperture is comparing different objects.
+
+*The saw-cut attribution is configuration-dependent.* Those two specimens run with $\lambda \neq 0$
+*and* kinematic dilation routing, which counts the same dilation twice (§3.6). The split between
+$\chi a_m$ and $\lambda\Delta_{\rm cum}r(R)$ in Table 17 is therefore not identifiable from the
+data; only their sum is. The tensile pair, with $\lambda = 0$, has no such ambiguity, and it is on
+the tensile pair that the strongest attribution claim is made.
+
+*The comparison is not independent validation.* Table 2's hydraulic aperture is derived from its
+flow rate through the cubic law, so Table 16 is the $Q$ channel re-expressed, as §5.6 states at the
+outset. The one genuinely out-of-sample quantity available is Kalantar et al.'s self-propping gain
+$k_0^{\rm post}/k_0^{\rm pre}$, and §6.10 reports it: the model reproduces it on both saw cuts —
+2.72 against 2.56, and 1.62 against 1.67 — and the target is not determined on the tensile pair.
+It is worth noting which way round that is. The saw cuts are where the model's *mechanism* is
+least identifiable and where the out-of-sample check is cleanest; the tensile fractures are where
+the mechanism is unambiguous and the external check is unavailable.
+
+*The pressure–area coefficient is held constant.* $\alpha_f$ is a fitted constant per specimen,
+1.00 on the tensile pair and 0.86–0.87 on the saw cuts (§3.6.1). A state-dependent $\alpha_f$ that
+steepens as contact area grows is implemented and disabled. Because $\alpha_f$ multiplies the
+pressure in the effective normal stress that drives *both* the strength envelope and the closure
+term, enabling it would move the retained aperture as well as the slip onset, and this study does
+not test in which direction.
 
 ## 7. Conclusions
 
@@ -3633,6 +4055,24 @@ where $Q$ is scored over the full cycle and SW-T1's is the best of the four.
     single-parameter controls identify the ratio of slip-driven gouge fill to initial hydraulic
     aperture as the term that sets even its sign. That ratio is a calibrated quantity that no routine
     joint characterisation measures.
+15. Decomposing the hydraulic-aperture budget term by term shows that retained enhancement is
+    produced by two different mechanisms, selected by roughness. On the two tensile fractures 95 %
+    and 101 % of the aperture retained after depressurisation is the solved mechanical opening —
+    irreversible plastic dilation, with no fitted hydraulic term contributing anything — giving a
+    ninefold retained transmissivity increase against a measured eightfold. On the two saw cuts the
+    retained aperture is instead the small difference of a dilation feed and a gouge fill of
+    comparable size, $+0.57$ against $-0.31$ µm and $+0.16$ against $-0.25$ µm, which is how a
+    model that dilates by a quarter of a micron reproduces a specimen measured to retain nothing.
+    No explicit propping term is active on any specimen: the self-propping reported here is
+    emergent from irreversible dilation, not supplied by a residual-aperture parameter.
+16. That decomposition also exposes the aperture law's weakest structural feature. Its only
+    negative term saturates within the first cycle while its positive terms do not, so retained
+    aperture grows without bound in cumulative slip and is limited only by a numerical clamp. The
+    two largest residuals in the aperture comparison are over-predictions on exactly the two
+    specimens where retention is large, which is the signature that would be expected. Supplying a
+    physical bound — comminution beyond the gouge characteristic distance, or gouge transport out
+    of the flow channel — is the change we would make to this aperture law before extrapolating it
+    to field-scale slip.
 
 ---
 
