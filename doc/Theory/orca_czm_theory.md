@@ -1,10 +1,20 @@
-# ORCA 3.0
+# ORCA 4.0
 
 ## Theory, Algorithms and Implementation Manual
 
 *Hydro-mechanical modelling of fracture opening, closure and injection-induced shear slip with cohesive-zone interface elements*
 
 > This Markdown edition was converted from `orca_czm_theory.tex`. Display equations use LaTeX/MathJax syntax. TikZ and PGFPlots diagrams retain their original source in collapsible blocks.
+
+> **Revision 2026-08-31, branch `orca_v11`.** Two opt-in constitutive terms have been added to
+> the source since the 2026-08-18 edition, and both are documented here for the first time:
+> a **stress-dependent tangential stiffness** in the Barton--Bandis contact law
+> (Part V, [Model B](#model-b-stress-dependent-tangential-stiffness)) and a
+> **time-dependent closure creep** in the hydraulic-aperture budget
+> (Part VII, [the aperture model](#eq-aperture)). Both default to `false` and are
+> bit-identical to the previous behaviour when off, so nothing in the validated campaign
+> changes. The Ye & Ghassemi supplement now closes with the campaign's final calibrated
+> decks and an out-of-sample check against Kalantar et al. (2025).
 
 ### How to read this manual
 
@@ -1578,6 +1588,54 @@ $$
     $\mathrm{JRC}_{\text{mob}}$, not the nominal JRC, so switching this flag
     changes the hydraulic response as well as the mechanical one.
 
+**Optional: stress-dependent tangential stiffness.**
+
+<a id="model-b-stress-dependent-tangential-stiffness"></a>
+
+`use_stress_dependent_tangential_stiffness` (default `false`) replaces the constant
+tangential penalty with
+
+<a id="eq-kt"></a>
+
+$$
+k_t = \max\!\Big[\,f_{\min},\;\big(\sigma'^{\,\rm old}_n/\sigma_{t,\rm ref}\big)^{m_t}\,\Big]\;K_t^{0},
+$$
+
+where $K_t^{0}$ is `penalty_tangent`, $\sigma_{t,\rm ref}$ is
+`tangential_stiffness_reference_stress`, $m_t$ is `tangential_stiffness_exponent` and
+$f_{\min}$ is `min_tangential_stiffness_fraction`. With the flag on, `penalty_tangent`
+is **the stiffness at $\sigma_{t,\rm ref}$, not a fixed stiffness**.
+
+*Why it exists.* Barton--Bandis shear stiffness for a rock joint scales with $\sigma'_n$.
+A joint held at constant shear stress while $\sigma'_n$ falls therefore creeps forward,
+and **no value of a constant $K_t$ reproduces that**: with $k_t$ constant the elastic
+shear jump is $\tau/k_t$, so if $\tau$ is flat the modelled $d_s$ is flat too, and
+softening the penalty only shifts a datum that stage-1 referencing removes anyway. This
+is the pre-peak shear-creep deficit seen on every specimen of the validation campaign.
+The physically indicated magnitude, $k_s\sim\sigma'_n$, is about $1.4\times10^{12}$ Pa/m
+for those specimens — some 7× softer than the $10^{13}$ Pa/m carried as a numerical
+penalty and never checked against the joint it represents.
+
+*Why it is evaluated on the old stress.* $k_t$ is computed from the **start-of-step**
+effective normal stress, so it is a constant inside the step. Every return-map expression
+in [Section VI](#the-local-solve-return-map) keeps its existing algebra, and only the
+Jacobian's dependence of $k_t$ on $\mathrm{jump}(0)$ is dropped — the *value* is exact,
+and the convergence cost is a lagged term, not an inconsistent tangent.
+
+*Why there is a floor.* At the slip event $\sigma'_n$ approaches zero, and an unfloored
+$k_t$ would collapse with it, taking the stick condition soft exactly where the solution
+is most delicate. $f_{\min}$ (default 0.05) bounds the penalty from below.
+
+The stiffness actually used is exported as `bb_tangential_stiffness`, so a run can be
+audited rather than assumed.
+
+> **This flag changes the mechanical solution and requires re-validation.** It is not a
+> conditioning knob. Every deck of the Ye & Ghassemi campaign that produced a final
+> calibrated result runs with it `false`; the four arms that enabled it
+> (`106_12`–`106_15`) did not survive their adaptive time step and so the mechanism
+> remains **specified and implemented but not validated**. Turning it on inherits none
+> of the campaign's evidence.
+
 > **Remark: $D_c$ and $c$ are not independent.**
 >
 > Both the cohesion decay and the friction decay are driven by the same
@@ -1944,7 +2002,7 @@ increase in aperture nearly triples the flow.
 #### The aperture model, and why it is written that way
 
 `ADOrcaRoughnessDamageFracturePermeability` assembles the hydraulic aperture as a
-**bounded sum of six terms**, several of which are optional and are switched off in
+**bounded sum of seven terms**, several of which are optional and are switched off in
 most calibrations:
 
 <a id="eq-aperture"></a>
@@ -1958,6 +2016,7 @@ a_{h0}
 + \lambda\,\Delta_{\rm cum}\,r(R)
 + a_{\rm prop}(R)
 - a_{\text{gouge}}(s)
+- a_c(t)
 \;;\; a_{\min},\,a_{\max}\Big] \;}
 $$
 
@@ -2007,6 +2066,11 @@ $$
     that has slipped does not recover its original conductivity when re-clamped. The
     onset $s^*$ delays the effect so that early slip does not immediately block flow.
     Read explicitly from the slip history, so it contributes no Jacobian term.
+- **$a_c(t)$** (`use_closure_creep`, `closure_creep_*`). Time-dependent closure creep,
+    the **only term in the budget that contains $t$**. Off by default and identically zero
+    unless enabled. See the next subsection: it is the term that decides whether a
+    stimulated fracture stays open, and without it a long hold returns a horizontal line
+    by construction.
 
 > **Remark: the double-counting trap, and how two flags in two different materials
 > interact.**
@@ -2036,6 +2100,61 @@ $$
 > Barton--Bandis closure with independently fitted constants makes it a second,
 > unconstrained closure law fitting the same data. Keep its constants tied to the
 > mechanical ones unless there is a stated reason not to.
+
+**Closure creep, and why every other term is time-independent.**
+
+<a id="closure-creep"></a>
+
+Every other term above is a function of the *current* effective normal stress, the
+*current* mechanical gap, or a history variable monotone in slip. **None of them contains
+$t$ or $\Delta t$.** The consequence is worth stating plainly, because it is easy to miss
+and it invalidates a whole class of question: hold a calibrated deck at constant injection
+pressure for as long as you like and the aperture does not decay, it has already
+converged. Measured on one campaign run over the last 300 s of an 8 MPa hold, cumulative
+slip was identical to ten significant figures, $a_h$ moved from 3.54317 to 3.54316 µm
+(3 ppm) and $Q$ from 0.542246 to 0.542244 mL/min. A "how long until the fracture returns
+to its initial state" study run against that model is answered by the input file, not by
+the physics.
+
+`use_closure_creep` supplies the missing mechanism — pressure solution and asperity
+indentation at the contacting points — as a first-order relaxation toward an imposed
+asymptote:
+
+<a id="eq-closurecreep"></a>
+
+$$
+\frac{\mathrm{d}a_c}{\mathrm{d}t}
+= \frac{1}{\tau_c}\left(\frac{\langle N_{\rm eff}\rangle_+}{\sigma_{c,\rm ref}}\right)^{q}
+\big(a_{c,\max} - a_c\big),
+$$
+
+with $\tau_c$ = `closure_creep_time`, $\sigma_{c,\rm ref}$ =
+`closure_creep_reference_stress`, $q$ = `closure_creep_stress_exponent` and $a_{c,\max}$ =
+`closure_creep_max_aperture`.
+
+**Three properties of the form, each deliberate.**
+
+- *The rate vanishes for an open joint.* $\langle N_{\rm eff}\rangle_+$ is the positive
+    part of the effective normal compression, so creep **freezes rather than reverses**
+    when the fracture opens. Pressure solution does not undo itself, and a relaxation law
+    with a signed driving force would let it.
+- *It is integrated implicitly.* With $r = \tau_c^{-1}(\langle N_{\rm eff}\rangle_+/\sigma_{c,\rm ref})^{q}$,
+    the update is
+    $a_c^{n+1} = (a_c^{n} + r\,\Delta t\,a_{c,\max})/(1 + r\,\Delta t)$, clipped to
+    $a_{c,\max}$. Backward Euler is not a refinement here but a requirement: these decks
+    span $\Delta t$ from 0.05 s inside the slip event to $10^{3}$ s in the hold, and the
+    explicit update is unstable once $r\,\Delta t > 2$.
+- *It is hydraulic only.* $a_c$ subtracts from $a_h$ and does **not** feed back on the
+    traction — the same treatment $a_{\text{gouge}}$ gets, and for the same reason: it is
+    read from a stateful history variable, so it contributes no Jacobian term.
+
+> **$a_{c,\max}$ is imposed, not predicted.** Calibrating an asymptotic creep closure
+> needs a long-duration experiment, and the reference protocol is 3500 s. In the campaign
+> decks $a_{c,\max}$ is set to each run's own retained aperture gain, which makes the
+> asymptote exactly $a_{h0}$ and turns the deck into a pure **timing** question — *how
+> long*, given that it returns at all — rather than a prediction of *whether* and *how
+> far*. Do not quote a retained permeability from such a run as a model output; the
+> endpoint was chosen.
 
 **Bounds.** A lower bound `min_hydraulic_aperture` prevents
 $a_h\le 0$; it must be a small numerical floor, *not* equal to $a_{h0}$,
@@ -2249,6 +2368,28 @@ are algebraic (so they should hold to machine precision, making failure unambigu
 and without them a return-map regression can only be caught by a full validation run,
 where it is confounded with everything else.
 
+**How the two 2026 opt-in terms were checked, and what that is worth.** Neither the
+stress-dependent tangential stiffness ([`eq:kt`](#eq-kt)) nor the closure creep
+([`eq:closurecreep`](#eq-closurecreep)) has a single-element test in `test/tests/`. Both
+were checked *differentially* instead, in two directions:
+
+| check | $k_t$ law | closure creep |
+|---|---|---|
+| **flag off is legacy** | `100_01` at 10 ranks vs its own 32-rank HPC CSV at $t=3.75$ s: differential stress and hydraulic aperture identical to all printed digits; $\sigma'_n$ $2.682589\times10^{7}$ vs $2.682396\times10^{7}$, MPI partition noise | same deck and comparison on `orca_v11`: $a_h = 1.659597423$ µm and $\sigma_1 = 6.142971516$ MPa, identical to every printed digit |
+| **flag on does the intended thing** | `106_12`, same steps: shear jump 0.914 µm against the control's 0.051 — an 18× compliance increase, matching $\tau/k_t$ at the implied $4.80\times10^{11}$ Pa/m, with the frame shedding load as predicted | `108_11` run locally: `closure_creep_aperture_pp` agrees with the same ODE reintegrated offline from the run's own $N_{\rm eff}$ trace to better than 0.65 % throughout |
+
+The 0.65 % residual has a known source and is not slack: the material integrates
+[`eq:closurecreep`](#eq-closurecreep) pointwise per quadrature point, the offline check can
+only use the side-averaged postprocessor, and the rate law is nonlinear, so the two do not
+have to agree exactly.
+
+**This is verification of a weaker kind and should be read as such.** A flag-off bit-identity
+test proves the new branch is inert when off — which is what licenses re-using the campaign's
+results — and a flag-on differential proves the implemented expression is the intended one.
+Neither establishes that the *discretisation* converges, and neither is a closed-form check.
+Both terms therefore sit in the same category as the four *specified* interface tests above:
+implemented, exercised, and not yet verified against an analytic solution.
+
 #### Bulk poroelasticity
 
 **Terzaghi 1D consolidation.** A saturated column, drained at the top,
@@ -2436,6 +2577,10 @@ simulation never starts from the state the experiment started from. Set $c_0 = v
 | --- | --- | --- | --- | --- | --- |
 | `penalty_normal` $K_n$ [Pa/m] | $p_c = K_n\langle -g_n\rangle_+$ | interpenetration; $\sigma'_n$ | excess closure, joint too compliant, $\sigma'_n$ underestimated | ill-conditioning, Newton failure. Target $K_n h/E \sim 10^2$–$10^3$ | $K_t$ (the ratio sets implicit dilation, §[`sec:kinematicdilation`](#sec-kinematicdilation)) |
 | `penalty_tangent` $K_t$ [Pa/m] | $\boldsymbol{t}_t = K_t(\boldsymbol{g}_t-\boldsymbol{g}_t^p)$ | pre-yield shear stiffness: the slope of $\tau$ vs $s$ before yield | shear too compliant; apparent pre-slip creep that is numerical | ill-conditioning; and the $K_t/K_n$ ratio sets the spurious implicit dilation | $K_n$; $\eta_t$ (the bracket for the local root-find is $\tau^{\rm trial}/(K_t+\eta_t/\Delta t)$). Zero uses $K_n$. |
+| `use_stress_dependent_tangential_stiffness` | gates [`eq:kt`](#eq-kt) | makes $K_t$ track $\sigma'_n$ instead of being constant | modelled $d_s$ stays flat while $\tau$ is flat — the pre-peak shear-creep deficit | **changes the mechanical solution; requires re-validation** | reinterprets `penalty_tangent` as the stiffness *at* $\sigma_{t,\rm ref}$ |
+| `tangential_stiffness_reference_stress` $\sigma_{t,\rm ref}$ [Pa] | [`eq:kt`](#eq-kt) | the stress at which $k_t=K_t^{0}$ | $k_t$ inflated over the whole path | $k_t$ suppressed over the whole path | set it to the specimen's preload $\sigma'_n$, not to a round number |
+| `tangential_stiffness_exponent` $m_t$ | [`eq:kt`](#eq-kt) | how strongly $k_t$ follows $\sigma'_n$ | 0 recovers the constant penalty exactly | over-soft at the event, where $\sigma'_n\to 0$ | 1.0 is the Barton--Bandis linear form |
+| `min_tangential_stiffness_fraction` $f_{\min}$ | floor on $k_t/K_t^{0}$ | keeps the stick condition stiff at the event | $k_t$ collapses with $\sigma'_n$; Newton suffers where the solution is most delicate | the stress dependence is clipped away | $m_t$; default 0.05 |
 | `use_hyperbolic_normal_closure` | selects the branch | the whole $\sigma'_n$ path | — | — | makes $K_n$ a numerical floor rather than the physical stiffness |
 | `initial_normal_stiffness` $K_{ni}$ [Pa/m] | closure law | stiffness at low $\sigma'_n$ | joint too soft at the start of unloading; over-recovery | joint effectively rigid; no closure signal | $V_m$: only the product $\sigma_0 = K_{ni}V_m$ sets the half-closure stress |
 | `maximum_closure` $V_m$ [m] | closure law | total recoverable closure; **caps** the unload recovery | recovery bounded below the measurement (the SW-T1 BB case) | unbounded closure, joint can be squeezed shut | $K_{ni}$; `normal_unload_retention_fraction` |
@@ -2710,7 +2855,7 @@ manual. Enable it only to model an intact bridge that must break.
 #### IX.10 Hydraulic parameters
 
 $$
-a_h = a_{h0} + \chi\left\langle g_n \right\rangle_+ + a_{\rm stress}(\sigma'_n) - a_{\rm gouge}(s),
+a_h = a_{h0} + \chi\left\langle g_n \right\rangle_+ + a_{\rm stress}(\sigma'_n) - a_{\rm gouge}(s) - a_c(t),
 \qquad
 a_{\rm gouge}(s) = a_g\left[1 - \exp\!\left(-\frac{\langle s - s^{*}_g\rangle_+}{s_c}\right)\right].
 $$
@@ -2727,6 +2872,11 @@ $$
 | `max_hydraulic_aperture` [m] | bound | numerical cap | clips real growth | a transient mechanical excursion blows up $a_h^3$ and wrecks the coupled solve | $\chi$ |
 | `retention_residual` | roughness retention | how much dilation-propping survives wear | — | — | $R$ |
 | `pressure_penalty_length` $L_p$ [m] | wall pressure continuity | — | ill-conditioning | wall pressures decouple | numerical only — demonstrate insensitivity |
+| `use_closure_creep` | gates [`eq:closurecreep`](#eq-closurecreep) | whether $a_h$ has **any** time dependence at all | a constant-pressure hold returns a horizontal line by construction | — | off in every validated deck |
+| `closure_creep_max_aperture` $a_{c,\max}$ [m] | creep asymptote | how much aperture is ultimately lost | creep is cosmetic | the fracture closes below $a_{h0}$ | **imposed, not predicted** — see the remark at [`closure creep`](#closure-creep) |
+| `closure_creep_time` $\tau_c$ [s] | creep rate | **how long** closure takes at $\sigma_{c,\rm ref}$ | closure completes inside the stimulation itself | no measurable decay over the run | $q$, $\sigma_{c,\rm ref}$ — the three are not separately identifiable from one hold |
+| `closure_creep_reference_stress` $\sigma_{c,\rm ref}$ [Pa] | creep rate | the stress at which $\tau_c$ is the time constant | rate inflated | rate suppressed | $\tau_c$ |
+| `closure_creep_stress_exponent` $q$ | creep rate | stress sensitivity of the rate | creep proceeds even on a nearly open joint | creep confined to the most compressed states | $q=0$ makes the rate stress-independent |
 
 **Calibrate $a_{h0}$ first and alone.** It is the only hydraulic parameter identifiable from a
 single pre-slip measurement, and everything downstream depends on it. Then $\chi$ from the peak
@@ -2794,6 +2944,8 @@ Ye & Ghassemi-type protocol and should be fixed from literature or from an indep
 | Initial $Q$ | $a_{h0}$ | everything else hydraulic |
 | Peak $a_h$ | $\chi$ | $a_{h0}$ |
 | $a_h$ hysteresis between branches | $a_g$, $s_c$, $s^{*}_g$ | $\chi$ |
+| Pre-peak $d_s$ while $\tau$ is flat or falling | $m_t$, $\sigma_{t,\rm ref}$ — **only** with the stress-dependent $k_t$ on | nothing, with constant $K_t$: the channel is then flat by construction |
+| Decay of $a_h$ during a long constant-pressure hold | $\tau_c$, $q$ jointly | $a_{c,\max}$, which must come from a longer experiment than this protocol provides |
 | Failure to reach `end_time` | that a stability or tolerance bound has been crossed | which one — check $\lvert\mathrm{d}Y/\mathrm{d}s\rvert$ vs $k_{\rm sys}$ first |
 
 ### Back-analysing a result
@@ -4064,6 +4216,92 @@ error. A validation that matches apertures but produces a burst for SW-S4 is a
 weak one. **Weight the scoring accordingly.**
 
 ---
+
+### The campaign outcome, and an out-of-sample check
+
+*Added 2026-08-31. Everything above this point describes what the data constrains in
+principle; this section records what the calibration actually reached, so that a reader
+scoring a new run has a reference.*
+
+#### The four decks of record
+
+Selected on the balanced mean of the five scored Table-2 channels over complete 11/11-stage
+runs. Provenance and the rejected alternatives:
+`Examples/YeGhasemmi2018/Docs/Final_ye_ghaseemi_simulations.txt`.
+
+| specimen | deck | $Q$ | $\sigma'_n$ | $\tau$ | $d_n$ | $d_s$ | **mean** |
+|---|---|---:|---:|---:|---:|---:|---:|
+| SW-T1 | `107_01_swt1_coh27p2_apscale0p01512_ppfix` | 1.162 | 1.458 | 2.003 | 1.804 | 0.939 | **1.473 %** |
+| SW-T2 | `100_04_swt2_apscale0p0177_ppfix` | 4.336 | 1.274 | 1.723 | 2.067 | 1.260 | **2.132 %** |
+| SW-S3 | `100_06_sw3_resc1p30_unld0p00_ppfix` | 3.060 | 3.070 | 7.392 | 6.174 | 2.073 | **4.354 %** |
+| SW-S4 | `93_07_sw4_final_theta30_jrc5_ppfix` | 5.005 | 3.872 | 10.103 | 4.633 | 7.082 | **6.139 %** |
+
+Three qualifications belong with the table. The parameterisations are final **on mesh 5**
+and have not all been transferred to mesh 3, so they should not be described as
+mesh-independent — the one measured base-case transfer that moved materially is SW-T1
+(4.435 → 5.528). The optima are **intervals, not points**: SW-T2's aperture scale is
+identified only as 0.0175–0.0177, and SW-S3's nearest alternatives sit inside the
+0.08–0.10 point run-to-run reproducibility floor. And the residual on the two saw cuts is
+**model-form, not calibration**: SW-S4's error is localised at loading stage 4, where the
+model is high by 2.741 MPa in $\tau$ and short by 0.0137 mm in slip while the last
+unloading stage is right to 0.051 MPa, so no global strength or weakening change can repair
+one without damaging the other.
+
+#### An out-of-sample check: Kalantar et al. (2025) Figure 8
+
+Kalantar et al. (2025) §4.2 reanalyse these same four specimens, fitting the Pedrosa (1986)
+law $k = k_0\exp(-\alpha\,\sigma'_n)$ separately to the pressurization and depressurization
+branches. The ratio $k_0^{\rm post}/k_0^{\rm pre}$ — the **self-propping gain**, how much
+enhancement survives re-clamping — is not a Table-2 observable, so it is a genuinely
+out-of-sample target for a model calibrated against Table 2.
+
+Reproduce with `python3 scripts/pedrosa_fit_vs_kalantar_fig8.py`, which samples the same
+eleven stages the scorer uses (pre = 1–5, post = 7–11, the stage-6 event excluded from
+both) and, crucially, applies the **identical fit to the published Table 2 itself** so that
+a reduction-method difference cannot be mistaken for a model error.
+
+| specimen | source | $k_0$ pre | $k_0$ post | gain | $\alpha$ pre | $\alpha$ post |
+|---|---|---:|---:|---:|---:|---:|
+| SW-S4 | model | 0.135 | 0.218 | **1.62** | 0.0353 | 0.0611 |
+| | Table 2 refit | 0.129 | 0.199 | 1.55 | 0.0337 | 0.0600 |
+| | Kalantar Fig 8 | 0.120 | 0.200 | 1.67 | 0.0300 | 0.0600 |
+| SW-S3 | model | 0.274 | 0.746 | **2.72** | 0.0256 | 0.0521 |
+| | Table 2 refit | 0.162 | 0.412 | 2.54 | 0.0088 | 0.0248 |
+| | Kalantar Fig 8 | 0.160 | 0.410 | 2.56 | 0.0100 | 0.0200 |
+| SW-T1 | model | 0.224 | 3.248 | 14.48 | **0.0000** | 0.0303 |
+| | Table 2 refit | 0.623 | 3.517 | 5.65 | 0.0164 | 0.0323 |
+| | Kalantar Fig 8 | 0.370 | 3.470 | 9.38 | 0.0100 | 0.0300 |
+| SW-T2 | model | 0.384 | 2.295 | 5.98 | 0.0003 | 0.0083 |
+| | Table 2 refit | **10.278** | 3.085 | 0.30 | 0.0508 | 0.0189 |
+| | Kalantar Fig 8 | 0.830 | 3.040 | 3.66 | 0.0100 | 0.0200 |
+
+**Read the saw cuts first, because there the check is clean.** On SW-S3 and SW-S4 the refit
+reproduces the published fit to within its two-digit rounding (0.162/0.412 against
+0.160/0.410; 0.129/0.199 against 0.120/0.200), which validates the reduction — and the
+model's gain then lands at 2.72 against 2.56 and 1.62 against 1.67. That is a real
+out-of-sample agreement on a quantity nothing in the calibration saw.
+
+**The tensile pair does not support the same claim, and the reason is in the target, not the
+model.** $k_0$ is the intercept at $\sigma'_n = 0$, extrapolated from stages that span only
+$\approx 57$–67 MPa, so it carries a leverage of $\exp(62\alpha)$. On SW-T1 and SW-T2 the
+published pre-slip permeability rises by less than the two-digit print resolution of Table 2
+(SW-T1: 0.22, 0.21, 0.22, 0.23, 0.25), and the intercept is consequently not determined —
+our refit gives 0.623 and 10.278 where Kalantar read 0.370 and 0.830, and Kalantar's own
+$r^2 = 0.39$ on SW-T1 says the same thing from their side. **The tensile self-propping gain
+is not a usable validation target**, and any claim resting on it should be withdrawn. The
+*post-slip* fits are well determined on all four ($r^2$ 0.87–0.95); there the model matches
+SW-T1 (3.248/0.0303 against 3.470/0.0300) and SW-S4 (0.218/0.0611 against 0.200/0.0600)
+closely, is too flat on SW-T2 and too steep on SW-S3.
+
+**One model defect is exposed cleanly, against Table 2 directly rather than through
+Kalantar.** SW-T1's modelled pre-slip permeability is *exactly* constant — 0.2214 to four
+digits across stages 1–5, giving $\alpha = 0$ — while the published value rises 0.22 → 0.25.
+That is the missing stress-aperture term: SW-T1 runs with
+`normal_stress_aperture_compliance = 0` and the nonlinear branch off, and the two branches of
+`computeStressAperture` are mutually exclusive, so its $a_h$ is frozen through the
+pre-slip stages. Matching the published $\alpha \approx 0.01$–0.016 /MPa needs roughly
+0.36 µm of stress-aperture span across the 26–66 MPa range. The first attempt at this
+(`106_02`) supplied 9.84 µm, about 27× too much, and drove $Q$ from 1.16 % to 42 %.
 
 ### Traps
 
