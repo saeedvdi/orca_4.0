@@ -440,3 +440,206 @@ collisions to clean up, not real gaps.
    (§5.3b), or the SW-S4 phi_r correction (§5.3c). All three are falsified.
 7. **Retire or re-scope `scripts/retune_aperture_law.py`.** Its exact-substitution
    assumption is only valid when nothing else in the coupled solution changes.
+
+---
+
+# Part 9 — The 108 wave-2 results (arm C, closure creep; 6 of 6 downloaded)
+
+Reproduce every number below with `python3 scripts/ye_series108_wave2.py`. All six runs
+reached their target end time; none truncated.
+
+## 9.1 The controls pass to the limit of the print precision
+
+`108_01` (SW-T1) and `108_02` (SW-S4), unchanged parents held for 1e6 s:
+
+| | a_h(T_p) | drift over 1e6 s | spread over the hold |
+|---|---:|---:|---:|
+| SW-T1 | 3.543165 µm | **0.00 ppm** | 0.00 ppm |
+| SW-S4 | 0.760726 µm | **0.00 ppm** | 0.00 ppm |
+
+Not "small" — *identical to every printed digit*, over four orders of magnitude in time
+and three in step size. §0 predicted convergence rather than decay and this is the
+strongest form of that: the held state is a fixed point of the whole coupled system, not
+merely a slowly-moving one. Arms B and C are therefore reading physics, not integration
+drift.
+
+They also score **exactly** as their parents against Table 2 (Δ = ±0.0000 % on both), so
+extending the schedule to 1e6 s does not perturb the calibrated window at all.
+
+## 9.2 The rate law integrates correctly, and unlike arm B its time constant is honest
+
+Model `closure_creep_aperture_um_pp` against the same ODE reintegrated offline from each
+run's own `effective_normal_compression` trace:
+
+| run | max rel. deviation | at t (s) | a_c/a_cmax there | at saturation |
+|---|---:|---:|---:|---:|
+| `108_15` τ_c = 1e4 | 3.48 % | 1.96e4 | 0.744 | 0.00 % |
+| `108_11` τ_c = 1e5 | 4.26 % | 1.29e5 | 0.596 | 0.58 % |
+| `108_16` τ_c = 1e6 | 4.35 % | 1.00e6 | 0.507 | 4.35 % |
+| `108_12` SW-T2 | 7.92 % | 4.15e4 | 0.253 | 0.51 % |
+| `108_13` SW-S3 | 0.85 % | 4.18e4 | 0.291 | 0.01 % |
+| `108_14` SW-S4 | 0.76 % | 2.52e3 | 0.019 | 0.00 % |
+
+The deviation peaks **mid-transient and vanishes at saturation**, which is the signature
+of the known cause and not of an integration error: the material integrates the ODE
+pointwise at each qp on the local N_eff, while the offline check can only use the
+side-averaged postprocessor, and the *solution* is nonlinear in the rate even though the
+rate law (q = 1) is linear in N_eff. Both curves are pinned to the same asymptote
+`a_cmax`, so the discrepancy has to close. The verification in the run list measured
+0.65 % over the first 26 s; over 1e6 s it reaches 4–8 %, which is the number to quote.
+
+**The time constant is interpretable — this is the contrast with arm B.** Observed 63.2 %
+time against the predicted τ_eff = τ_c·σ_ref/N_eff:
+
+| run | N_eff(end) MPa | τ_pred (s) | t(63.2 %) | ratio |
+|---|---:|---:|---:|---:|
+| `108_15` | 45.96 | 1.425e4 | 1.562e4 | **1.096** |
+| `108_11` | 46.05 | 1.422e5 | 1.549e5 | **1.090** |
+| `108_16` | 46.22 | 1.416e6 | not reached | — |
+| `108_12` | 46.51 | 1.435e5 | 1.635e5 | **1.139** |
+| `108_13` | 26.78 | 1.199e5 | 1.238e5 | **1.033** |
+| `108_14` | 25.37 | 1.222e5 | 1.245e5 | **1.019** |
+
+2–14 % high, against arm B's **12–21×**. `normal_unload_retention_time` is not the
+observed decay time; `closure_creep_time` is, to within 14 %. The difference is
+structural: arm B's retained opening raises its own target through the frame (§4.2),
+whereas creep subtracts from `a_h` only and its target `a_cmax` is fixed, so the only
+feedback left is the weak pressure path of §9.4.
+
+## 9.3 a_h does NOT return to a_h0 — the aperture floor stops it
+
+`closure_creep_max_aperture` was set to each run's own retained gain precisely so that the
+asymptote would be the pre-stimulation aperture and the deck would answer a pure timing
+question (design decision 2). **It does not, on any of the four specimens:**
+
+| run | a_h(T_p) | a_h(end) | a_h0 | a_min | a_c/a_cmax | gap to a_h0 | k(end)/k(T_p) |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `108_15` τ_c = 1e4 | 3.0835 | 1.8496 | 1.6300 | 1.5105 | 1.000 | **+0.2196** | 0.3598 |
+| `108_11` τ_c = 1e5 | 3.4915 | 1.8490 | 1.6300 | 1.5105 | 0.993 | **+0.2190** | 0.2804 |
+| `108_16` τ_c = 1e6 | 3.5379 | 2.6166 | 1.6300 | 1.5105 | 0.485 | +0.9866 | 0.5470 |
+| `108_12` SW-T2 | 4.3592 | 2.1764 | 2.1100 | 2.0045 | 0.994 | **+0.0664** | 0.2493 |
+| `108_13` SW-S3 | 1.5665 | 1.2338 | 1.2200 | 1.2200 | 1.000 | **+0.0138** | 0.6203 |
+| `108_14` SW-S4 | 0.7602 | 0.7501 | 0.7400 | 0.7400 | 1.000 | **+0.0101** | 0.9736 |
+
+`τ_c = 1e4` and `τ_c = 1e5` both end at 1.8490–1.8496 µm with a_c fully spent. They have
+converged, to the *same* place, and it is **0.22 µm above** the aperture the budget says
+they should reach. So the crossing time the run list asked for does not exist, and no
+longer run produces it.
+
+**The cause is the pointwise `min_hydraulic_aperture` clamp.** Reconstructing SW-T1's
+budget term by term at t = 1e6 s from the exported postprocessors gives
+`a_h0 + a_σ + χ a_m − a_gouge − a_c` = 1.6883 µm against an actual 1.8490 µm — a residual
+of **+0.161 µm**, where the same reconstruction on the control leaves −0.040 µm. The
+difference is the clamp: `a_min` = 1.5105 µm binds *pointwise* over part of the interface
+while the reported aperture is a side average, so the average sits above the unclamped
+budget. On SW-S3 and SW-S4 the effect is trivially visible because `a_min` was set equal
+to `a_h0` — those two specimens **cannot** go below their initial aperture by
+construction, and the +0.014/+0.010 µm gaps are the same averaging effect at a floor that
+is already the target.
+
+This is the third independent place a numerical guard is doing physical work: `a_max`
+bounds retained aperture in the manuscript's §6.11.3 limitation, `computeStressAperture`'s
+zero clamp killed arm A above the reference stress (§4.3), and `a_min` now bounds closure
+in arm C. **Report the clamps as part of the constitutive law, because that is how they
+behave.**
+
+## 9.4 A hydraulic-only term is not hydraulically isolated
+
+Design decision 1 said closure creep "subtracts from `a_h` and does not feed back on the
+traction". That is true of the *direct* path and false of the coupled solution. SW-T1
+`108_11` against its control at t = 1e6 s:
+
+| | control `108_01` | creep `108_11` | change |
+|---|---:|---:|---:|
+| `a_h` | 3.5432 µm | 1.8490 µm | −1.694 |
+| interface pressure | 5.896 MPa | 6.057 MPa | **+0.161** |
+| σ'_n (BB) | 46.238 MPa | 46.046 MPa | **−0.192** |
+| χ·a_m | 1.9526 µm | 1.9587 µm | +0.006 |
+| Q | 0.5422 mL/min | 0.0771 mL/min | ×0.142 |
+| k | 10.974 | 2.933 (1e-13 m²) | ×0.267 |
+
+Closing the fracture lowers its transmissivity, which raises the pressure it holds against
+the shared field, which lowers σ'_n, which opens it back. The loop is weak — 0.19 MPa and
+0.006 µm — but it is present, it is the H→M direction of the manuscript's §3.6.2 coupling
+tables, and it means **no term in this model is hydraulic-only once the pressure field is
+shared.** State design decision 1 as "no direct Jacobian coupling", not as "no feedback".
+
+The Q and k ratios confirm the cubic law is intact end to end:
+(1.8490/3.5432)³ = 0.142 and (·)² = 0.272 against the measured 0.142 and 0.267.
+
+## 9.5 The 3500 s protocol DOES bound τ_c — arm C is not unconstrained
+
+The run list assumed arm C was unscoreable and purely exploratory. It is unscoreable
+against `a_cmax`, which was imposed. It is **not** unconstrained in τ_c, because creep runs
+during the protocol (design decision 3) and leaves a signature in the unloading-branch
+flow rate. Scoring each arm-C run over its protocol window on the *parent's* stage clock
+— the arm-C decks extend `injection_pressure` to 1e6 s, so their own schedule would sample
+stage 11 a million seconds late:
+
+| sample | run | Q | σ'_n | τ | d_n | d_s | mean nRMSE % | vs parent |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| SW-T1 | parent `100_01` | 4.5107 | 1.4400 | 1.9784 | 4.5836 | 0.9304 | 2.6886 | — |
+| SW-T1 | control `108_01` | 4.5107 | 1.4400 | 1.9784 | 4.5836 | 0.9304 | 2.6886 | ±0.0000 |
+| SW-T1 | τ_c = 1e4 | 5.5192 | 1.4142 | 1.9461 | 4.4470 | 0.9849 | 2.8623 | **+0.1737** |
+| SW-T1 | τ_c = 1e5 | **3.3666** | 1.4351 | 1.9720 | 4.5710 | 0.9323 | **2.4554** | **−0.2332** |
+| SW-T1 | τ_c = 1e6 | 4.3939 | 1.4395 | 1.9778 | 4.5824 | 0.9306 | 2.6648 | −0.0238 |
+| SW-T2 | parent `100_04` | 4.3355 | 1.2742 | 1.7230 | 2.0669 | 1.2597 | 2.1319 | — |
+| SW-T2 | τ_c = 1e5 | 4.4818 | 1.2486 | 1.6882 | 2.0584 | 1.2514 | 2.1457 | +0.0138 |
+| SW-S3 | parent `100_06` | 3.0605 | 3.0697 | 7.3916 | 6.1740 | 2.0731 | 4.3538 | — |
+| SW-S3 | τ_c = 1e5 | 2.9063 | 3.0394 | 7.3223 | 6.1346 | 2.2045 | 4.3214 | −0.0324 |
+| SW-S4 | parent `93_07` | 5.0053 | 3.8723 | 10.1029 | 4.6332 | 7.0822 | 6.1392 | — |
+| SW-S4 | control `108_02` | 5.0053 | 3.8723 | 10.1029 | 4.6332 | 7.0822 | 6.1392 | ±0.0000 |
+| SW-S4 | τ_c = 1e5 | 5.0249 | 3.8712 | 10.0999 | 4.6357 | 7.0867 | 6.1437 | +0.0045 |
+
+**SW-T1's Q channel brackets an optimum near τ_c = 1e5 s.** It falls 4.51 → 3.37 % at
+1e5, rises to 5.52 % at 1e4, and is essentially unchanged at 1e6. The other four channels
+move by ≤0.14 %, so this is a one-channel effect, and the mean improves by 0.23 pp
+(accuracy 97.31 → 97.55 %) entirely on the back of it.
+
+**Why, and how much to claim.** The parent over-predicts Q on the whole unloading branch —
+errors +0.44, +0.43, +0.32, +0.21, +0.080 mL/min at stages 7–11, every one positive. Any
+mechanism that removes aperture late in the run improves that channel. So the honest claim
+is *not* "creep is confirmed". It is:
+
+1. The calibration has a **systematic late-time flow excess**, and a slow closure process
+   at τ_c ≈ 1e5 s removes it.
+2. **τ_c ≤ 1e4 s is rejected** by the SW-T1 flow data: it over-corrects and costs
+   0.17 pp.
+3. τ_c and `a_cmax` are **not independently identified** here, because `a_cmax` was pinned
+   to each run's own retained gain rather than fitted. The 1e5 result is a one-parameter
+   result with the amplitude imposed.
+4. The other three specimens have no resolving power (|Δ| ≤ 0.03 pp) — SW-S3 and SW-S4
+   because their retained gain, and therefore their imposed `a_cmax`, is 0.36 and
+   0.021 µm.
+
+This connects directly to the manuscript's §6.11.3: the aperture budget's only saturating
+term is the negative one, so retained aperture is monotone and unbounded in slip and needs
+a bounding mechanism the law does not have. Arm C supplies a candidate for that mechanism,
+and the SW-T1 flow channel weakly prefers it over having none. That is a genuinely new
+line of evidence for a limitation the manuscript currently argues from structure alone.
+
+## 9.6 A repository defect: a diagnostic postprocessor that silently reports zero
+
+`effective_normal_compression` is only written when `_effective_normal_traction` is
+non-null, and that pointer is fetched only if one of `normal_stress_aperture_compliance
+> 0`, `use_nonlinear_normal_closure`, `compute_effective_normal_compression`, or
+`use_closure_creep` is set. The source comment above the assignment says "the diagnostic
+above is unconditional". **It is not.** A deck may declare
+`effective_normal_compression_mpa_pp` and get a column of exact zeros with no warning.
+
+Affected: the five SW-T1 wave-1 decks — `108_01`, `108_03`, `108_07`, `108_08`, `108_09` —
+all of which report 0.000 where `bb_effective_normal_stress_pp` reports 46.2–105.3 MPa.
+Every other 108 deck sets `use_nonlinear_normal_closure` or `use_closure_creep` and is
+unaffected. Wherever both are live they agree to every printed digit.
+
+**This did not corrupt any recorded result, and §4.3 is confirmed.** `108_03` is the
+SW-T1 reconfinement arm, and §8 of the run list directs the analyst at exactly the zeroed
+column. Recomputing the matched-σ'_n ratios from `bb_effective_normal_stress_pp` instead
+reproduces the recorded table to the digit: SW-T1 ×2.088 at 55 MPa and ×2.029 at 65 MPa,
+SW-T2 ×2.060 and ×2.042. The wave-1 analysis used the right column.
+
+Two corrections to §4.3 while it is open: SW-T1's virgin curve is **flat at 1.6300 µm**,
+not "1.6300→1.6655" — its stress-aperture term is identically zero, as the same sentence
+says. And `scripts/ye_series108_checks.py` reads `effective_normal_compression_mpa_pp` at
+three places and will silently produce zeros on any SW-T1 wave-1 deck; it should either
+fall back to `bb_effective_normal_stress_pp` or refuse an all-zero column.

@@ -170,12 +170,33 @@ Four design decisions that must be reported as decisions:
    traction — exactly the treatment the existing gouge-fill gets, read explicitly from
    the raw stress with no Jacobian term. It models loss of connected void space, not
    mechanical convergence of the two surfaces.
+
+   > **CORRECTION, 2026-08-31, after wave 2.** True of the *direct* path, false of the
+   > coupled solution. Closing `a_h` lowers transmissivity, which raises the pressure the
+   > fracture holds against the shared field (+0.161 MPa on SW-T1 at 1e6 s), which lowers
+   > sigma'_n (-0.192 MPa), which opens the joint back (+0.006 um). The loop is weak but
+   > real. The claim that survives is "no direct Jacobian coupling"; "hydraulic only" does
+   > not. See SELF_PROPPING_AND_CYCLIC_CAMPAIGN.md section 9.4.
 2. **`a_c_max` is imposed, not predicted.** It is set to each run's own retained gain
    `a_h(T_p) - a_h0`, so the asymptote is exactly the pre-stimulation aperture and the
    deck answers a pure timing question. Calibrating it would need a long-duration
    experiment; Ye & Ghassemi's protocol is 3500 s and cannot supply one.
+
+   > **CORRECTION, 2026-08-31, after wave 2.** The asymptote is NOT the pre-stimulation
+   > aperture on any of the four specimens. `min_hydraulic_aperture` binds pointwise while
+   > the reported aperture is a side average, so a_h converges 0.010-0.219 um ABOVE a_h0
+   > with a_c fully spent, and the crossing time section 8 asks for does not exist at any
+   > run length. On SW-S3 and SW-S4 `a_min` was set equal to `a_h0`, so those two cannot
+   > reach it by construction. Section 9.3.
 3. **Creep runs during the protocol too.** It does not switch on at `T_p`, which
    perturbs the calibrated match slightly — a further reason these are not scoreable.
+
+   > **CORRECTION, 2026-08-31, after wave 2.** This cuts the other way. Because creep runs
+   > during the protocol it leaves a signature in the unloading-branch flow rate, and the
+   > protocol window CAN be scored — on the parent's stage clock, since these decks extend
+   > `injection_pressure` to 1e6 s. SW-T1's Q channel brackets an optimum at tau_c = 1e5 s
+   > (4.51 -> 3.37 %) and rejects tau_c = 1e4 (5.52 %). `a_cmax` remains uncalibratable;
+   > tau_c is not. Section 9.5.
 4. **SW-S4's arm is near-degenerate by construction** — its retained gain is 0.0207 µm
    against SW-T1's 1.913 µm, so there is almost nothing for creep to take away. That is
    not a defect in the arm; it is the 104-series result (SW-S4 *closes*, k ratio ×0.86)
@@ -311,6 +332,12 @@ restarted.
   *chosen* to make that crossing exist, is a statement about rate only. Say so in the
   caption.
 
+  > **RESULT, 2026-08-31.** tau_eff is confirmed to 2-14 % (arm B's was wrong by 12-21x),
+  > and the deviation from the reintegrated ODE peaks mid-transient at 0.8-7.9 % and
+  > vanishes at saturation — pointwise-vs-averaged N_eff, not the implicit update. **There
+  > is no crossing**, for the clamp reason above. `scripts/ye_series108_wave2.py`
+  > regenerates all of it.
+
 ---
 
 ## 9. Two repository defects found while building this series
@@ -322,7 +349,17 @@ restarted.
    now use `../mesh/...`, and their per-deck `_hpc_nochk.sh` scripts — which chdir'd to
    the specimen directory, where the decks are not — now chdir to `Sweeps`, as the array
    script does. All fifteen re-checked clean. The 108 decks carry the fix from birth.
-2. The same latent mismatch exists for every archived deck under `Sweeps/` that still
+2. **A diagnostic postprocessor that silently reports zero.**
+   `effective_normal_compression` is written only when `_effective_normal_traction` is
+   non-null, which needs one of `normal_stress_aperture_compliance > 0`,
+   `use_nonlinear_normal_closure`, `compute_effective_normal_compression` or
+   `use_closure_creep`. The source comment claims the diagnostic is unconditional; it is
+   not. The five SW-T1 wave-1 decks (`108_01`, `108_03`, `108_07`, `108_08`, `108_09`)
+   therefore export a column of exact zeros. No recorded result was corrupted — section
+   4.3's numbers reproduce exactly from `bb_effective_normal_stress_pp` — but
+   `scripts/ye_series108_checks.py` reads the zeroed column at three places and should
+   refuse an all-zero column rather than return zeros. Section 9.6.
+3. The same latent mismatch exists for every archived deck under `Sweeps/` that still
    carries `mesh_file = mesh/...`. Those were run historically from the specimen
    directory and are not being resubmitted, so they are left alone; anything revived
    from the archive needs the one-line path change first.

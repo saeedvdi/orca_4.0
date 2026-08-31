@@ -1241,8 +1241,16 @@ both exactly, and in particular keeps the aperture-rate storage that a dilating 
 normal exchange between them is already carried by the bulk Darcy kernels evaluated on the two
 elements adjacent to $\Gamma$. Nothing needs to be added, and — more to the point — nothing may be
 added, since a separate leak-off term written on top of a shared field double-counts the exchange.
-The consequence worth checking is global mass conservation, and it is checked: the run reports
-`flow_mass_imbalance_fraction` every step, formed from the tagged nodal reactions of Appendix B.
+
+The size of that exchange is reported rather than assumed. Every step the run forms
+`flow_mass_imbalance_fraction` $= |\dot m_{\rm in} + \dot m_{\rm out}| / |\dot m_{\rm in}|$ from the
+tagged nodal reactions of Appendix B — the fraction of the injected mass that does *not* leave through
+the outlet port. It is not a conservation residual; conservation is enforced by the monolithic
+residual itself, and this quantity is the leak-off-plus-storage share, which is a physical output.
+On SW-T1 it runs at 0.15--0.17 through the loading branch and rises to 0.78 by the final 8 MPa hold:
+once the injection pressure is being stepped back down, most of the fluid entering the fracture is
+going into the matrix and into fracture storage rather than out of the far end. A model that carried
+a separate leak-off term on top of the shared field would count that 0.78 twice.
 
 **The two directions, explicitly.** Mechanics acts on flow through exactly three quantities, all of
 them functions of the interface state:
