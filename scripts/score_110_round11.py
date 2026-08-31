@@ -5,6 +5,11 @@ Score the Kalantar Round-11 platen arms against their preregistered gate.
 Reports, for every run given (or for the whole Round-11 set plus its baselines
 when called with no arguments):
 
+  dp_MPa   the rise in interface_pressure_pp over the pre-slip part of the ramp.
+           Round 11 showed the OG-T deficit IS this number: 48.9 MPa of undrained
+           poroelastic overpressure, times fault_pressure_coefficient = 1.0.  The
+           round-12 drained-preload arm has to bring it under 3 MPa; ratio and slope
+           only follow it.
   ratio    bb_effective_normal_stress_pp / effective_normal_paper_frame_mpa_pp,
            sampled at the last step before the joint has slipped 5 um.  This is
            the fraction of its due normal stress the joint actually receives.
@@ -97,6 +102,14 @@ def score(path):
         if den > 0:
             slope = sum((a - mx) * (b - my) for a, b in pre) / den
 
+    # Round 12 gate 1: the pore-pressure rise over the preload ramp. The whole OG-T
+    # deficit is alpha_f * p, so this is the quantity the drained-preload arm has to
+    # move; the ratio and the slope only follow it.
+    p_first = num(rows[0], "interface_pressure_pp") / 1e6
+    p_pre = [num(r, "interface_pressure_pp") / 1e6 for r in rows
+             if abs(num(r, "czm_shear_slip_mm_pp")) * 1000.0 <= SLIP_SAMPLE_UM]
+    dp = (max(p_pre) - p_first) if p_pre else None
+
     peak = 0.0
     cross_sd = None
     for r in rows:
@@ -110,7 +123,7 @@ def score(path):
             cross_sd = num(r, "differential_stress_mpa_pp")
 
     return dict(name=name.replace("_hpc.csv", "").replace(".csv", ""),
-                theta=th, ratio=ratio, slope=slope, peak=peak, cross=cross_sd,
+                theta=th, ratio=ratio, slope=slope, peak=peak, cross=cross_sd, dp=dp,
                 sd_max=max(num(r, "differential_stress_mpa_pp") for r in rows),
                 slip_max=max(abs(num(r, "czm_shear_slip_mm_pp")) for r in rows) * 1000.0)
 
@@ -122,12 +135,13 @@ def main(argv):
         paths = [os.path.join(STUDY, "..", p) for p in BASELINES]
         for pat in ("OGT/results_csv_*/110_3*_r11*.csv",
                     "OGSH/results_csv_*/110_3*_r11*.csv",
-                    "OGSC/results_csv_*/110_3*_r11*.csv"):
+                    "OGSC/results_csv_*/110_3*_r11*.csv",
+                    "OGT/results_csv_*/110_3*_r12*.csv"):
             paths += sorted(glob.glob(os.path.join(STUDY, pat)))
 
     print(f"{'run':44s}{'th':>5}{'target':>8}{'slope':>9}{'ratio':>8}"
-          f"{'peak t/tl':>11}{'yield@sd':>10}{'sd_max':>9}{'slip_um':>10}")
-    print("-" * 114)
+          f"{'peak t/tl':>11}{'yield@sd':>10}{'sd_max':>9}{'slip_um':>10}{'dp_MPa':>9}")
+    print("-" * 123)
     for p in paths:
         if not os.path.exists(p):
             print(f"{os.path.basename(p):44s}  (not run yet)")
@@ -140,11 +154,17 @@ def main(argv):
         f = lambda v, w, d: (f"{v:{w}.{d}f}" if v is not None else " " * (w - 1) + "-")
         print(f"{s['name']:44s}{s['theta'] or 0:5.0f}{tgt:8.4f}"
               f"{f(s['slope'], 9, 4)}{f(s['ratio'], 8, 3)}{s['peak']:11.3f}"
-              f"{f(s['cross'], 10, 1)}{s['sd_max']:9.1f}{s['slip_max']:10.1f}")
+              f"{f(s['cross'], 10, 1)}{s['sd_max']:9.1f}{s['slip_max']:10.1f}"
+              f"{f(s['dp'], 9, 2)}")
 
     print()
-    print(f"GATE  110_30 passes if ratio >= 0.93, slope = +0.20 +- 0.04, and")
-    print(f"      tau/tau_limit does not reach 1.0 below sigma_d = {SIGMA_D_TARGET} MPa.")
+    print(f"GATE  110_36 (round 12, drained preload) passes on ALL FIVE:")
+    print(f"        dp_MPa <= 3.0     ratio >= 0.93     slope = +0.22 +- 0.04")
+    print(f"        no tau/tau_limit = 1.0 below sigma_d = {SIGMA_D_TARGET} MPa")
+    print(f"        slip_um < 10 at the end of the preload")
+    print(f"      If 110_36 fails, DISCARD 110_37 rather than analysing it.")
+    print(f"PRIOR 110_30 (round 11) required ratio >= 0.93, slope = +0.20 +- 0.04 and")
+    print(f"      no yield below {SIGMA_D_TARGET} MPa. It failed all three; the null fired.")
     print(f"NULL  if 110_32 (locked joint, zero slip) still shows ratio ~ 0.5, the")
     print(f"      shielding is elastic and no platen BC repairs it -- go at the")
     print(f"      interface map or the mesh instead, and treat a 110_30 pass as")
