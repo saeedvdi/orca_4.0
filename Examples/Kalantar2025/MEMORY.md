@@ -16,8 +16,31 @@ what was concluded. When a claim here is shown wrong, correct it **in place and 
 — §5 exists because the wrong round-1 assumptions were worth more than the right ones.
 Add a line to §12.
 
-**Last updated:** 2026-08-28 (final audit complete / round 10 built). **Branch:** `orca_v10`,
-commit `353faf3` + later results, decks, and audit artifacts.
+**Last updated:** 2026-08-31 (round 11 built; OG-T diagnosis replaced). **Branch:** `orca_v11`.
+Previously 2026-08-28 (final audit complete / round 10 built) on `orca_v10`, commit `353faf3`.
+
+> **OG-T DIAGNOSIS REPLACED, 2026-08-31.** The OG-T joint receives **half** the effective
+> normal stress it is due — ratio `bb_effective_normal_stress_pp / effective_normal_paper_frame_mpa_pp`
+> = 0.515 / 0.509 / 0.520 on r7 / r6 / r4, against 0.999 on OG-SH, 0.930 on OG-SC and 0.969
+> on Ye SW-T1 — and the pre-slip slope `d(σ'ₙ)/d(σ_d)` is **negative** (−0.10 to −0.13) where
+> it must be +0.2204. So `τ/τ_limit` crosses 1.0 at σ_d ≈ 64 MPa against the experiment's
+> 160.43 MPa: **the specimen yields during its own preload, before any injection.** No OG-T
+> constitutive constant in this campaign has been fitted against a valid specimen.
+>
+> Both round-3 suspects are refuted by their own preregistered falsifiers. Axial platen
+> stiffness: round 7's traction swap moved the ratio 0.520 → 0.515. Tip clearance: round 6 cut
+> it 3.00 → 1.00 mm and moved the ratio 0.515 → 0.509, where §9 of the round-3 document
+> predicted a large worsening. Mesh angle and load train are both excluded.
+>
+> Round 11 tests the one thing never tried — **in-plane platen freedom**. Both end faces are
+> laterally unrestrained, and OG-T's fracture spans 94 mm of a 100 mm core, so its two wedges
+> can translate past one another and the joint never builds normal stress. Full argument,
+> table and gates: `Doc/Memory/KALANTAR2025_ROUND3_BACKANALYSIS.md` §11. Decks built by
+> `scripts/make_110_round11_platen.py`; score with `scripts/score_110_round11.py`.
+>
+> **Do not run the leftover OG-T r6/r8/r10 arms as calibration.** `110_14` (26° mesh) and
+> `110_16` (traction) were the falsifiers and have now returned; `110_23` is folded into
+> round 11 as a mesh-resolution null; `110_29` is superseded by `110_35`.
 
 > **State in one line, 2026-08-28.** Rounds 6–8 closed the remaining scalar arms:
 > OG-SH's best complete mean nRMSE is **19.06%**, but neither weakening exponent passed;

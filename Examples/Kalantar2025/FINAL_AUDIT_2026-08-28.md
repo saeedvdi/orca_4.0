@@ -1,5 +1,14 @@
 # Kalantar et al. (2025) final audit — 2026-08-28
 
+> **SUPERSEDED FOR OG-T, 2026-08-31.** This audit lists `110_08_og_t_bbfast_r4` as OG-T's
+> baseline at 17/17 with a "physically invalid preload". That is now measured: the run
+> delivers **0.520** of the effective normal stress its joint is due and yields at
+> σ_d = 64.9 MPa against the experiment's 160.43 MPa. **The OG-T rows below are not
+> calibration data** — no OG-T constant has been fitted against a specimen that survived its
+> own preload. OG-SH and OG-SC are unaffected (0.999 and 0.930). See
+> `Doc/Memory/KALANTAR2025_ROUND3_BACKANALYSIS.md` §11 and round 11.
+
+
 Branch: `orca_v10`
 
 ## Conclusion

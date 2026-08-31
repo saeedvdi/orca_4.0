@@ -170,7 +170,16 @@ Checked against Table 2 stage 1 (26° frame, σ₃ = 33, P_p = 4.5):
 the 28° mesh. **The axial gate is not the defect**, despite being flagged as suspect #1 in the
 deck header for its 0.71 % axial strain.
 
-### 3.4 Prime suspect — written down a day before round 1, never checked
+### 3.4 Prime suspect — written down a day before round 1, never checked  **[REFUTED 2026-08-31 — see §11]**
+
+> **This section's hypothesis has been tested against its own preregistered falsifier and it
+> failed.** Both halves of it are dead: the axial platen stiffness (round 7 swapped the
+> `FunctionPenaltyDirichletBC` for a distributed traction — the defect moved 0.520 → 0.515)
+> and the tip clearance (round 6 cut clearance from 3.00 mm to 1.00 mm on the 26° mesh — the
+> defect moved 0.515 → 0.509, where §9 predicted it would become markedly worse). The
+> measurement and what replaces it are in §11. The section is kept unedited below because the
+> reasoning was sound and the falsifier was correctly specified; it simply came back negative.
+
 
 `OGT/mesh/kalantar2025_og_t_theta28.jou`, dated 2026-08-23:
 
@@ -537,7 +546,11 @@ not a statement about the rock. **Price the constraint before obeying it.**
 
 ---
 
-## 9. OG-T: the defect orders with tip clearance, not with axial load
+## 9. OG-T: the defect orders with tip clearance, not with axial load  **[REFUTED 2026-08-31 — see §11]**
+
+> The ordering was real but it is not causal. Driving clearance below 3.00 mm changes the
+> defect by 1 %. See §11.
+
 
 `110_04` behaved identically to round 2 and stopped at t = 34.2 s with `dt` collapsing. The
 preload inversion is unchanged: `bb_effective_normal_stress_pp` falls 30.79 → 24.17 MPa while
@@ -650,3 +663,117 @@ The builder prints this as a warning rather than failing, because the same crite
 uncorrected form blocked the right `D_c` on OG-SH for three rounds. It does not stop OG-SC
 bursting in the model: at full weakening `τ_limit` = 9.73 MPa against a τ of 13.0, so the joint
 must slide ~21 µm regardless. **Watch it, do not tune to it.**
+
+---
+
+# Part III — the round-11 verdict on OG-T
+
+**Written 2026-08-31 from the completed round-6, round-7 and round-4 probes.**
+
+## 11. The OG-T joint receives half its normal stress, and neither round-3 suspect explains it
+
+### 11.1 The measurement
+
+One number settles it. Sample every run at the last step before the joint has slipped 5 µm —
+early enough that slip-weakening, roughness degradation and dilation have all barely moved —
+and take the ratio of the joint's own effective normal stress to the paper-frame value it is
+supposed to be tracking, `bb_effective_normal_stress_pp / effective_normal_paper_frame_mpa_pp`.
+Alongside it, the least-squares slope `d(bb_effective_normal_stress)/d(σ_d)` over the pre-slip
+ramp, whose correct value is `sin²θ`.
+
+| run | θ | correct slope | slope | ratio | peak τ/τ_limit | yields at σ_d |
+|---|---:|---:|---:|---:|---:|---:|
+| `110_16_og_t_traction_probe_r7` | 28° | +0.2204 | **−0.104** | **0.515** | 3.491 | 64.0 |
+| `110_14_og_t_preload_probe` (26°) | 26° | +0.1922 | **−0.132** | **0.509** | 1.293 | 63.6 |
+| `110_08_og_t_bbfast_r4` | 28° | +0.2204 | **−0.101** | **0.520** | 1.588 | 64.9 |
+| `110_13_og_sh_bbfast_r6` | 30° | +0.2500 | +0.217 | 0.999 | 1.002 | 51.3 |
+| `110_15_og_sc_bbfast_r6` | 30° | +0.2500 | (short ramp) | 0.930 | 1.073 | 27.5 |
+| Ye2018 `100_01_swt1` | — | — | — | 0.969 | — | — |
+
+Reproduce with `python3 scripts/score_110_round11.py`.
+
+**OG-T delivers half the normal stress to its joint, and the slope has the wrong sign.** Not
+approximately — the joint *unloads* normally as the specimen is compressed. OG-SH gets +0.217
+against a correct +0.250 and a ratio of 0.999. Ye SW-T1, which validates at 1.16 % on Q, gets
+0.969. OG-SC gets 0.930. OG-T gets 0.515, three times, on two meshes, under two load trains.
+
+The consequence is the whole OG-T failure: `τ/τ_limit` crosses 1.0 at **σ_d ≈ 64 MPa**, against
+the **σ_d = 160.43 MPa** the experiment applied at stage 1. The specimen yields during its own
+preload, before a drop of water is injected, and slip-weakening then drops `τ_limit` from
+38.2 MPa to 15.8 MPa while slip runs to 322 µm (26° arm) or 2356 µm (28° arm). Every OG-T
+"result" in this campaign was read off a specimen that had already destroyed itself.
+
+### 11.2 Both round-3 suspects are refuted by their own falsifiers
+
+§3.4 named two mechanisms and §9 preregistered the test for each. Both tests ran.
+
+**Axial platen stiffness.** §3.4: a `FunctionPenaltyDirichletBC` forcing every top node to one
+displacement "is far stiffer than a real platen, and it can lever the two wedges apart."
+Round 7 replaced it with a distributed traction. Ratio went **0.520 → 0.515**. No effect.
+
+**Tip clearance.** §9 ordered the defect against tip clearance (14.92 / 6.72 / 3.00 mm on
+OG-SH / OG-SC / OG-T) and round 6 built the 26° long-core mesh explicitly as a falsifier,
+its own header saying: *"if tip interaction is the cause, the constitutive/reported
+normal-stress slope must become still worse."* Clearance fell 3.00 → 1.00 mm, a factor of
+three. Ratio went **0.515 → 0.509**. A 1 % move where a large one was predicted.
+
+The ordering in §9 was a real correlation and it is still worth explaining, but it is not the
+cause. Neither is the mesh angle, and neither is the load train.
+
+### 11.3 What has not been tested: in-plane platen freedom
+
+This is a *different* platen hypothesis from §3.4's, which was about axial stiffness.
+
+Both end faces are laterally free. `base_fixed_z` pins `disp_z` on the bottom; the top carries
+an axial traction (r7) or a penalty displacement (r4/r6) in `z` only; `disp_x` and `disp_y` are
+restrained nowhere except four rigid-body pin vertices. OG-T's fracture spans 94 mm of a
+100 mm core, so the specimen is two nearly-complete wedges joined by 3 mm end caps. With
+frictionless platens those wedges are free to translate laterally past one another, and a joint
+whose two faces can slide apart in-plane never builds normal stress. OG-SH's 14.92 mm end caps
+are stiff enough to carry that shear themselves — which is exactly why OG-SH scores 0.999 and
+why the correlation §9 found is real without being causal. Real triaxial platens are steel
+bonded against ground rock; frictionless is the modelling artefact.
+
+This also predicts the shape §9 could not explain: a **step**, not a trend. Once the end caps
+are compliant enough to stop carrying the lateral shear, the only thing left is platen
+friction, and there is none — so 3.00 mm and 1.00 mm give the same answer, while 14.92 mm
+gives a different one.
+
+### 11.4 Round 11 — three arms, one gate, one null
+
+Built by `scripts/make_110_round11_platen.py`, all inheriting `110_16` verbatim except for the
+one change named. 60 s preload probes, no injection.
+
+| deck | change | role |
+|---|---|---|
+| `110_30_og_t_platen_bonded_r11` | `disp_x = disp_y = 0` on both platens | the hypothesis |
+| `110_31_og_t_platen_base_bonded_r11` | bottom platen only | asymmetric control |
+| `110_32_og_t_locked_joint_r11` | platens free, cohesion 1 GPa | **the null** |
+
+**Gate for `110_30`:** ratio ≥ 0.93, slope +0.20 ± 0.04, and no crossing of τ/τ_limit = 1.0
+below σ_d = 160.43 MPa.
+
+**Read `110_32` first.** It locks the joint so it cannot slip at any stress the preload
+reaches, which measures the elastic stress transfer alone. If the ratio is *still* ≈ 0.5 with
+zero slip, the shielding is elastic, no platen boundary condition repairs it, and a pass in
+`110_30` is over-constraint masking a mesh or interface-map defect — the next step would then
+be the split-interface lower-D map, not another BC arm.
+
+**`110_31`** stops `110_30` being read as a bare yes/no: if the mechanism is symmetric
+rigid-body translation, one bonded platen removes about half the freedom and this arm must land
+between 0.515 and `110_30`.
+
+Wave B, gated on the above and not to be submitted before it: `110_35_og_t_platen_bonded_full_r11`
+(the first OG-T full cycle whose specimen did not yield in its own preload), plus
+`110_33_og_sh_platen_bonded_r11` and `110_34_og_sc_platen_bonded_r11` as over-constraint
+controls. A pass on OG-T cannot be claimed without showing the same restraint leaves OG-SH's
+9/9 and OG-SC's 13/13 undamaged.
+
+### 11.5 What this invalidates in the existing audit
+
+`FINAL_AUDIT_2026-08-28.md` records `110_08_og_t_bbfast_r4` as OG-T's baseline at 17/17 with a
+"physically invalid preload". That characterisation is now precise and it is worse than it
+reads: the run scores 0.520 on the normal-stress ratio and yields at σ_d = 64.9 MPa. **No OG-T
+constitutive constant in this campaign has been fitted against a valid specimen**, so the OG-T
+rows of the audit are not calibration data. OG-SH and OG-SC are unaffected — both track their
+paper frame within 7 %.
