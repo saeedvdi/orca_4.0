@@ -3,7 +3,7 @@
 #SBATCH --job-name=109_01_sw4_floor1nm_g028_ppfix
 #SBATCH --chdir=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4
 #SBATCH --account=def-biaoli66
-#SBATCH --time=24:00:00
+#SBATCH --time=6:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=32
 #SBATCH --cpus-per-task=1
