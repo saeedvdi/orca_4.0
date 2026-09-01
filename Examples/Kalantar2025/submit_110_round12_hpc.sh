@@ -64,11 +64,11 @@
 #SBATCH --job-name=kalantar_110_r12
 #SBATCH --chdir=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/Kalantar2025
 #SBATCH --account=def-biaoli66
-#SBATCH --time=2-00:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --nodes=1
-#SBATCH --ntasks=64
+#SBATCH --ntasks=32
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=64G
+#SBATCH --mem=32G
 #SBATCH --array=0-1
 #SBATCH --output=kalantar_110_r12_%A_%a.out
 #SBATCH --error=kalantar_110_r12_%A_%a.err
@@ -84,7 +84,7 @@ case "${SLURM_ARRAY_TASK_ID}" in
   *) echo "Unexpected SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}" >&2; exit 2 ;;
 esac
 
-ranks=64
+ranks=32
 case_path=${study_root}/${case_dir}
 input_path=${case_path}/${stem}.i
 executable=${project_root}/orca-opt
@@ -106,7 +106,7 @@ unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
 mkdir -p results_csv_hpc results_exodus_hpc results_checkpoint_hpc logs
 
 echo "Starting array task ${SLURM_ARRAY_TASK_ID}: ${case_dir}/${stem}.i"
-echo "SLURM job ${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}; ${ranks} ranks, 64G"
+echo "SLURM job ${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}; ${ranks} ranks, 32G"
 
 # Task 1 runs to t = 20745 s. Checkpoints are KEPT for it so a wall-clock timeout can
 # be restarted -- the round-8 108-series lesson, where _nochk truncations could not be.
