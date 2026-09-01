@@ -1,33 +1,15 @@
 #!/bin/bash
-
-#SBATCH --job-name=110_01_sw3_floor1nm_g040_ppfix
-#SBATCH --chdir=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS3
-#SBATCH --account=def-biaoli66
-#SBATCH --time=8:00:00
+#SBATCH --job-name=110_01_sw3_floor1nm_g040_ppfix       
+#SBATCH --account=def-biaoli66   
+#SBATCH --time=06:00:00             # Time limit (hh:mm:ss)
 #SBATCH --nodes=1
 #SBATCH --ntasks=32
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=16G
-#SBATCH --output=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/110_01_sw3_floor1nm_g040_ppfix_%j.out
-#SBATCH --error=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/110_01_sw3_floor1nm_g040_ppfix_%j.err
+#SBATCH --mem=16G                   
+#SBATCH --output=110_01_sw3_floor1nm_g040_ppfix_%j.out    
+#SBATCH --error=110_01_sw3_floor1nm_g040_ppfix_%j.err     
 
-set -euo pipefail
+# Navigate to the simulation directory
+cd /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs
 
-PROJECT_ROOT=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0
-CASE_STEM=110_01_sw3_floor1nm_g040_ppfix
-CASE_DIR=${PROJECT_ROOT}/Examples/YeGhasemmi2018/SWS3
-RESULTS_ROOT=${PROJECT_ROOT}/Examples/YeGhasemmi2018/SWS4/proposed_inputs/results
-CSV_DIR=${RESULTS_ROOT}/results_csv
-EXODUS_DIR=${RESULTS_ROOT}/results_exodus
-
-cd "${CASE_DIR}"
-unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
-if [[ ! -d "${CSV_DIR}" || ! -d "${EXODUS_DIR}" ]]; then
-  echo "Missing result directory: ${CSV_DIR} and/or ${EXODUS_DIR}" >&2
-  exit 1
-fi
-
-srun --mpi=pmi2 -n 32 "${PROJECT_ROOT}/orca-opt" -i "${CASE_DIR}/proposed_inputs/${CASE_STEM}.i" \
-  Outputs/chk/enable=false \
-  "csv_file_base=${CSV_DIR}/${CASE_STEM}" \
-  "exodus_file_base=${EXODUS_DIR}/${CASE_STEM}"
+# Run your MOOSE application (replace `your_moose_exec` with the actual executable)
+srun --mpi=pmi2 -n 32 /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/orca-opt -i 110_01_sw3_floor1nm_g040_ppfix.i
