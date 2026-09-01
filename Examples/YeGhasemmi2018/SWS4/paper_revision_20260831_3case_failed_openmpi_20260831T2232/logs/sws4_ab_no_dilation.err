@@ -1,0 +1,36 @@
+Abort(739919120): Fatal error in internal_Init_thread: Internal MPI error!, error stack:
+internal_Init_thread(71)........: MPI_Init_thread(argc=0x7ffdb9a066bc, argv=0x7ffdb9a066b0, required=0, provided=0x7ffdb9a066cc) failed
+MPII_Init_thread(204)...........: 
+MPIR_pmi_init(225)..............: 
+check_MPIR_CVAR_PMI_VERSION(167):  Runtime environment uses unsupported PMI version PMIx. Aborting.
+Abort(203048208): Fatal error in internal_Init_thread: Internal MPI error!, error stack:
+internal_Init_thread(71)........: MPI_Init_thread(argc=0x7fff68a8affc, argv=0x7fff68a8aff0, required=0, provided=0x7fff68a8b00c) failed
+MPII_Init_thread(204)...........: 
+MPIR_pmi_init(225)..............: 
+check_MPIR_CVAR_PMI_VERSION(167):  Runtime environment uses unsupported PMI version PMIx. Aborting.
+Abort(135939344): Fatal error in internal_Init_thread: Internal MPI error!, error stack:
+internal_Init_thread(71)........: MPI_Init_thread(argc=0x7fffaa9332bc, argv=0x7fffaa9332b0, required=0, provided=0x7fffaa9332cc) failed
+MPII_Init_thread(204)...........: 
+MPIR_pmi_init(225)..............: 
+check_MPIR_CVAR_PMI_VERSION(167):  Runtime environment uses unsupported PMI version PMIx. Aborting.
+Abort(739919120): Fatal error in internal_Init_thread: Internal MPI error!, error stack:
+internal_Init_thread(71)........: MPI_Init_thread(argc=0x7ffcc976396c, argv=0x7ffcc9763960, required=0, provided=0x7ffcc976397c) failed
+MPII_Init_thread(204)...........: 
+MPIR_pmi_init(225)..............: 
+check_MPIR_CVAR_PMI_VERSION(167):  Runtime environment uses unsupported PMI version PMIx. Aborting.
+Abort(68830480): Fatal error in internal_Init_thread: Internal MPI error!, error stack:
+internal_Init_thread(71)........: MPI_Init_thread(argc=0x7ffc8d5e043c, argv=0x7ffc8d5e0430, required=0, provided=0x7ffc8d5e044c) failed
+MPII_Init_thread(204)...........: 
+MPIR_pmi_init(225)..............: 
+check_MPIR_CVAR_PMI_VERSION(167):  Runtime environment uses unsupported PMI version PMIx. Aborting.
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpiexec detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[11505,1],3]
+  Exit code:    16
+--------------------------------------------------------------------------

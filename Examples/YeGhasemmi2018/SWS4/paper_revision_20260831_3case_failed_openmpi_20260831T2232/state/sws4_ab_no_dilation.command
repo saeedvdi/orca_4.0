@@ -1,0 +1,1 @@
+taskset -c 0-7 mpiexec -n 8 /media/geomechanics/Data4TB/projects/orca_4.0/orca-opt -i Sweeps/93_07_sw4_final_theta30_jrc5_ppfix.i Outputs/chk/enable=false mesh_file=../mesh/ye2018_sw_s4_theta30_size5_mesh.e csv_file_base=paper_revision_20260831_3case/csv/sws4_ab_no_dilation exodus_file_base=paper_revision_20260831_3case/exodus/sws4_ab_no_dilation dilation_scale=0 
