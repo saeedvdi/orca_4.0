@@ -401,3 +401,28 @@ binaryoutput
 # Generated aggregate fracture-analysis notebooks are large, reproducible outputs.
 # Keep every All_fracture*.ipynb variant local and out of repository history.
 **/[Aa]ll_fracture*.ipynb
+
+# ---------------------------------------------------------------------------
+# Kalantar (2025) meshes -- same treatment as the Ye specimens above: every deck
+# references mesh/<file>.e relative to its own specimen directory, so a clone
+# without them is unrunnable.
+#
+# kalantar2025_og_t_theta28_graded.e is what every OG-T deck from Round 8 onward
+# points at, and it is NOT reproducible from the journal -- theta28.jou exports
+# _size3_pin.e, nothing in the repo regenerates the graded mesh. The working copy
+# was therefore the only one in existence, and Round 12 died on a fresh HPC clone
+# with "Unable to open file .../kalantar2025_og_t_theta28_graded.e".
+#
+# The OG-SH and OG-SC graded variants stay untracked on purpose: theta28.jou
+# measured graded sizing and REJECTED it for those two, and no deck references
+# them. Only the _size3 meshes they do reference are exempted here.
+# ---------------------------------------------------------------------------
+!/Examples/Kalantar2025/OGT/mesh/
+!/Examples/Kalantar2025/OGT/mesh/**/*.e
+!/Examples/Kalantar2025/OGT/mesh/**/*.jou
+!/Examples/Kalantar2025/OGSH/mesh/
+!/Examples/Kalantar2025/OGSH/mesh/**/*_size3.e
+!/Examples/Kalantar2025/OGSH/mesh/**/*.jou
+!/Examples/Kalantar2025/OGSC/mesh/
+!/Examples/Kalantar2025/OGSC/mesh/**/*_size3.e
+!/Examples/Kalantar2025/OGSC/mesh/**/*.jou
