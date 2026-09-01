@@ -1,23 +1,15 @@
 #!/bin/bash
-#SBATCH --job-name=111_03_swt2_floor1nm_control_ppfix
-#SBATCH --account=def-biaoli66
-#SBATCH --time=06:00:00
+#SBATCH --job-name=111_03_swt2_floor1nm_control_ppfix       
+#SBATCH --account=def-biaoli66   
+#SBATCH --time=06:00:00             # Time limit (hh:mm:ss)
 #SBATCH --nodes=1
 #SBATCH --ntasks=32
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=16G
-#SBATCH --output=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/111_03_swt2_floor1nm_control_ppfix_%j.out
-#SBATCH --error=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/111_03_swt2_floor1nm_control_ppfix_%j.err
+#SBATCH --mem=16G                   
+#SBATCH --output=111_03_swt2_floor1nm_control_ppfix_%j.out    
+#SBATCH --error=111_03_swt2_floor1nm_control_ppfix_%j.err     
 
-set -euo pipefail
+# Navigate to the simulation directory
+cd /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs
 
-PROJECT_ROOT=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0
-CASE_DIR=${PROJECT_ROOT}/Examples/YeGhasemmi2018/SWT2
-RESULTS_DIR=${PROJECT_ROOT}/Examples/YeGhasemmi2018/SWS4/proposed_inputs/results
-
-cd "${CASE_DIR}"
-srun --mpi=pmi2 -n 32 "${PROJECT_ROOT}/orca-opt" \
-  -i "${CASE_DIR}/proposed_inputs/111_03_swt2_floor1nm_control_ppfix.i" \
-  Outputs/chk/enable=false \
-  "csv_file_base=${RESULTS_DIR}/results_csv/111_03_swt2_floor1nm_control_ppfix" \
-  "exodus_file_base=${RESULTS_DIR}/results_exodus/111_03_swt2_floor1nm_control_ppfix"
+# Run your MOOSE application (replace `your_moose_exec` with the actual executable)
+srun --mpi=pmi2 -n 32 /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/orca-opt -i 111_03_swt2_floor1nm_control_ppfix.i

@@ -348,9 +348,9 @@ paper_flow_width_over_length = 0.814323680496
 mesh_flow_width_over_length = 0.814323680496
 ml_per_m3_per_min = 6.0e7
 
-exodus_file_base = /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/results/results_exodus/111_01_swt1_floor1nm_control_ppfix
-csv_file_base    = /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/results/results_csv/111_01_swt1_floor1nm_control_ppfix
-checkpoint_file_base = /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/results/results_exodus/111_01_swt1_floor1nm_control_ppfix
+exodus_file_base = results/results_exodus/111_01_swt1_floor1nm_control_ppfix
+csv_file_base    = results/results_csv/111_01_swt1_floor1nm_control_ppfix
+checkpoint_file_base = results/results_exodus/111_01_swt1_floor1nm_control_ppfix
 
 [GlobalParams]
   displacements = 'disp_x disp_y disp_z'

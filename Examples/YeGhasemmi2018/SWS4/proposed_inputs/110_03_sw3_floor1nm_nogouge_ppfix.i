@@ -1302,9 +1302,9 @@ mesh_flow_width_over_length_sw_s3 = 0.674   # diagnostic only: prior estimate ba
 ml_per_m3_per_min = 6.0e7
 
 # --- output ---
-exodus_file_base = /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/results/results_exodus/110_03_sw3_floor1nm_nogouge_ppfix
-csv_file_base    = /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/results/results_csv/110_03_sw3_floor1nm_nogouge_ppfix
-checkpoint_file_base = /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/results/results_exodus/110_03_sw3_floor1nm_nogouge_ppfix
+exodus_file_base = results/results_exodus/110_03_sw3_floor1nm_nogouge_ppfix
+csv_file_base    = results/results_csv/110_03_sw3_floor1nm_nogouge_ppfix
+checkpoint_file_base = results/results_exodus/110_03_sw3_floor1nm_nogouge_ppfix
 
 ######################################################################################
 [GlobalParams]
