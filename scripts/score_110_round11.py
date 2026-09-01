@@ -41,7 +41,7 @@ SIGMA_D_TARGET = 160.43   # MPa, OG-T Table 2 stage 1
 SLIP_SAMPLE_UM = 5.0      # sample the ratio before the joint has moved this far
 
 # theta by specimen, for the correct slope
-THETA = {"og_t": 28.0, "og_sh": 30.0, "og_sc": 30.0}
+THETA = {"og_t": 28.0, "og_sh": 29.0, "og_sc": 30.0}   # og_sh was 30.0; the mesh is kalantar2025_og_sh_theta29_size3.e, so the sin^2 target is 0.2350 not 0.2500
 
 BASELINES = [
     "Kalantar2025/OGT/results_csv_hpc/110_16_og_t_traction_probe_r7_hpc.csv",

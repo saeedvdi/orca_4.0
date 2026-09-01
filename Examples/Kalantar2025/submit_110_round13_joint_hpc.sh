@@ -1,0 +1,137 @@
+#!/bin/bash
+
+# Kalantar ROUND 13 -- OG-SH and OG-SC JOINT-LAW ARMS.
+#
+#   cd /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/Kalantar2025
+#   sbatch submit_110_round13_joint_hpc.sh
+#
+# WHY.  Scoring 110_13 and 110_15 stage by stage against Table 2 -- rather than on the
+# campaign mean -- shows both specimens are excellent early and fail late, in OPPOSITE
+# directions.  Neither failure is in the aperture law and neither is a boundary condition.
+#
+#   OG-SH   slip FREEZES at 27.4 um from stage 5 while the experiment slips to 42 um.
+#           The piston is displacement-controlled, so slip that does not happen is
+#           shear stress that is not shed: tau runs +2.6 MPa across the whole unloading
+#           branch and sigma'_n (+1.5) and a_h (+0.25) follow it.  One defect, three
+#           symptoms.  characteristic_slip_distance = 100 um with exponent 1.4 means
+#           only 27 % of D_c is spent at 27 um, so weakening never engages while BB
+#           closure and 4.3 deg of dilation harden the joint.
+#           Closing the gap needs +17 um of slip; at the measured d(tau)/d(d_s) =
+#           0.150 MPa/um that sheds 2.6 MPa -- exactly the deficit.  The arithmetic
+#           closes, which is why D_c and not something else.
+#
+#   OG-SC   stages 1-5 are essentially exact (tau within 0.05-0.23 MPa, sigma'_n within
+#           0.03, a_h within 0.15 um).  Then the model BURSTS one stage early -- stage 6
+#           at P_i = 21 MPa instead of the experiment's stage 7 at 24 -- and bursts
+#           twice as far, 45 um against 22.  Surviving stage 6 needs tau_limit up by
+#           ~0.56 MPa at sigma'_n = 26.26.  cohesion is currently 0, so a small cohesion
+#           is the cleanest level shift: stages 1-5 are nowhere near the limit.
+#
+# Array map:
+#   0  OG-SH  110_38_og_sh_control_r13            REPRODUCIBILITY CONTROL, read first
+#   1  OG-SH  110_39_og_sh_dc50_r13               D_c 100 -> 50 um
+#   2  OG-SH  110_40_og_sh_dc30_r13               D_c 100 -> 30 um   expected best
+#   3  OG-SH  110_41_og_sh_dc15_r13               D_c 100 -> 15 um   expected overshoot
+#   4  OG-SH  110_42_og_sh_dc30_coh0p6_r13        D_c 30 um + cohesion 1.2 -> 0.6 MPa
+#   5  OG-SC  110_43_og_sc_coh0p6_r13             cohesion 0 -> 0.6 MPa   THE OG-SC gate
+#   6  OG-SC  110_44_og_sc_coh1p0_r13             cohesion 0 -> 1.0 MPa   upper bracket
+#   7  OG-SC  110_45_og_sc_coh0p6_swres22p2_r13   + slip-weakening residual 21.175 -> 22.200
+#
+# READING ORDER, AND IT MATTERS.
+#
+#   python3 scripts/kalantar_gate.py \
+#     Examples/Kalantar2025/OGSH/results_csv_hpc/110_38_og_sh_control_r13_hpc.csv \
+#     --deck Examples/Kalantar2025/OGSH/110_38_og_sh_control_r13.i
+#
+#   1. TASK 0 FIRST.  It is byte-for-byte 110_13 apart from the output names, so it must
+#      reproduce tau 29 % / Q 9.3 % / mean 19 %.  If it does not, the machine or the
+#      build has moved and NOTHING else in this round can be read.  Stop and say so.
+#   2. Then the OG-SH ladder on d_s at stage 9, which is the diagnostic the whole
+#      hypothesis rests on:  experiment 42 um, control 27.4 um.
+#         110_39 (50 um) expect d_s > 30, tau_9 < 21.0
+#         110_40 (30 um) expect d_s ~ 40, tau_9 ~ 19.0     <- the prediction
+#         110_41 (15 um) expect OVERSHOOT, d_s > 45, tau_9 < 18
+#      An ordered ladder that brackets the experiment is the result.  If d_s does not
+#      move at all with D_c, the freeze is not the weakening law and the hypothesis is
+#      dead -- do not then reach for cohesion, come back and re-diagnose.
+#   3. 110_42 only if 110_40 fixes the late stages and leaves a UNIFORM tau offset.
+#      If 110_40's residual is not uniform, cohesion is the wrong instrument.
+#   4. OG-SC on the burst stage, which is a yes/no, not a percentage:  the model must
+#      hold tau ~ 13 MPa through stage 6 (P_i = 21) and break at stage 7 (P_i = 24).
+#      110_43 is the gate.  110_44 is only for bracketing -- if 110_43 passes and
+#      110_44 never bursts at all, the answer is bounded on both sides and that is
+#      worth more than either arm alone.
+#   5. 110_45 addresses burst SIZE (45 vs 22 um) and is meaningless unless 110_43 has
+#      already fixed burst TIMING.  Timing and size are different parameters; do not
+#      read a size fix as a timing fix.
+#
+# CHECKPOINTS ARE ON for every task.  Rounds 8-10 lost six runs to wall-clock
+# truncation at ~55 % of schedule with no way to restart -- that is the whole reason
+# this campaign has no scoreable result newer than round 6.  48 h should be ample
+# (110_13 and 110_15 both completed inside 24 h at these ranks) but a truncation here
+# must be restartable rather than thrown away.
+#
+# NO RATE-AND-STATE IN THIS ROUND.  It is what diverged rounds 9 and 10.
+# residual_friction_angle_degrees, jrc and jcs are untouched on both specimens -- all
+# three carry measured provenance from Kalantar Table 1 / section 2.1.
+#
+# Decks generated by scripts/build_110_kalantar_round13_decks.py; all ten Syntax OK.
+
+#SBATCH --job-name=kalantar_110_r13
+#SBATCH --chdir=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/Kalantar2025
+#SBATCH --account=def-biaoli66
+#SBATCH --time=2-00:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=64
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=64G
+#SBATCH --array=0-7
+#SBATCH --output=kalantar_110_r13_%A_%a.out
+#SBATCH --error=kalantar_110_r13_%A_%a.err
+
+set -euo pipefail
+
+project_root=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0
+study_root=${project_root}/Examples/Kalantar2025
+
+case "${SLURM_ARRAY_TASK_ID}" in
+  0) case_dir=OGSH; stem=110_38_og_sh_control_r13 ;;
+  1) case_dir=OGSH; stem=110_39_og_sh_dc50_r13 ;;
+  2) case_dir=OGSH; stem=110_40_og_sh_dc30_r13 ;;
+  3) case_dir=OGSH; stem=110_41_og_sh_dc15_r13 ;;
+  4) case_dir=OGSH; stem=110_42_og_sh_dc30_coh0p6_r13 ;;
+  5) case_dir=OGSC; stem=110_43_og_sc_coh0p6_r13 ;;
+  6) case_dir=OGSC; stem=110_44_og_sc_coh1p0_r13 ;;
+  7) case_dir=OGSC; stem=110_45_og_sc_coh0p6_swres22p2_r13 ;;
+  *) echo "Unexpected SLURM_ARRAY_TASK_ID=${SLURM_ARRAY_TASK_ID}" >&2; exit 2 ;;
+esac
+
+ranks=64
+case_path=${study_root}/${case_dir}
+input_path=${case_path}/${stem}.i
+executable=${project_root}/orca-opt
+
+if [[ ! -f "${input_path}" ]]; then
+  echo "Missing input deck: ${input_path}" >&2
+  exit 3
+fi
+
+if [[ ! -x "${executable}" ]]; then
+  echo "Missing or non-executable application: ${executable}" >&2
+  exit 4
+fi
+
+cd "${case_path}"
+
+# Alliance injects SLURM_MEM_PER_CPU; --mem sets SLURM_MEM_PER_NODE. Clear both.
+unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
+mkdir -p results_csv_hpc results_exodus_hpc results_checkpoint_hpc logs
+
+echo "Starting array task ${SLURM_ARRAY_TASK_ID}: ${case_dir}/${stem}.i"
+echo "SLURM job ${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}; ${ranks} ranks, 64G"
+
+srun --mpi=pmi2 -n "${ranks}" "${executable}" -i "${stem}.i" \
+  Outputs/chk/enable=true \
+  csv_file_base="results_csv_hpc/${stem}_hpc" \
+  exodus_file_base="results_exodus_hpc/${stem}_hpc" \
+  checkpoint_file_base="results_checkpoint_hpc/${stem}_hpc"
