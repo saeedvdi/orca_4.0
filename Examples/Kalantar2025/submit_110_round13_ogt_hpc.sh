@@ -105,7 +105,7 @@
 #SBATCH --job-name=kalantar_110_r13_ogt
 #SBATCH --chdir=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/Kalantar2025
 #SBATCH --account=def-biaoli66
-#SBATCH --time=6:00:00
+#SBATCH --time=12:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=32
 #SBATCH --cpus-per-task=1
