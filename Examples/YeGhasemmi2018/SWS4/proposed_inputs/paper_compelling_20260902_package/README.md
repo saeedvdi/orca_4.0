@@ -1,6 +1,6 @@
 # Targeted simulations for strengthening the paper
 
-This package contains the minimum additional simulation matrix recommended after the 109--111 mechanism tests. It contains 12 new runs in four batches of three. Every run uses eight MPI ranks. Each input inherits a selected parent deck and changes only the axis stated in `case_manifest.tsv`.
+This package contains the minimum additional simulation matrix recommended after the 109--111 mechanism tests. It contains 16 new runs: the original four batches of three plus four extended-depressurization diagnostics. Every run uses eight MPI ranks. Each input inherits a selected parent deck and changes only the axis stated in `case_manifest.tsv`.
 
 ## Scientific questions
 
@@ -27,6 +27,19 @@ The six variants are a local one-at-a-time sensitivity study. They also define a
 
 The selected center is `111_03_swt2_floor1nm_control_ppfix`, with aperture scale 0.0177. The two new values are 0.01416 and 0.02124. The best of these three candidates is selected using only stages 1--6 flow nRMSE, then evaluated without adjustment on stages 7--11. This is a deliberately limited one-parameter tensile-fracture prediction test rather than a new full-cycle calibration.
 
+### Extended post-slip depressurization (115 series)
+
+The four 115-series decks retain every mechanical and hydraulic parameter from the selected controls:
+
+- `115_01_swt1_extended_depressurization_ppfix`;
+- `115_02_swt2_extended_depressurization_ppfix`;
+- `115_03_sws3_extended_depressurization_ppfix`;
+- `115_04_sws4_extended_depressurization_ppfix`.
+
+After each original cycle, the final injection pressure is held and the inlet-to-outlet pressure difference is reduced to 50% and then 15% of its original final value. Each new pressure level includes a 200-s hold. Production pressure remains 5 MPa in every specimen, so the imposed flow direction does not reverse. The absolute inlet pressures are 8.00, 6.50, and 5.45 MPa for SW-T1 and SW-T2; 7.882927, 6.4414635, and 5.43243905 MPa for SW-S3; and 7.9704976, 6.4852488, and 5.4455746 MPa for SW-S4.
+
+These runs test the claim discussed by Kalantar et al. (2025): post-slip permeability may decrease during depressurization because increasing effective normal compression elastically closes the fracture. Comparing the same normalized pressure path across the two tensile and two saw-cut specimens tests whether that sensitivity changes from rougher to smoother surfaces. The attribution is accepted only if cumulative plastic slip, cumulative dilation, and gouge aperture remain constant over the added path while effective normal compression increases and the normal-stress aperture contribution, total aperture, and permeability decrease. If slip or damage evolves, the change is a coupled reactivation response and cannot be assigned to elastic closure alone.
+
 ## Batch order
 
 The local launchers are:
@@ -36,7 +49,20 @@ The local launchers are:
 3. `run_compelling_batch_03_local.sh`: SW-S3 gouge -20%, gouge +20%, closure -20%.
 4. `run_compelling_batch_04_local.sh`: SW-S3 closure +20%, SW-T2 aperture scale -20%, aperture scale +20%.
 
-Equivalent `submit_compelling_batch_XX_hpc.sh` launchers submit the individual Slurm scripts. Submit only one batch at a time if no more than three eight-core jobs should run concurrently.
+5. `run_compelling_batch_05_local.sh`: extended-depressurization diagnostics for SW-T1, SW-T2, and SW-S3.
+6. `run_compelling_batch_06_local.sh`: the SW-S4 extended-depressurization diagnostic.
+
+Equivalent `submit_compelling_batch_XX_hpc.sh` launchers submit the individual Slurm scripts. Submit only one batch at a time if no more than three eight-core jobs should run concurrently. The size-3 mesh case is reserved for HPC and must not be launched locally on the workstation.
+
+### One-command HPC submission of the remaining cases
+
+`submit_all_remaining_hpc.sh` is the current recommended launcher. Submit it from the HPC copy of this package with:
+
+```bash
+sbatch submit_all_remaining_hpc.sh
+```
+
+It is a 14-task Slurm array with at most three simultaneous tasks (`--array=0-13%3`), and each task uses eight MPI ranks. It excludes `112_02_swt1_eta200gpa_s_ppfix` and `112_03_sw4_dt075_ppfix`, which completed locally. It includes the incomplete local runs, all previously unstarted 113--114 cases, the HPC-only size-3 mesh case, and all four 115-series elastic-closure tests. The tasks start from the beginning on HPC; partial workstation CSV and Exodus files are not restart files.
 
 ## Outputs
 

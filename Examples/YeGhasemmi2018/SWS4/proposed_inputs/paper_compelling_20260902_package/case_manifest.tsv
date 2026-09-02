@@ -11,3 +11,7 @@ stem	specimen	parent	purpose
 113_06_sw3_closure144_ppfix	SWS3	110_01_sw3_floor1nm_g040_ppfix	Identifiability: increase the hydraulic normal-closure amplitude by 20 percent.
 114_01_swt2_ascale01416_ppfix	SWT2	111_03_swt2_floor1nm_control_ppfix	Loading-only tensile selection: decrease the kinematic aperture scale by 20 percent.
 114_02_swt2_ascale02124_ppfix	SWT2	111_03_swt2_floor1nm_control_ppfix	Loading-only tensile selection: increase the kinematic aperture scale by 20 percent.
+115_01_swt1_extended_depressurization_ppfix	SWT1	111_01_swt1_floor1nm_control_ppfix	Elastic-closure diagnostic: hold the final post-slip state, then reduce the inlet-to-outlet pressure difference to 50 and 15 percent of its original final value.
+115_02_swt2_extended_depressurization_ppfix	SWT2	111_03_swt2_floor1nm_control_ppfix	Elastic-closure diagnostic: hold the final post-slip state, then reduce the inlet-to-outlet pressure difference to 50 and 15 percent of its original final value.
+115_03_sws3_extended_depressurization_ppfix	SWS3	110_01_sw3_floor1nm_g040_ppfix	Elastic-closure diagnostic: hold the final post-slip state, then reduce the inlet-to-outlet pressure difference to 50 and 15 percent of its original final value.
+115_04_sws4_extended_depressurization_ppfix	SWS4	109_01_sw4_floor1nm_g028_ppfix	Elastic-closure diagnostic: hold the final post-slip state, then reduce the inlet-to-outlet pressure difference to 50 and 15 percent of its original final value.
