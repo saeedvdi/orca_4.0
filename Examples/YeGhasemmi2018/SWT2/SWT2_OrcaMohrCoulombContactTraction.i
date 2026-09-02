@@ -1,4 +1,30 @@
 # =============================================================================
+# AS BUILT (2026-09-02 verification pass).  Two things this file did not state.
+#
+#   1. THE UNLOADING SCHEDULE IS COMPRESSED, AND IS THE OPEN ITEM ON THIS SPECIMEN.
+#      injection_pressure ramps the five unloading transitions in 10 s each at 400 kPa/s
+#      (the last in 20 s at 200 kPa/s) and holds each plateau 35-50 s, giving stages of
+#      45-60 s.  Ye & Ghassemi Sec. 2.4 state 0.03 MPa/s and 300-500 s stages, and Table 2
+#      reports five EQUILIBRIUM unloading states.  The whole unloading branch is 352.5 s,
+#      against 1600.0 s on SW-T1 and 2103.4 / 1583.1 s on the saw cuts, and end_time =
+#      2852.53 stops 0.03 s after the last schedule point, so there is no settling tail.
+#      At matrix k = 5e-19 m2 the specimen cannot re-equilibrate on that timescale, so the
+#      unloading half of this deck's score compares a transient state against settled
+#      measurements.  The LOADING branch is clean (29.6-53.3 kPa/s, 355-515 s stages),
+#      which is the signature of a digitisation error rather than a modelling choice.
+#      The schedule was rebuilt from the paper's figure on 2026-08-16; RE-CHECK THAT
+#      DIGITISATION BEFORE PUBLISHING SW-T2 NUMBERS.
+#   2. PORT GEOMETRY.  The source nodes sit 6.89 mm in from the sidewall against the
+#      6.0 mm offset of Sec. 2.4, giving a separation of 73.48 mm against the 77.04 mm
+#      that offset implies on the 30-degree plane (-4.62 %).  SW-T1 and SW-S4 carry the
+#      same -4.6 % error; SW-S3 does not.  The scored flow rate is insulated -- injection
+#      and production are both Dirichlet pressure BCs, so pp_drop is prescribed and Q is
+#      built from paper_flow_width_over_length -- but the mechanical channels are not.
+#
+# See Examples/YeGhasemmi2018/FINAL_BBFAST_PAPER_MC_MATERIAL_PROPERTY_COMPARISON.md
+# Sec. 4, Sec. 14 F1 and F3.
+# =============================================================================
+# =============================================================================
 # FINAL RENAMED MC CENTER CASE, 2026-08-27.
 # The 94-series shear law is preserved. The SWT2 hydraulic aperture scale is
 # aligned with the final renamed BBFast deck for a fair rerun.
@@ -133,6 +159,10 @@
 #    30.30 MPa intact cohesion implied by the paper's own UCS and phi -- exactly
 #    what a fully mated Mode-I fracture should show, since its asperities ARE
 #    intact rock. d(tau)/d(sigma'_n) changes 0.999 -> 0.553.
+#    AS BUILT (2026-09-02 correction): the number above is the CLOSED-FORM REFIT value, and it is
+#    what scripts/build_paper_corrected_decks.py wrote into 89_05. The 90-series and later
+#    hand-set cohesion to bracket slip-onset timing, and this header block was copied forward
+#    without being updated. THIS DECK RUNS the Mohr-Coulomb pair cohesion_rough = 42.96 MPa, cohesion_smooth = 9.71 MPa. The refit fixes the parameterisation; the offset from it is calibrated, not derived.
 #
 # UNCHANGED AND DELIBERATELY SO: slip-weakening D_c, exponent and tail floor;
 # dilation angles; normal-closure constants; hydraulic constants; every BC and

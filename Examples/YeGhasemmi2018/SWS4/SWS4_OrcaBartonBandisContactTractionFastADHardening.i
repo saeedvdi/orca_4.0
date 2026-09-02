@@ -1,4 +1,33 @@
 # =============================================================================
+# AS BUILT (2026-09-02 verification pass).  Two things this file did not state.
+#
+#   1. NEITHER THE PISTON NOR THE CONFINING PRESSURE IS HELD CONSTANT.  Ye & Ghassemi
+#      Sec. 2.4 state a fixed piston during injection and 30 MPa confinement throughout.
+#      This deck adds, after the 55 s preload, poro_du = +2.9e-6 m to the piston command
+#      over t=55-1000 s and axial_relax_du = +2.6e-6 m over t=1000-1800 s, and ramps the
+#      radial pressure from 30.0 down to 28.8 MPa over t=1900-3300 s via
+#      side_unload_relax_pressure.  The deck's own comments label all three
+#      "CONTROL: legacy fitted".  Through axial_bc_penalty = 1.2e12 Pa/m in series with
+#      the specimen's E*A/L (67e9/0.1187 = 5.64e11 Pa/m), the 5.5 um of piston motion is
+#      worth roughly 2.1 MPa of axial relief, and the confining ramp adds 1.2 MPa
+#      directly.  Both act on sigma'_n and tau, which are SCORED channels.  The matched
+#      MC deck imposes identical histories, so the BB-vs-MC comparison is unaffected;
+#      what is affected is any claim that this specimen was driven by the reported
+#      protocol.  Treat these as FITTED load-side boundary conditions.
+#   2. PORT GEOMETRY.  The source nodes sit 6.89 mm in from the sidewall against the
+#      6.0 mm offset of Sec. 2.4, giving a separation of 73.47 mm against the 77.02 mm
+#      that offset implies on the 30-degree plane (-4.61 %).  SW-T1 and SW-T2 carry the
+#      same error.  The scored flow rate is insulated (both ports are Dirichlet pressure
+#      BCs, so pp_drop is prescribed and Q uses paper_flow_width_over_length_sw_s4); the
+#      mechanical channels are not.
+#
+# Note also that end_time = 3500 while the injection schedule ends at t = 3404.84 s, so
+# the final 8 MPa plateau is extended by 95 s of flat hold.
+#
+# See Examples/YeGhasemmi2018/FINAL_BBFAST_PAPER_MC_MATERIAL_PROPERTY_COMPARISON.md
+# Sec. 4, Sec. 14 F3 and F9.
+# =============================================================================
+# =============================================================================
 # 93-SERIES -- MESH AND POSTPROCESSOR AUDIT FIXES.  SW-S4 mesh 5
 # Built from 90_08_sw4_bbfast_theta30_jrc5_kernel_SV_biot0p6.i.  Constitutive parameters are UNCHANGED;
 # this series changes only what is measured and reported, plus one source-node

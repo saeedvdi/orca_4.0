@@ -1826,7 +1826,16 @@ slips, and how far it falls is controlled by the series stiffness of rock, frame
 A rigid condition would suppress the stress drop entirely.
 
 The prescribed displacement $\bar{u}_z$ ramps to its final value during an initial loading phase
-and is then held for the remainder of the simulation.
+and is then held for the remainder of the simulation on SW-T1 and SW-T2. **The two saw cuts are
+exceptions and are reported as such.** SW-S3 retreats the command by 4.5 µm over $t = 2550$–2850 s;
+SW-S4 retreats it by 2.9 µm over $t = 55$–1000 s and a further 2.6 µm over $t = 1000$–1800 s, and
+additionally bleeds the confining pressure from 30.0 to 28.8 MPa over $t = 1900$–3300 s. Put through
+$k_{\rm pen}$ in series with the specimen's own $EA/L$, the two piston histories are worth
+approximately 2.3 and 2.1 MPa of axial relief, and SW-S4's bleed a further 1.2 MPa. These are
+**fitted load-side boundary conditions inherited from the parent decks, not reproductions of the
+reported protocol**, and they act on $\sigma'_n$ and $\tau$, which are scored channels. The matched
+Mohr–Coulomb deck of each specimen imposes an identical history, so the controlled comparison of
+§4.1 is unaffected; §6.6.9 quantifies SW-S4's bleed and piston relaxation against the cycling result.
 
 Injection pressure is imposed as a time-dependent Dirichlet condition at the injection node,
 following the eleven-stage schedule; the production node is held at 5 MPa. The initial pore
@@ -1873,9 +1882,9 @@ strength parameters, per specimen:
 
 | | JRC | JCS (MPa) | $\phi_r$ (°) | $c$ (MPa) | $c_{\rm res}$ (MPa) |
 |---|---:|---:|---:|---:|---:|
-| SW-T1 | 15.32 | 150 | 29.756 | 26.88 | 9.19 |
+| SW-T1 | 15.32 | 150 | 29.756 | 27.20 | 9.19 |
 | SW-T2 | 14.63 | 150 | 29.756 | 33.20 | 9.71 |
-| SW-S3 | 1.96 | 150 | 29.756 | 1.67 | 1.40 |
+| SW-S3 | 1.96 | 150 | 29.756 | 1.67 | 1.30 |
 | SW-S4 | 5.0 | 150 | 22.72 | 0 | 0 |
 
 Three features of this table are worth pointing out rather than leaving to be noticed. The residual
@@ -1929,12 +1938,21 @@ implemented had no cohesion term at all.
 But shearing *through* asperities is a cohesion, not a friction: its strength does not scale with
 confinement. The law now carries a cohesion and a residual cohesion, decaying on the same
 slip-weakening curve as friction (§3.5.2). Refitting with $\phi_r$ fixed at the basic friction angle
-measured on this campaign's own saw cut, 29.756°, gives $c = 26.88$ MPa for SW-T1 and 33.20 MPa for
-SW-T2. Those are 89 % and 110 % of the 30.30 MPa intact-rock cohesion implied by the paper's own
-UCS = 150 MPa and intact $\phi = 46°$. The two straddle the intact value, and nothing in the
-derivation knows about it — which is the expected signature of a fully mated Mode-I fracture whose
-asperities *are* intact rock, and the physical statement the old $\phi_r = 44$–$46°$ was standing in
-for.
+measured on this campaign's own saw cut, 29.756°, and holding each envelope through its specimen's
+last stick stage, gives $c = 24.65$ MPa for SW-T1 and 31.65 MPa for SW-T2. Those are 81 % and 104 %
+of the 30.30 MPa intact-rock cohesion implied by the paper's own UCS = 150 MPa and intact
+$\phi = 46°$. The two straddle the intact value, and nothing in the closed-form derivation knows
+about it — which is the expected signature of a fully mated Mode-I fracture whose asperities *are*
+intact rock, and the physical statement the old $\phi_r = 44$–$46°$ was standing in for.
+
+The values the decks actually run — 27.20 and 33.20 MPa in Table 4 — are **not** those derived
+numbers, and the distinction matters because only the derived pair carries the intact-cohesion
+argument. Both were subsequently moved by a slip-onset bracket: SW-T2 by $+1.55$ MPa (`90_03`, with
+`90_04` at 35.00 MPa locking completely and never failing, so the peak is bracketed from above), and
+SW-T1 by $+2.55$ MPa in two steps — a margin-sensitivity fit to 26.88 MPa in `91_01`, then a further
+$+0.32$ MPa in `107_01` (§6.2). The closed-form refit therefore fixes the parameterisation and gets
+within 6–10 % of the final value; that last 6–10 % is calibrated against onset timing, which is why
+Table 4 lists this row as calibrated rather than derived.
 
 **(c) Fluid bulk modulus.** Earlier decks used 4.78 GPa, 2.17 times too stiff for water at 20 °C.
 It is read in exactly one place, the matrix constitutive model, and the fracture flow uses the

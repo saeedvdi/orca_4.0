@@ -1,4 +1,38 @@
 # =============================================================================
+# AS BUILT (2026-09-02 verification pass).  Three statements in the inherited 59_07
+# banner below are contradicted by this deck's live values.  The banners are kept for
+# lineage; this block is authoritative.
+#
+#   1. THE PISTON COMMAND IS NOT CONSTANT AFTER PRELOAD.  The 59_07 banner states that
+#      the ancestor's t=2500-2800 piston retreat "is therefore disabled instead of being
+#      used to manufacture the stress drop".  THIS DECK RUNS THAT RETREAT: axial_disp_ramp
+#      adds +4.5e-6 m to the command over t=2550-2850 s and then holds it.  Through
+#      axial_bc_penalty = 1.0e13 Pa/m in series with the specimen's own E*A/L
+#      (67e9/0.1234 = 5.43e11 Pa/m) that is roughly 2.3 MPa of axial relief -- the same
+#      order as the stress drop being modelled.  Ye & Ghassemi Sec. 2.4 state the piston
+#      did not move during injection.  Treat this as a FITTED load-side boundary
+#      condition, not as a reproduction of the reported protocol.
+#   2. EFFECTIVE JRC = 25.1 IS NOT THIS DECK'S VALUE.  The 59_07 "deliberately held fixed
+#      for attribution" list names an effective JRC of 25.1.  Since the 92-series paperjrc
+#      rebuild this deck runs jrc = 1.96, the measured Table 1 value; peak strength is
+#      carried by cohesion = 1.67 MPa with residual_friction_angle_degrees = 29.756.
+#   3. THE PRESSURE-TRACTION COEFFICIENT IS 0.87, NOT 0.85.  Same banner, same list, and
+#      also the "INVARIANTS ACROSS 70_01/11/21/31" block above it.
+#
+# PORT GEOMETRY -- unchanged, but previously undocumented in this file.  The source nodes
+# sit 2.11 mm in from the sidewall against the 6.0 mm borehole offset of Sec. 2.4, and
+# their separation is 95.54 mm against the 79.5 mm that offset implies on the 29-degree
+# plane: 20 % too long, and the widest port error of the four specimens.  The deck's own
+# two constants already measure it -- mesh_flow_width_over_length_sw_s3 = 0.674 against
+# paper_flow_width_over_length_sw_s3 = 0.8125 is a ratio of 0.830, where the separation
+# error predicts 0.832.  The SCORED flow rate is insulated, because injection and
+# production are both Dirichlet pressure BCs, so pp_drop is prescribed and Q is built
+# from the paper W/L; sigma'_n, tau, d_n and d_s are not insulated.
+#
+# See Examples/YeGhasemmi2018/FINAL_BBFAST_PAPER_MC_MATERIAL_PROPERTY_COMPARISON.md
+# Sec. 4, Sec. 14 F3, F7, F9 and F10.
+# =============================================================================
+# =============================================================================
 # FINAL RENAMED MC CENTER CASE, 2026-08-27.
 # The audited 94-series MC material and all BBFast-shared properties are
 # preserved. The companion Slurm array varies only MC-specific shear parameters.

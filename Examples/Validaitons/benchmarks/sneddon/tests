@@ -1,0 +1,47 @@
+[Tests]
+  design = 'OrcaMechInterfaceKernel.md OrcaCZMFluidPressureInterfaceKernel.md'
+  issues = '#czm-benchmarks'
+  # Sneddon (1946): pressurized 2D crack in an infinite elastic medium.
+  #   w(s) = 4 (1 - nu^2) p_f / E sqrt(b^2 - s^2)
+  # The crack is open, so the interface must be traction-free and all four constitutive
+  # laws must give the SAME answer. Measured: w_max = 7.347888e-4 m against the analytic
+  # 7.5e-4 m (2.03% -- finite domain, 40 m box around a 2 m crack, and QUAD4 elements at
+  # a square-root-singular tip), identical to 7 significant figures across all four laws,
+  # with |sigma_n| / p_f <= 3e-16.
+  [compression_tensile]
+    type = CSVDiff
+    input = sneddon_compression_tensile.i
+    csvdiff = sneddon_compression_tensile_out.csv
+    rel_err = 1e-6
+    abs_zero = 1e-30
+    requirement = 'The cohesive-contact-friction law shall reproduce the Sneddon crack '
+                  'opening and carry no traction across an open crack.'
+  []
+  [barton_bandis]
+    type = CSVDiff
+    input = sneddon_barton_bandis.i
+    csvdiff = sneddon_barton_bandis_out.csv
+    rel_err = 1e-6
+    abs_zero = 1e-30
+    requirement = 'The Barton-Bandis FastAD law shall reproduce the Sneddon crack opening '
+                  'and carry no traction across an open crack.'
+  []
+  [bb_flow_rsf]
+    type = CSVDiff
+    input = sneddon_bb_flow_rsf.i
+    csvdiff = sneddon_bb_flow_rsf_out.csv
+    rel_err = 1e-6
+    abs_zero = 1e-30
+    requirement = 'The Barton-Bandis flow/rate-and-state law shall reproduce the Sneddon '
+                  'crack opening and carry no traction across an open crack.'
+  []
+  [peak_shelf_tail]
+    type = CSVDiff
+    input = sneddon_peak_shelf_tail.i
+    csvdiff = sneddon_peak_shelf_tail_out.csv
+    rel_err = 1e-6
+    abs_zero = 1e-30
+    requirement = 'The peak-shelf-tail flow/rate-and-state law shall reproduce the Sneddon '
+                  'crack opening and carry no traction across an open crack.'
+  []
+[]

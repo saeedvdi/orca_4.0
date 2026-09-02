@@ -1,0 +1,62 @@
+[Tests]
+  design = 'ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile.md ADOrcaBartonBandisContactTractionFastAD.md'
+  issues = '#czm-benchmarks'
+  # Single inclined fracture under far-field compression (GEOS singleFracCompression).
+  #
+  #   g_t(s) = 4 (1 - nu^2)/E * sigma sin(psi) [cos(psi) - sin(psi) tan(theta)] sqrt(b^2 - s^2)
+  #   sigma_n = -sigma sin^2(psi)
+  #
+  # Unlike Sneddon, the interface here is CLOSED and SLIDING, so this is the benchmark that
+  # actually exercises the Coulomb return map: the analytic amplitude depends on the friction
+  # coefficient through the [cos psi - sin psi tan theta] driving term.
+  #
+  # All four laws are configured to the same constant-mu interface and must agree.
+  #
+  # The remote compression MUST be ramped: applying 100 MPa in one step from a stress-free
+  # state fails at the first Newton solve, because the interface starts at zero gap carrying
+  # no contact pressure and the first trial step interpenetrates freely.
+  #
+  # The reference mesh carries ~127k QUAD4 elements but each model solves in ~27 s on 8 ranks,
+  # so these are ordinary (non-heavy) tests. They were ~12x slower and did not complete at all
+  # before the powerRuleFactor NaN fix: every NaN Jacobian forced a dt cutback.
+  [compression_tensile]
+    type = CSVDiff
+    input = shear_compression_compression_tensile.i
+    csvdiff = shear_compression_compression_tensile_out.csv
+    min_parallel = 4
+    rel_err = 1e-5
+    abs_zero = 1e-30
+    requirement = 'The cohesive-contact-friction law shall reproduce the analytic frictional '
+                  'slip of an inclined fracture under far-field compression.'
+  []
+  [barton_bandis]
+    type = CSVDiff
+    input = shear_compression_barton_bandis.i
+    csvdiff = shear_compression_barton_bandis_out.csv
+    min_parallel = 4
+    rel_err = 1e-5
+    abs_zero = 1e-30
+    requirement = 'The Barton-Bandis FastAD law shall reproduce the analytic frictional slip '
+                  'of an inclined fracture under far-field compression.'
+  []
+  [bb_flow_rsf]
+    type = CSVDiff
+    input = shear_compression_bb_flow_rsf.i
+    csvdiff = shear_compression_bb_flow_rsf_out.csv
+    min_parallel = 4
+    rel_err = 1e-5
+    abs_zero = 1e-30
+    requirement = 'The Barton-Bandis flow/rate-and-state law shall reproduce the analytic '
+                  'frictional slip of an inclined fracture under far-field compression.'
+  []
+  [peak_shelf_tail]
+    type = CSVDiff
+    input = shear_compression_peak_shelf_tail.i
+    csvdiff = shear_compression_peak_shelf_tail_out.csv
+    min_parallel = 4
+    rel_err = 1e-5
+    abs_zero = 1e-30
+    requirement = 'The peak-shelf-tail flow/rate-and-state law shall reproduce the analytic '
+                  'frictional slip of an inclined fracture under far-field compression.'
+  []
+[]

@@ -1,6 +1,9 @@
 # Final BBFast–experiment–Mohr–Coulomb material-property comparison
 
 **Prepared:** 2026-08-27  
+**Verified:** 2026-09-02 — every value in §5–§10 was re-extracted from the eight decks by a MOOSE input parser (with `${}` resolution) and compared field by field. **All rows matched**, and all four meshes reproduce Table 1's length and diameter to three decimals.
+
+**Completeness pass:** 2026-09-02 (second pass) — the same parser then enumerated *every* parameter of the contact, permeability and bulk-material blocks in all eight decks, plus every top-level deck variable, and checked each against this document. The gaps it found are now filled: the loading-frame stiffness and the imposed boundary-condition histories (§4), five model-form switches and the output-only reporting controls (§7.1), the closure family, AD plumbing and mesh `W/L` estimate (§9), and the local-solver controls (§10). Ten open discrepancies against the paper are recorded in §14. **Two claims in the first pass were wrong and are corrected there: the saw cuts do reproduce the stated ramp rate (F2), and the largest departure from the reported protocol is not the injection schedule but the fitted load-side histories on SW-S3 and SW-S4 (F9).**  
 **Experimental reference:** Ye, Z., and A. Ghassemi (2018), *Injection-Induced Shear Slip and Permeability Enhancement in Granite Fractures*, JGR Solid Earth, 123, 9009–9032, [doi:10.1029/2018JB016045](https://doi.org/10.1029/2018JB016045).  
 **Scope:** the four selected BBFast cases and the common Mohr–Coulomb (MC) center decks from which the equal-budget sweep was launched. Values are active input-deck values, not historical values left in comments. Final figures use the selected sweep members SWT1 `pb04`, SWT2 `pb04`, SWS3 `pb06`, and SWS4 `center`; their five varied shear parameters are supplied by the corresponding submission-script array row.
 
@@ -72,8 +75,36 @@ These are the quantities for which an experimental value exists. Geometry and bo
 |---|---:|---:|---|
 | Confining pressure | 30 MPa | 30 MPa | **EXP** |
 | Production pressure | 5 MPa | 5 MPa | **EXP** |
-| Injection-pressure schedule | 8, 12, 16, 20, 24, 28 MPa, followed by unloading | Same staged schedule | **EXP** |
-| Loading control | Fixed piston displacement during injection | Finite loading-system stiffness used to reproduce stress relaxation | Control mode is **EXP**; effective machine compliance is **DER/CAL**. |
+| Injection-pressure schedule | 8, 12, 16, 20, 24, 28 MPa, followed by unloading | Six loading plateaus and five unloading plateaus on all four | **EXP** in level structure. SW-T1/SW-T2 snap plateau *levels* to the nominal values and keep only the digitised transition *times*; SW-S3/SW-S4 feed the raw digitised trace, so their plateaus sit at [5.75, 7.85, 11.95, 16.03, 19.93, 23.99, 28.57] and [5.13, 7.96, 11.99, 16.11, 20.00, 24.05, 27.91] MPa. Two reconstruction conventions, not one. |
+| Injection ramp rate | 0.03 MPa/s (§2.4) | Plateau-to-plateau: [50–73, 30–53 up / **200–400** down, 12–32, 23–31] kPa/s | **Reproduced on the saw cuts**, whose transitions bracket the stated rate. SW-T1 runs 1.7–2.4× fast throughout. SW-T2's loading branch is correct (30–53 kPa/s) and its five unloading transitions are 7–13× fast. See §14 F1/F2. |
+| Step duration (transition + hold) | 300–500 s per stage (150–250 s buildup + 150–250 s hold) | [265–445, 355–515 up / **45–60** down, 274–571, 275–376] s | **Reproduced within about ±20 % everywhere except SW-T2's unloading branch**, where five stages complete in 45–60 s. SW-S3 stretches two stages to 556 and 571 s. See §14 F1. |
+| Borehole diameter | 3.5 mm | Not represented; injection and production are single mesh nodes | **EXP geometry discarded** as a modeling simplification. See §14 F4. |
+| Borehole offset from sidewall | 6.0 mm | [6.89, 6.89, **2.11**, 6.89] mm | **EXP value not reproduced**, and not consistently across specimens. See §14 F3. |
+| Injection–production separation | Not tabulated; the 6.0 mm offset implies [72.69, 77.04, 79.47, 77.02] mm on each specimen's own fracture plane | [69.34, 73.48, **95.54**, 73.47] mm, i.e. [−4.62, −4.62, **+20.22**, −4.61] % | **DER**; three specimens share one small error, SW-S3 does not. Now documented in all eight decks. See §14 F3, F10. |
+| Loading control | Fixed piston displacement during injection | Penalty (spring) displacement BC: a commanded piston position acting through a finite machine stiffness | Control mode is **EXP**; the machine stiffness and the commanded position history are **CAL**. See the next table. |
+| Loading-frame stiffness, `axial_bc_penalty` (Pa/m) | Not reported | [`4.123e11`, `5.121e11`, `1.0e13`, `1.2e12`] | **CAL**, and it spans a factor of 24 across four specimens tested in the same load frame. It is the compliance that converts the fixed-piston command into the reported stress relaxation, so it is a first-order calibration parameter, not a numerical penalty. |
+| Simulated `end_time` vs schedule end (s) | — | [3500 / 3500, 2852.53 / 2852.50, 4802 / 4802.4, 3500 / 3404.84] | SW-T1 and SW-T2 stop exactly at the last schedule point, so neither gets a settling interval; SW-S3 stops 0.4 s early; SW-S4 holds its final 8 MPa for a further 95 s. Relevant to F1. |
+
+### Boundary conditions the decks impose beyond the reported protocol
+
+The paper states that the confining pressure was held at 30 MPa and that the loading piston did not
+move during injection. Two of the four decks depart from both statements, and their own comments
+label the departures `CONTROL: legacy fitted`. The BB and MC deck of each specimen impose identical
+histories, so this does not disturb the controlled BB-versus-MC comparison; it does affect how the
+result may be described relative to the experiment.
+
+| Imposed history | Paper | SWT1 | SWT2 | SWS3 | SWS4 |
+|---|---|---|---|---|---|
+| Initial total stress | 30 MPa confinement, 5 MPa pore | isotropic −31 MPa | −31 MPa | −31 MPa | −31 MPa |
+| Preload ramp | Not detailed | `axial_pres_initial` → `axial_pres_final` over t = 2–55 s, all four | ← | ← | ← |
+| Piston command after the 55 s preload | **Held fixed** | constant | constant | **+4.5 µm retreat ramped over t = 2550–2850 s**, then held | **+2.9 µm over t = 55–1000 s, then +2.6 µm over t = 1000–1800 s** |
+| Confining pressure | **Constant 30 MPa** | 30 MPa | 30 MPa | 30 MPa | **ramped 30.0 → 28.8 MPa over t = 1900–3300 s** |
+| Estimated axial-stress effect of the piston motion | — | 0 | 0 | ≈ 2.3 MPa relief | ≈ 2.1 MPa relief |
+
+The stress estimates put the commanded displacement through the machine spring in series with the
+specimen's own axial stiffness `E·A/L`; they are order-of-magnitude, not deck outputs. Both are
+comparable to the stress drops being modelled, so these are **calibration levers on the load side**,
+recorded here as **CAL**, not as reproductions of the experimental protocol. See §14 F9.
 
 ## 5. Shared bulk poroelastic and fluid material inputs
 
@@ -104,6 +135,7 @@ The normal law is calibrated in both formulations. MC retains the same law famil
 | BBFast unloading-retention fraction | Not reported | [0.94, 0.84, 0.00, 0.04] | Not present in active MC law | **CAL**; this is a BBFast history variable, not measured material retention. |
 | Reclosure stiffness multiplier | Not reported | [1, 1, 1, default] | Not present | **ASM/CAL** |
 | Unload activation slip (µm) | Not reported | [50, 50, 50, 50] | Not present | **CAL/NUM** |
+| Unload retention relaxation time (s) | Not reported | [0, 0, 0, 0] | Not present | **ASM**; zero applies the retention target instantly, with no relaxation. |
 
 ## 7. Shear-strength and weakening properties
 
@@ -121,6 +153,12 @@ The normal law is calibrated in both formulations. MC retains the same law famil
 | Large-slip friction angle (deg) | Not reported | [29.756, 29.756, 8.45, 6.50] | **CAL** |
 | JRC scale correction | Not reported | Disabled for all | **ASM/CAL** |
 | Mobilized-JRC ramp | Not reported | Disabled for all | **ASM/CAL**; peak envelope is available at zero slip. |
+| Decoupled dilation (`use_decoupled_dilation`) | Not applicable | Enabled for all | **Model-form choice.** The dilation angle is an independent Barton-1982-style term rather than the legacy form welded to the JRC strength term. This is why §8 can list dilation angles that are not derived from `jrc`. |
+| Roughness degradation (`use_roughness_degradation`) | Not applicable | Enabled for all | **Model-form choice**; drives the normalized roughness state in §8. |
+| Pore-pressure strength coefficient | Not applicable | [0, 0, 0, 0] | **ASM**, explicitly zero. No pore-pressure term is added inside the strength law; effective stress reaches the envelope only through `fault_pressure_coefficient` (§5). |
+| Residual shear-strength floor, `min_tau_limit` (Pa) | Not reported | [0, 0, 0, 0] | **Disabled.** No self-propping shear resistance is retained when the joint opens and `sigma_n → 0`. |
+| Dilation capped to available closure | Not applicable | Disabled for all | **ASM**; dilation is not limited by the remaining mechanical closure. |
+| Reported reversible normal opening: scale / retention fraction / activation slip | Not applicable | [1.0 / 0.0 / 50 µm] on T1–S3; defaults on S4 | **Output-only, at defaults.** With scale 1 and retention 0 the reported `normal_opening_total` equals the kinematic normal jump exactly, so the scored `d_n` channel carries no output-side shaping. Recorded because `d_n` is a scored channel. |
 
 ### 7.2 MC shear-envelope parameters
 
@@ -164,7 +202,7 @@ Both model families use `ADOrcaRoughnessDamageFracturePermeability` and compute 
 | Initial hydraulic aperture, `a_h0` (µm) | [1.63, 2.11, 1.22, 0.74] | Same | Same | **DER/XFER** from measured flow. |
 | Mechanical-aperture scale | Not reported | [0.01512, 0.0177, 0.001, 0.001] | Same | **CAL/XFER**; the renamed SWT1/SWT2 MC centers were aligned to the final BBFast refinements on 2026-08-27. |
 | Linear normal-stress aperture compliance (m/Pa) | Not reported | [0, 0, `2e-14`, `2e-14`] | Same | **CAL/XFER** |
-| Reference effective normal stress (MPa) | Derived stress histories are reported | [65.47, 66.74, 32.1, 31.0] | Same | **DER/CAL/XFER** reference-state choice. |
+| Reference effective normal stress (MPa) | Table 2 stage-1 `sigma'_n` = [65.47, 66.74, 31.65, 30.75] | [65.47, 66.74, **32.1**, **31.0**] | Same | **Two provenance classes in one row.** T1/T2 take the Table 2 stage-1 value exactly (**DER**); S3/S4 sit +0.45 and +0.25 MPa above it (**CAL**). See §14 F6. |
 | Nonlinear hydraulic closure enabled | Not specified | [no, yes, yes, yes] | Same | **CAL/XFER** |
 | Maximum hydraulic closure (µm) | Not reported | [1.20 inactive, 1.20, 1.20, 1.05] | Same | **CAL/XFER** |
 | Hydraulic closure initial stiffness (Pa/m) | Not reported | [`1.25e13` inactive, `1.25e13`, `1.25e13`, `1.43e13`] | Same | **CAL/XFER** |
@@ -180,6 +218,11 @@ Both model families use `ADOrcaRoughnessDamageFracturePermeability` and compute 
 | Minimum hydraulic aperture (µm) | Initial derived aperture supplies a lower reference | [1.5105, 2.0045, 1.22, 0.74] | Same | T1/T2 are **CAL** floors; S3/S4 use the **DER** initial aperture as a floor. |
 | Maximum hydraulic aperture (µm) | Not reported | [8, 8, 8, 8] | Same | **NUM** cap. |
 | Permeability relation | Paper uses cubic-law reduction | `k_f = a_h²/12` | Same | **DER/literature relation**, shared. |
+| Dilation-to-aperture routing (`use_kinematic_aperture`) | Not applicable | [true, true, **false**, **false**] | Same | **CAL model-form switch, previously undocumented.** All four decks set `dilation_opens_joint = true`; on T1/T2 dilation therefore reaches aperture through the mechanical gap and `dilation_scale` is 0, while on S3/S4 it reaches aperture through the explicit `dilation_scale` feed with `aperture_scale` cut 15× to 0.001. The two rows above are alternative routes for one mechanism, not independent parameters. See §14 F5. |
+| Nonlinear closure family (`nonlinear_closure_type`) | Not specified | `barton_bandis` for all | Same | **CAL/XFER**; names the hydraulic closure form whose constants are the four rows above. |
+| Plastic-slip coupling is AD (`cumulative_plastic_slip_is_ad`) | Not applicable | [false, false, false, false] | [true, true, true, true] | **NUM plumbing difference**, not a physical one: the two contact laws publish the slip state as different property types. It changes Jacobian assembly, not the aperture law. |
+| Flow reduction coefficient `W/L` | Not tabulated | [0.814324, 0.813243, 0.812486, 0.814820] | Same | **DER from Table 2, not from mesh geometry.** Each equals the 11-stage mean of `W/L = Q·12µ/(a_h³·Δp)` inverted from the paper's own Q, a_h and Δp (agreement to 4–5 s.f.; per-stage scatter ±1 %). It converts simulated aperture into the scored Q channel, so it is part of the Q operator and belongs in this table. Benign — Table 2's a_h was itself derived from Q through this relation, so the inversion recovers the paper's own constant rather than fitting a new one — but see caution 7. |
+| Mesh-geometry `W/L` estimate | Not tabulated | [0.814324, 0.813243, **0.674**, 0.814820] | Same | **Independent only on SW-S3.** On T1, T2 and S4 the mesh variable was set equal to the paper-inverted value and is therefore not a check on anything. SW-S3 retains a genuine node-spacing estimate, and it is 17 % below the paper value — which is exactly what its 20 %-too-long port separation predicts (§14 F3, F10). It feeds a diagnostic postprocessor only; the scored flow rate uses the paper value. |
 
 ## 10. Numerical contact and regularization parameters
 
@@ -193,23 +236,28 @@ These values affect robustness and, in transient localization, can affect the co
 | BBFast maximum plastic-slip increment (µm/step) | [5, 0, 0, 0] | MC uses [0, 0, 0, 0] | **NUM** |
 | Contact-gap regularization (m) | `1e-8` explicitly in SWT1; otherwise default/deck-specific | `1e-8` explicitly in SWT1; otherwise default/deck-specific | **NUM** |
 | Compressive normal-stress floor (Pa) | 1000 | Internal MC handling | **NUM** |
+| Return-mapping iteration cap | [100, 100, 100, 100] | Local Newton [80, 80, 80, 80] with [48, 48, 48, 48] substeps | **NUM**; the two laws expose different local-solver controls. |
+| Return-mapping relative tolerance | [`1e-10`, `1e-10`, `1e-10`, `1e-10`] | Not exposed | **NUM** |
+| Normal-traction tolerance (Pa) | [0, 0, 0, 0] | [0, 0, 0, 0] | **NUM**, disabled in both families. |
+| Tangential-traction tolerance | [`1e-16`, `1e-16`, `1e-16`, `1e-16`] | Same | **NUM** |
+| Strain formulation | `incremental` for all eight decks | Same | **ASM/XFER** modeling convention, shared. |
 
 ## 11. What is independently constrained and what is inferred
 
 | Category | Independently supplied by the experiment | Inferred/calibrated in this study |
 |---|---|---|
 | Matrix | `E`, `nu`, matrix permeability range, UCS, intact friction angle, tensile strength | Porosity, Biot coefficient, and the selected value within the permeability range |
-| Geometry/loading | Dimensions, nominal fracture angle, confining pressure, injection/production pressures, fixed-piston control | SWT2 effective 30° angle and loading-system compliance |
+| Geometry/loading | Dimensions (meshes match Table 1 exactly), nominal fracture angle, the 30 MPa confining and 5/8/…/28 MPa injection levels | SWT2 effective 30° angle; the loading-frame stiffness, which spans 24× across four specimens; **port placement (§14 F3, F10); SW-T2's unloading schedule (F1); and the fitted piston retreats and confining unload on the two saw cuts, which replace the reported fixed-piston, constant-confinement control rather than reproducing it (F9)** |
 | Surface description | Fracture type and measured JRC | SWS4 effective JRC = 5 and all normalized roughness-state parameters |
 | Normal response | Normal displacement/stress histories | Normal stiffness, closure capacity/offset/exponent, and unloading retention |
 | Shear response | Shear stress and slip histories | BB friction/cohesion/weakening parameters and all MC `(mu, c)` envelope parameters |
 | Dilation | Normal displacement history and observed retained opening | Dilation angles, decay distances, and irreversible-state implementation |
-| Hydraulics | Flow rate; fluid viscosity; pressure stages | Initial aperture is **derived** from flow; aperture scales, closure, retention, and damage parameters are calibrated |
+| Hydraulics | Flow rate; fluid viscosity; pressure stages | Initial aperture is **derived** from flow; the `W/L` reduction coefficient is **inverted from Table 2** (§9); aperture scales, closure, retention, and damage parameters are calibrated |
 | Constitutive model | None | Choice of BBFast versus MC, including their mathematical state variables |
 
 ## 12. Recommended manuscript wording
 
-> The experimental study provides specimen geometry, fracture type and JRC, intact-rock properties, fluid properties, loading conditions, and hydromechanical response histories. Hydraulic aperture and permeability are derived from measured flow through the cubic law and are therefore not independent observations. Neither the Barton–Bandis nor Mohr–Coulomb constitutive formulation is prescribed by the experiment. Closure, cohesion, frictional weakening, dilation, roughness evolution, pressure-transfer, and hydraulic-retention parameters are inferred by calibration where direct measurements are unavailable. The Mohr–Coulomb controls retain the matched bulk, normal-closure, dilation, and hydraulic-aperture descriptions; thus the comparison principally evaluates the alternative shear-strength and weakening laws. Under these controlled conditions, the Barton–Bandis formulation gives the more faithful representation of the four fracture responses.
+> The experimental study provides specimen geometry, fracture type and JRC, intact-rock properties, fluid properties, loading conditions, and hydromechanical response histories. Hydraulic aperture and permeability are derived from measured flow through the cubic law and are therefore not independent observations. Neither the Barton–Bandis nor Mohr–Coulomb constitutive formulation is prescribed by the experiment. Closure, cohesion, frictional weakening, dilation, roughness evolution, pressure-transfer, and hydraulic-retention parameters are inferred by calibration where direct measurements are unavailable. The Mohr–Coulomb controls retain the matched bulk, normal-closure, dilation, and hydraulic-aperture descriptions; thus the comparison principally evaluates the alternative shear-strength and weakening laws. The injection schedule and port placement are reconstructions rather than reproductions of the reported protocol; on the two saw-cut specimens the piston command and, for SW-S4, the confining pressure carry additional fitted histories; and the flow reduction coefficient is obtained by inverting the reported flow data. Under these controlled conditions, the Barton–Bandis formulation gives the more faithful representation of the four fracture responses.
 
 ## 13. Audit notes and cautions
 
@@ -219,11 +267,61 @@ These values affect robustness and, in transient localization, can affect the co
 4. **Do not use the paper's 46° intact friction angle as a joint residual-friction measurement.** They refer to different strength descriptions.
 5. **Do not score flow, hydraulic aperture, and permeability as three independent data channels.** The last two are derived from the first.
 6. **Describe the 94-series model precisely.** It is a roughness-dependent, dilatant MC shear control embedded in the shared BBFast hydromechanical framework, not a bare constant-friction MC interface.
+7. **Do not describe the flow reduction `W/L` as a geometric constant.** It is inverted from Table 2's own flow data (§9). The scorer already excludes `a_h` and `k` as derived channels — `scripts/table2_gate.py` scores only `Q`, `sigma'_n`, `tau`, `d_n`, `d_s` — so no double counting occurs, but the coefficient must be reported as Table-2-derived rather than measured.
+8. **Do not present the loading protocol as reproduced.** The stated 0.03 MPa/s ramp and 300–500 s stages are not honoured by any deck, and SW-T2's unloading branch departs from them by more than an order of magnitude (§14 F1).
+9. **Do not describe the injection geometry as experimental.** The 3.5 mm borehole is not represented, the 6.0 mm sidewall offset is not reproduced, and the four specimens do not share a consistent port placement (§14 F3, F4).
+10. **Do not describe SW-S3 and SW-S4 as run under fixed-piston, constant-confinement control.** Both impose fitted piston retreats, and SW-S4 also unloads the confining pressure by 1.2 MPa during the cycle (§4, §14 F9). These act directly on the scored `sigma'_n` and `tau` channels.
+11. **Do not describe the loading-frame stiffness as a numerical penalty.** It is a calibrated physical compliance that varies by a factor of 24 across four specimens tested in one frame (§4).
 
-## 14. Sources audited
+## 14. Open discrepancies found in the 2026-09-02 verification
+
+Every constitutive value in §5–§10 reproduced exactly, and all four meshes match Table 1's length and
+diameter to three decimals. **No error was found in any material parameter.** The items below are
+things the decks do not take from the paper, or take inconsistently between specimens. They are
+ordered by how much they could move a score.
+
+Two of them, **F1 and F9, need a decision before the numbers are published**; F3 and F6 are corrections
+the user may or may not want to spend a rerun on; the rest are now documented and need nothing further.
+
+| # | Finding | Paper | Decks [T1, T2, S3, S4] | Assessment |
+|---|---|---|---|---|
+| **F1** | **SW-T2's unloading branch is compressed by roughly 4.5×.** Its five unloading transitions are 10 s ramps at 400 kPa/s (the last, 20 s at 200 kPa/s) and its plateaus last 35–50 s, giving stages of 45–60 s. The branch occupies 352.5 s against 1600.0, 2103.4 and 1583.1 s on the three siblings. Its loading branch, by contrast, is normal: 29.6–53.3 kPa/s and 355–515 s stages. | 0.03 MPa/s; 300–500 s stages | Unload branch [1600.0, **352.5**, 2103.4, 1583.1] s | **Action required.** Table 2 reports five equilibrium unloading states for SW-T2; the deck passes through all five in 352.5 s and then stops at `end_time = 2852.53` — 0.03 s after the last schedule point, so there is no settling interval either. With matrix `k = 5e-19 m²` the specimen cannot re-equilibrate on that timescale, so the unloading half of SW-T2's score compares a transient model state against settled measurements. That only the unloading branch is affected, while the loading branch is clean, is the signature of a digitisation error rather than a modeling choice. The schedule was rebuilt from the paper's figure on 2026-08-16; **re-check that digitisation before the SW-T2 numbers are published.** |
+| **F2** | SW-T1 ramps about twice as fast as the stated rate. The saw cuts do not — a claim in an earlier draft of this section, made from raw per-segment differences on noisy digitised traces, was wrong. | 0.03 MPa/s | Plateau-to-plateau [50–73, 30–53 up / 200–400 down, 12–32, 23–31] kPa/s | **SW-S3 (12–32) and SW-S4 (23–31 kPa/s) reproduce the stated rate.** SW-T1's 1.7–2.4× follows from snapping plateau levels to nominal while keeping the measured transition windows; its stage durations stay in range, so the plateau states it is scored against are still equilibrated. SW-T2's unloading is F1. |
+| **F3** | Port placement does not reproduce the paper's borehole position, and is not consistent between specimens. | 6.0 mm from the sidewall | [6.89, 6.89, **2.11**, 6.89] mm; separation error [−4.62, −4.62, **+20.22**, −4.61] % | SW-T1's banner documented its own −4.62 % separation error honestly; the other three were silent, and now carry the same disclosure. SW-S3 is the outlier by a wide margin — 3.9 mm closer to the wall than the paper states and a 95.5 mm separation against ~73 mm on its siblings. SW-S3's header argues that moving ports "would be unjustified" without measured borehole coordinates, but §2.4 supplies the 6.0 mm offset, so the correction is available. **The scored flow rate is insulated from this**: injection and production are both Dirichlet pressure BCs, so `pp_drop` is prescribed by the schedule, and `Q` is built from that drop, the simulated aperture, and the Table-2-inverted `W/L` — no length enters. The error reaches the mechanical channels instead, through the matrix pressure field between the ports. See F10. |
+| **F4** | The 3.5 mm borehole is not represented at all. | 3.5 mm diameter | Single mesh node, `ExtraNodesetGenerator` | A defensible simplification, but it is an unstated one, and it bears directly on the manuscript's explanation of the flow-rate offset as a 1-D-versus-3-D reduction effect. State it. |
+| **F5** | `use_kinematic_aperture` splits the four specimens into two model forms and appeared nowhere in this document. | Not applicable | [true, true, false, false] | Not a defect — it is the flag that prevents double-counting dilation, and the pairing with `aperture_scale` and `dilation_scale` is deliberate. But §9 listed those two scales as independent rows, which reads as though all four specimens use one aperture law with different constants. They do not. Now recorded in §9. |
+| **F6** | `reference_effective_normal_stress` is exact on the tensile pair and approximate on the saw cuts. | Table 2 stage 1: [65.47, 66.74, 31.65, 30.75] MPa | [65.47, 66.74, 32.10, 31.00] MPa | Small, but it means one table row holds two provenance classes. Either adopt the measured values on S3/S4 or state why they were rounded. |
+| **F7** | Stale constants in SW-S3's inherited header. Lines 342–396 name "effective JRC = 25.1" and "pressure-traction coefficient = 0.85"; the deck runs `jrc = 1.96` and `fault_pressure_coefficient = 0.87`. | — | — | Cosmetic, and milder than the 90-series cohesion case corrected on 2026-09-02, because these lines sit inside explicitly dated ancestor banners rather than in the active header. Worth a pass. |
+| **F8** | The flow reduction coefficient `W/L` was absent from every table. | Not tabulated | [0.814324, 0.813243, 0.812486, 0.814820] | Now in §9. It is the operator that turns simulated aperture into the scored `Q`, so omitting it left the Q channel's construction undocumented. |
+| **F9** | **SW-S3 and SW-S4 impose fitted load-side histories that the paper's protocol excludes.** SW-S3 retreats the piston command by 4.5 µm over t = 2550–2850 s. SW-S4 retreats it by 2.9 µm over t = 55–1000 s and a further 2.6 µm over t = 1000–1800 s, *and* ramps the confining pressure from 30.0 to 28.8 MPa over t = 1900–3300 s. The deck comments label all three `CONTROL: legacy fitted`. | Piston held fixed during injection; confinement constant at 30 MPa | Piston motion [0, 0, +4.5, +5.5] µm; confinement [30, 30, 30, **30 → 28.8**] MPa | **Second only to F1, and arguably ahead of it in consequence.** Put through the machine spring in series with the specimen, the piston motions are worth roughly 2.3 and 2.1 MPa of axial relief — the same order as the stress drops being modelled — and SW-S4's confining ramp adds 1.2 MPa directly. These act on `sigma'_n` and `tau`, which are scored channels. The BB and MC deck of each specimen impose identical histories, so the controlled comparison is intact; what is not intact is any claim that the two saw cuts were driven by the reported protocol. **Also a header defect:** SW-S3's inherited `59_07` banner states that the ancestor's t = 2500–2800 piston retreat "is therefore disabled instead of being used to manufacture the stress drop," while the live deck runs that retreat at t = 2550–2850. Either restore constant control on both saw cuts and recalibrate, or state these as fitted boundary conditions in the manuscript. Now in §4. |
+| **F10** | SW-S3's own mesh-geometry `W/L` estimate independently confirms F3's port error, and nobody had connected the two. | — | mesh 0.674 vs paper-inverted 0.812486 (−17.0 %) | The deck keeps both numbers side by side. Their ratio, 0.830, matches the ratio of the paper-consistent port separation (79.5 mm, from the 6.0 mm offset on the 29° plane) to the deck's actual separation (95.5 mm), which is 0.832 — agreement to 0.3 %. So the 17 % `W/L` gap is not an independent modeling uncertainty; it *is* the port-placement error, measured. On T1, T2 and S4 the mesh variable was simply set equal to the paper value, so no such check exists there. Now in §9. |
+
+### Disposition
+
+| # | Status | What closing it requires |
+|---|---|---|
+| F1 | **Open — needs the source figure** | Re-check SW-T2's 2026-08-16 digitisation. If the unloading branch really is ~350 s, the finding closes as an experimental fact; if not, SW-T2 must be rerun and rescored. |
+| F9 | **Open — needs a decision** | Either restore fixed-piston, constant-confinement control on SW-S3 and SW-S4 and recalibrate, or keep the fitted histories and describe them as such in the manuscript (§12 already does). SW-S3's `59_07` banner must be corrected either way, since it asserts the opposite of what the deck runs. |
+| F3, F10 | Open — optional rerun | Move SW-S3's ports to the 6.0 mm offset (its own mesh `W/L` estimate would then rise from 0.674 toward the paper value) and rerun. The scored `Q` will not move; `sigma'_n`, `tau`, `d_n` and `d_s` may. |
+| F6 | Open — optional | Adopt Table 2's stage-1 `sigma'_n` on S3/S4, or state why 32.1 and 31.0 MPa were used. |
+| F7 | Open — text only | Correct SW-S3's inherited banner (see F9; same file, same pass). |
+| F2, F4, F5, F8 | **Closed** | Documented in §4, §9 and here. No deck change implied. |
+
+**What this pass could not check.** Whether the digitised injection schedules match the paper's figures,
+and whether Table 2's reported values were transcribed correctly, both require the source PDF, which is
+not in the repository. F1 is flagged precisely because it is the one place where the deck contradicts the
+paper's *stated* protocol badly enough to suggest a transcription problem rather than a modeling choice.
+This pass also does not check the sweep-member submission arrays, which override five shear parameters
+per specimen at run time; §3 names the selected members, but their array rows were not re-extracted here.
+
+## 15. Sources audited
 
 - [Ye and Ghassemi (2018), official article](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029%2F2018JB016045)
 - The eight active input decks listed in Section 3
 - [`ADOrcaBartonBandisContactTractionFastADHardening.C`](../../src/InterfaceMaterial/ADOrcaBartonBandisContactTractionFastADHardening.C)
 - [`ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile.C`](../../src/InterfaceMaterial/ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile.C)
 - [`ADOrcaRoughnessDamageFracturePermeability.C`](../../src/InterfaceMaterial/ADOrcaRoughnessDamageFracturePermeability.C)
+- [`ADOrcaBartonBandisContactTractionFastAD.C`](../../src/InterfaceMaterial/ADOrcaBartonBandisContactTractionFastAD.C) — parameter semantics for the output-only reporting controls, `min_tau_limit`, and `use_decoupled_dilation` (§7.1)
+- [`scripts/paper_parameter_audit.py`](../../scripts/paper_parameter_audit.py) — the authoritative extraction of what Ye and Ghassemi (2018) actually reports
+- [`scripts/table2_gate.py`](../../scripts/table2_gate.py) — the scored-channel definition underlying caution 5
+- The four specimen meshes, read directly for the Table 1 check

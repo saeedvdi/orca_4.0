@@ -1,0 +1,16 @@
+[Tests]
+  design = 'OrcaSinglePhaseMassTimeDerivativeKernel.md OrcaSinglePhaseMassVolumetricExpansionKernel.md'
+  issues = '#biot-mass-balance'
+  [mandel]
+    type = CSVDiff
+    input = mandel.i
+    csvdiff = mandel.csv
+    rel_err = 1e-6
+    abs_zero = 1e-12
+    requirement = 'The hydro-mechanical system shall reproduce the analytic Mandel solution '
+                  'including the Mandel-Cryer pressure overshoot: centre-pressure peak '
+                  '550.06 Pa vs 553.45 Pa analytic (0.6%), peak ratio 1.100 vs 1.107, final '
+                  'settlement -2.3661 vs -2.3713 mm. The overshoot is unreachable unless the '
+                  'poromechanical coupling uses the Biot coefficient.'
+  []
+[]

@@ -1,0 +1,3 @@
+time,open_traction_ratio,sigma_n_mean,w_max,w_max_analytic,w_max_rel_error
+0,0,0,0,0.00075,0
+1,0,0,0.00073478879298652,0.00075,0.0202816093513

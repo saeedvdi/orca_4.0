@@ -1,0 +1,16 @@
+[Tests]
+  design = 'OrcaFractureFlowInterfaceKernel.md ADOrcaRoughnessDamageFracturePermeability.md'
+  issues = '#fracture-flow-verification'
+  [cubic_law]
+    type = CSVDiff
+    input = cubic_law.i
+    csvdiff = cubic_law_out.csv
+    rel_err = 1e-6
+    abs_zero = 1e-30
+    requirement = 'The fracture-flow system shall initialize the hydraulic aperture to its '
+                  'reference value as a stateful property, reproduce the cubic-law '
+                  'permeability and transmissivity exactly, and transport fluid along the '
+                  'fracture with a transmissivity weighting that yields a linear steady '
+                  'pressure profile in the absence of leak-off.'
+  []
+[]

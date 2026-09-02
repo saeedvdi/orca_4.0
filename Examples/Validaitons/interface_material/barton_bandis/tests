@@ -1,0 +1,15 @@
+[Tests]
+  design = 'ADOrcaBartonBandisContactTractionFastAD.md'
+  issues = '#czm-constitutive-verification'
+  [bb_shear_envelope]
+    type = CSVDiff
+    input = bb_shear_envelope.i
+    csvdiff = bb_shear_envelope_out.csv
+    rel_err = 1e-7
+    abs_zero = 1e-30
+    requirement = 'The Barton-Bandis FastAD law shall reproduce the power-law normal closure, '
+                  'the peak envelope phi_p = phi_r + JRC log10(JCS/sigma_n), and the '
+                  'exponential slip-weakening tail to machine precision, and shall return the '
+                  'trial state exactly onto the resulting yield surface.'
+  []
+[]

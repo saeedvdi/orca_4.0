@@ -131,6 +131,10 @@
 #    30.30 MPa intact cohesion implied by the paper's own UCS and phi -- exactly
 #    what a fully mated Mode-I fracture should show, since its asperities ARE
 #    intact rock. d(tau)/d(sigma'_n) changes 0.999 -> 0.553.
+#    AS BUILT (2026-09-02 correction): the number above is the CLOSED-FORM REFIT value, and it is
+#    what scripts/build_paper_corrected_decks.py wrote into 89_05. The 90-series and later
+#    hand-set cohesion to bracket slip-onset timing, and this header block was copied forward
+#    without being updated. THIS DECK RUNS the Mohr-Coulomb pair cohesion_rough = 42.96 MPa, cohesion_smooth = 9.71 MPa. The refit fixes the parameterisation; the offset from it is calibrated, not derived.
 #
 # UNCHANGED AND DELIBERATELY SO: slip-weakening D_c, exponent and tail floor;
 # dilation angles; normal-closure constants; hydraulic constants; every BC and

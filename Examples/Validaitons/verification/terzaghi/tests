@@ -1,0 +1,17 @@
+[Tests]
+  design = 'OrcaSinglePhaseMassTimeDerivativeKernel.md OrcaSinglePhaseMassVolumetricExpansionKernel.md'
+  issues = '#biot-mass-balance'
+  [terzaghi]
+    type = CSVDiff
+    input = terzaghi.i
+    csvdiff = terzaghi.csv
+    rel_err = 1e-6
+    abs_zero = 1e-12
+    requirement = 'The hydro-mechanical system shall reproduce the analytic Terzaghi 1D '
+                  'consolidation solution. With the shipped time step the peak error in '
+                  'p(z=0) is 0.50% of the undrained pressure p0; refining dt by 4x reduces it '
+                  'to 0.12% (first-order temporal convergence) and refining the mesh does not '
+                  'change it, confirming the consolidation coefficient '
+                  'cv = (k/mu)/(1/M + alpha^2/M_oed) is assembled correctly.'
+  []
+[]

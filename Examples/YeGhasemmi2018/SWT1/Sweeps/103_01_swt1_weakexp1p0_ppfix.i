@@ -153,6 +153,10 @@
 # the paper's own Table 1, Table 2 and Sec. 2.1. Nothing is tuned to a run.
 #
 # CONTROLLED AXIS: strength parameterisation: phi_r = 44.1 deg, c = 0  ->  phi_r = 29.756 deg, c = 24.65 MPa
+# AS BUILT (2026-09-02 correction): the number above is the CLOSED-FORM REFIT value, and it is
+# what scripts/build_paper_corrected_decks.py wrote into 89_04. The 90-series and later
+# hand-set cohesion to bracket slip-onset timing, and this header block was copied forward
+# without being updated. THIS DECK RUNS c = 26.88 MPa, c_res = 9.19 MPa. The refit fixes the parameterisation; the offset from it is calibrated, not derived.
 #
 # SW-T1 and SW-T2 already use the paper's measured JRC and JCS, yet they need
 # phi_r = 44.1 and 46.3 deg -- above every measured granite basic friction angle
@@ -167,7 +171,7 @@
 # orca_v5) to put that strength where it physically belongs:
 #   phi_r             = 29.756 deg  -- granite basic friction, measured on this
 #                                      campaign's OWN saw cut (SW-S3 refit)
-#   cohesion          = 24.65 MPa   -- asperity interlock at peak; 81 % of the
+#   cohesion          = 24.65 MPa   -- REFIT value, not this deck's; see AS-BUILT above. Asperity interlock at peak; 81 % of the
 #                                      30.30 MPa intact cohesion implied by the
 #                                      paper's own UCS = 150 MPa and phi = 46 deg
 #   residual_cohesion = 11.176 MPa  -- interlock surviving the burst, pinned on

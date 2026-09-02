@@ -1,0 +1,25 @@
+[Tests]
+  design = 'ADOrcaDecoupledDilationRoughnessContactTractionCompressionTensile.md'
+  issues = '#czm-constitutive-verification'
+  [normal_closure]
+    type = CSVDiff
+    input = normal_closure.i
+    csvdiff = normal_closure_out.csv
+    rel_err = 1e-7
+    abs_zero = 1e-30
+    requirement = 'The cohesive-contact-friction law shall reproduce the pre-seated '
+                  'Barton-Bandis power-law normal closure sigma_n = (K_ni V_m)[c/(V_m-c)]^(1/p) '
+                  'to machine precision on both the loading and unloading branches.'
+  []
+  [coulomb_return_mapping]
+    type = CSVDiff
+    input = coulomb_return_mapping.i
+    csvdiff = coulomb_return_mapping_out.csv
+    rel_err = 1e-7
+    abs_zero = 1e-30
+    requirement = 'The cohesive-contact-friction law shall return the trial state exactly onto '
+                  'the Coulomb yield surface, reproduce the roughness strength interpolation, '
+                  'and never admit dilation work exceeding the (1 - dissipation_margin) '
+                  'fraction of the frictional sliding work.'
+  []
+[]
