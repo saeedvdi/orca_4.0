@@ -51,7 +51,11 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
 [Mesh]
   [file_mesh]
     type = FileMeshGenerator
-    file = mesh/single_fracture_under_shear_compression_mesh.e
+    # 2026-09-02: the Cubit mesh puts the fracture at psi = 23.93335 deg, b = 0.998339,
+    # not the psi = 20 deg, b = 1.0 of the GEOS reference case that every *_analytic
+    # value below assumes.  mesh/correct_inclination.py rescales it onto the reference
+    # geometry; see that file and ../README.md.
+    file = mesh/single_fracture_under_shear_compression_mesh_psi20.e
   []
   [side_from_node]
     type = SideSetsFromNodeSetsGenerator
@@ -67,13 +71,13 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
   [no_disp_x]
     type = ExtraNodesetGenerator
     input = refine_crack_blocks
-    coord = '0 -40 0 ; 0 40 0'
+    coord = '0 -33.77976724204 0 ; 0 33.77976724204 0'   # +-40 * the y scale factor
     new_boundary = no_disp_x
   []
   [no_disp_y]
     type = ExtraNodesetGenerator
     input = no_disp_x
-    coord = '-40 0 0 ; 40 0 0'
+    coord = '-41.19200529472 0 0 ; 41.19200529472 0 0'   # +-40 * the x scale factor
     new_boundary = no_disp_y
     use_closest_node = true
   []
@@ -326,7 +330,10 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
     variable = 'czm_slip_out crack_opening czm_sigma_n_out'
     boundary = ${fracture}
     sort_by = x
-    execute_on = FINAL
+    # NOT `FINAL`: a side sampler executed on FINAL never runs its boundary loop, so the
+    # profile CSV came out header-only on every deck in this suite until 2026-09-02.
+    # TIMESTEP_END writes one file per step; the last one is the converged profile.
+    execute_on = TIMESTEP_END
   []
 []
 

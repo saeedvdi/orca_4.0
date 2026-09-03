@@ -1,0 +1,12 @@
+array_id	specimen	model	case_stem	purpose	full_run
+0	SWT1	BB	116_01_swt1_bb_commonK796_protocol_ppfix	Corrected common-machine baseline	YES
+1	SWT1	MC-pb04	116_02_swt1_mc_commonK796_protocol_ppfix	Matched MC corrected baseline	YES
+2	SWT2	BB	116_03_swt2_bb_theta31_commonK796_protocol_ppfix	Physical 31-degree geometry baseline	YES
+3	SWT2	MC-pb04	116_04_swt2_mc_theta31_commonK796_protocol_ppfix	Matched MC 31-degree baseline	YES
+4	SWS3	BB	116_05_sws3_bb_fixedpiston_commonK796_protocol_ppfix	Remove piston retreat and target 6-mm ports	YES
+5	SWS3	MC-pb06	116_06_sws3_mc_fixedpiston_commonK796_protocol_ppfix	Matched MC protocol correction	YES
+6	SWS4	BB	116_07_sws4_bb_jrc1p19_fixedpiston_commonK796_ppfix	Measured JRC 1.19 and corrected loading	YES
+7	SWS4	MC-center	116_08_sws4_mc_fixedpiston_commonK796_protocol_ppfix	Matched MC protocol correction	YES
+8	SWS4	BB	116_09_sws4_bb_jrc5_fixedpiston_commonK796_control	Isolate effective JRC 5 from loading corrections	CONTROL
+9	SWT2	BB	116_10_swt2_bb_theta31_commonK796_eqhold_ppfix	400-s unloading equilibrium holds	CONTROL
+10	SWT2	MC-pb04	116_11_swt2_mc_theta31_commonK796_eqhold_ppfix	Matched MC equilibrium holds	CONTROL

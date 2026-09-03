@@ -315,7 +315,10 @@ w_max_analytic = ${fparse 4.0 * (1.0 - poissons_ratio^2) * crack_pressure * half
     variable = 'crack_opening'
     boundary = ${fracture}
     sort_by = x
-    execute_on = FINAL
+    # NOT `FINAL`: a side sampler executed on FINAL never runs its boundary loop, so the
+    # profile CSV came out header-only on every deck in this suite until 2026-09-02.
+    # TIMESTEP_END writes one file per step; the last one is the converged profile.
+    execute_on = TIMESTEP_END
   []
 []
 

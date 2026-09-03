@@ -1,0 +1,3 @@
+time,dp_volume_avg,dp_volume_avg_expected,dtotal_xx_max_MPa,dtotal_xx_min_MPa,uniaxial_reference_MPa
+0,0,5913404,0,0,-14.823749724609
+1,5913397.4999995,5913404,2734686.2282268,-18151621.310929,-14.823749724609

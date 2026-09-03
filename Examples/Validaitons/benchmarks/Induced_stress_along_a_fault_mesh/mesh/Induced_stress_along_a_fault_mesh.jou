@@ -1,0 +1,60 @@
+reset
+brick x 4000 y 2000 z 1000
+
+webcut volume all with plane zplane offset 200 imprint merge 
+webcut volume all with plane zplane offset 100 imprint merge 
+webcut volume all with plane zplane offset 0 imprint merge 
+webcut volume all with plane zplane offset -100 imprint merge 
+webcut volume all with plane zplane offset -200 imprint merge 
+
+create vertex location 288.675 1000 500
+create vertex location 288.675 -1000 500
+create vertex location -288.675 -1000 -500
+
+webcut volume all with plane vertex 49  vertex 50  vertex 51  
+
+imprint all
+merge all
+
+block 1 add volume 1
+block 1 name "matrix_top_1"
+block 2 add volume 7
+block 2 name "matrix_top_2"
+block 3 add volume 8
+block 3 name "offset_top"
+block 4 add volume 5
+block 4 name "offset_bottom"
+block 5 add volume 6 
+block 5 name "matrix_bottom_1"
+block 6 add volume 12
+block 6 name "matrix_bottom_2"
+block 7 add volume 2
+block 7 name "fracture_block_1"
+block 8 add volume 3
+block 8 name "fracture_block_2"
+block 9 add volume 4 
+block 9 name "fracture_block_3"
+block 10 add volume 9
+block 10 name "fracture_block_4"
+block 11 add volume 10
+block 11 name "fracture_block_5"
+block 12 add volume 11
+block 12 name "fracture_block_6"
+
+nodeset 1 add surface 58 65  
+nodeset 1 name "top"
+nodeset 2 add surface 108 116  
+nodeset 2 name "bottom"
+nodeset 3 add surface 55 49 40 31 18 9  
+nodeset 3 name "left"
+nodeset 4 add surface 53 51 38 29 11 20  
+nodeset 4 name "right"
+nodeset 5 add surface 61, 63, 71, 73, 81, 83, 91, 93, 101, 103, 109, 115 
+nodeset 5 name "back"
+nodeset 6 add surface 59, 66, 69, 75, 79, 85, 89, 96, 99, 106, 111, 113 
+nodeset 6 name "front"
+nodeset 7 add surface 57 67 77 87 97 107 
+nodeset 7 name "fracture_interface"
+
+vol all size auto factor 3
+mesh vol all

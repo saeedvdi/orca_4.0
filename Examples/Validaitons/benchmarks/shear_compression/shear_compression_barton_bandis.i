@@ -47,11 +47,15 @@ theta = ${fparse friction_angle_deg * pi / 180.0}
 driving_stress = ${fparse remote_compression * sin(psi) * (cos(psi) - sin(psi) * tan(theta))}
 slip_max_analytic = ${fparse 4.0 * (1.0 - poissons_ratio^2) * driving_stress * half_length / youngs_modulus}
 sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
-
+##########################################################
 [Mesh]
   [file_mesh]
     type = FileMeshGenerator
-    file = mesh/single_fracture_under_shear_compression_mesh.e
+    # 2026-09-02: the Cubit mesh puts the fracture at psi = 23.93335 deg, b = 0.998339,
+    # not the psi = 20 deg, b = 1.0 of the GEOS reference case that every *_analytic
+    # value below assumes.  mesh/correct_inclination.py rescales it onto the reference
+    # geometry; see that file and ../README.md.
+    file = mesh/single_fracture_under_shear_compression_mesh_psi20.e
   []
   [side_from_node]
     type = SideSetsFromNodeSetsGenerator
@@ -67,13 +71,13 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
   [no_disp_x]
     type = ExtraNodesetGenerator
     input = refine_crack_blocks
-    coord = '0 -40 0 ; 0 40 0'
+    coord = '0 -33.77976724204 0 ; 0 33.77976724204 0'   # +-40 * the y scale factor
     new_boundary = no_disp_x
   []
   [no_disp_y]
     type = ExtraNodesetGenerator
     input = no_disp_x
-    coord = '-40 0 0 ; 40 0 0'
+    coord = '-41.19200529472 0 0 ; 41.19200529472 0 0'   # +-40 * the x scale factor
     new_boundary = no_disp_y
     use_closest_node = true
   []
@@ -84,16 +88,34 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
     split_interface = true
     add_interface_on_two_sides = true
   []
-[]
 
+#   [fault_split_3d]
+#   type = OrcaFaultInterface3DGenerator
+#   input = source_out
+#   nodesets = 'fracture_interface'
+#   preserve_front_nodes = true
+#   split_only_interior_nodes = true
+#   rebuild_sidesets_from_nodesets = false
+#   add_interface_on_two_sides = true
+#   secondary_sidesets = 'fracture_interface_other_side'
+#    []
+[]
+##########################################################
 [GlobalParams]
   displacements = 'disp_x disp_y'
 []
-
+##########################################################
 [Variables]
-  [disp_x][]
-  [disp_y][]
+    [disp_x]
+        order = FIRST
+        family = LAGRANGE
+    []
+    [disp_y]
+        order = FIRST
+        family = LAGRANGE
+    []
 []
+##########################################################
 
 [Functions]
   # Ramp the remote compression rather than applying it in one step. Applying the full
@@ -103,29 +125,14 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
   # rate-independent and quasi-static, so ramping does not change the final state.
   [compression_ramp]
     type = ParsedFunction
-    expression = '${remote_compression} * t'
+    expression = '${remote_compression} * t' # remote compression = 1.0e8 Pa
   []
   [compression_ramp_negative]
     type = ParsedFunction
-    expression = '-${remote_compression} * t'
+    expression = '-${remote_compression} * t' # remote compression = 1.0e8 Pa
   []
 []
-
-[AuxVariables]
-  [crack_opening]
-    order = CONSTANT
-    family = MONOMIAL
-  []
-  [czm_sigma_n_out]
-    order = CONSTANT
-    family = MONOMIAL
-  []
-  [czm_slip_out]
-    order = CONSTANT
-    family = MONOMIAL
-  []
-[]
-
+##########################################################
 [Kernels]
   [disp_x]
     type = OrcaPoroMechKernel
@@ -138,7 +145,7 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
     component = 1
   []
 []
-
+##########################################################
 [InterfaceKernels]
   [czm_mech_x]
     type = OrcaMechInterfaceKernel
@@ -155,7 +162,7 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
     component = 1
   []
 []
-
+##########################################################
 [BCs]
   [pin_x]
     type = DirichletBC
@@ -186,7 +193,22 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
     function = compression_ramp
   []
 []
-
+##########################################################
+[AuxVariables]
+  [crack_opening]
+    order = CONSTANT
+    family = MONOMIAL
+  []
+  [czm_sigma_n_out]
+    order = CONSTANT
+    family = MONOMIAL
+  []
+  [czm_slip_out]
+    order = CONSTANT
+    family = MONOMIAL
+  []
+[]
+##########################################################
 [AuxKernels]
   [crack_opening_aux]
     type = ADMaterialRealAux
@@ -213,7 +235,7 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
     execute_on = TIMESTEP_END
   []
 []
-
+##########################################################
 [Materials]
   [mech]
     type = OrcaMechMaterial
@@ -275,7 +297,7 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
     index = 0
   []
 []
-
+##########################################################
 [Postprocessors]
   [slip_max]
     type = ElementExtremeValue
@@ -315,24 +337,27 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
     block = 'matrix_top_mid matrix_bottom_mid'
   []
 []
-
+##########################################################
 [VectorPostprocessors]
   [slip_profile]
     type = SideValueSampler
     variable = 'czm_slip_out crack_opening czm_sigma_n_out'
     boundary = ${fracture}
     sort_by = x
-    execute_on = FINAL
+    # NOT `FINAL`: a side sampler executed on FINAL never runs its boundary loop, so the
+    # profile CSV came out header-only on every deck in this suite until 2026-09-02.
+    # TIMESTEP_END writes one file per step; the last one is the converged profile.
+    execute_on = TIMESTEP_END
   []
 []
-
+##########################################################
 [Preconditioning]
   [smp]
     type = SMP
     full = true
   []
 []
-
+##########################################################
 [Executioner]
   type = Transient
   solve_type = NEWTON
@@ -358,7 +383,7 @@ sigma_n_analytic = ${fparse -remote_compression * sin(psi)^2}
   petsc_options_iname = '-pc_type -pc_factor_mat_solver_type'
   petsc_options_value = 'lu superlu_dist'
 []
-
+##########################################################
 [Outputs]
   csv = true
 []

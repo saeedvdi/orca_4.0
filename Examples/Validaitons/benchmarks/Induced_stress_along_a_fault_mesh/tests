@@ -1,0 +1,45 @@
+[Tests]
+  design = 'OrcaPoroMechKernel.md OrcaBiotCoefficientMaterial.md'
+  issues = '#czm-benchmarks'
+  # Induced stresses along a fault bounding a pressurized, displaced reservoir
+  # (GEOS faultVerification; analytical solution of Wu et al. 2020).
+  #
+  # A 300 m reservoir is cut by a 60 deg normal fault with 100 m throw, so the two
+  # compartments overlap only partly. Raising the pore pressure by 20 MPa in one or
+  # both of them perturbs the stress on the fault plane.
+  #
+  # Unlike sneddon/ and shear_compression/, the fault here is NOT a mechanical
+  # interface -- it carries no contact or friction in the reference case either. This
+  # is the benchmark that exercises the POROELASTIC coupling: the Biot term in
+  # OrcaPoroMechKernel, its sign, and the effective-to-total stress conversion.
+  #
+  # Both decks solve the perturbation problem (zero initial stress, only the pressure
+  # change applied), so the scored stresses are the changes the reference reports.
+  #
+  # The scored postprocessors include dp_volume_avg against its closed-form expected
+  # value. That is the guard against a mis-specified reservoir region: the reservoir
+  # is the mesh's `fracture_block`, and `offset_top`/`offset_bottom` are the
+  # non-reservoir blocks juxtaposed by the throw, NOT part of it.
+  [impermeable]
+    type = CSVDiff
+    input = fault_verification_impermeable.i
+    csvdiff = fault_verification_impermeable_out.csv
+    min_parallel = 4
+    rel_err = 1e-5
+    abs_zero = 1e-30
+    requirement = 'The poromechanical coupling shall reproduce the analytic stress '
+                  'perturbation on a fault bounding a pressurized displaced reservoir '
+                  'when the fault is impermeable.'
+  []
+  [permeable]
+    type = CSVDiff
+    input = fault_verification_permeable.i
+    csvdiff = fault_verification_permeable_out.csv
+    min_parallel = 4
+    rel_err = 1e-5
+    abs_zero = 1e-30
+    requirement = 'The poromechanical coupling shall reproduce the analytic stress '
+                  'perturbation on a fault bounding a pressurized displaced reservoir '
+                  'when the fault is permeable.'
+  []
+[]

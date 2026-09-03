@@ -144,6 +144,18 @@ modules/subchannel/subchannel.yaml
 modules/thermal_hydraulics/thermal_hydraulics.yaml
 modules/xfem/xfem.yaml
 
+# Reference data for the validation benchmarks. These are small text files that the
+# comparison scripts need in order to run at all, so they must survive the blanket
+# *.txt / *.csv rules above.
+!**/Validaitons/benchmarks/**/AnalyticalSolution.txt
+!**/Validaitons/benchmarks/**/Aperture.txt
+!**/Validaitons/benchmarks/**/NormalTraction.txt
+!**/Validaitons/benchmarks/**/Slip.txt
+
+# Cubit journals for the two benchmark meshes. The Exodus files themselves are far too
+# large to track, so these ~1 kB scripts are the only record of how they were built.
+!**/Validaitons/benchmarks/**/mesh/*.jou
+
 # Allow certain files in gold directories
 !**/gold/**/*.e
 !**/gold/**/*.e-s*

@@ -1,0 +1,50 @@
+reset
+create surface rectangle width 80 height 80 zplane 
+
+# CORRECTED 2026-09-02.  The offsets below were 0.9125 / 0.405, which put the
+# fracture at psi = 23.93335 deg with half-length 0.998339 -- not the psi = 20 deg,
+# b = 1.0 of the GEOS reference case the four decks are scored against.  That cost
+# a 36 % error in the reported normal stress.  The values now used are
+# cos(20 deg) and sin(20 deg), giving exactly psi = 20 deg and b = 1.
+# Without Cubit, run mesh/correct_inclination.py instead.
+
+webcut body all with plane xplane offset 0.93969262078591 imprint merge 
+webcut body all with plane xplane offset -0.93969262078591 imprint merge 
+webcut body all with plane yplane offset -0.34202014332567 imprint merge 
+webcut body all with plane yplane offset 0.34202014332567 imprint merge 
+
+create curve vertex 18 26  
+project curve 53  onto surface 14  imprint
+
+imprint all
+merge all
+
+surface 18 19  size auto factor 1
+mesh surface 18 19 
+
+surface 8 12 15 16 size auto factor 1
+mesh surface 8 12 15 16
+
+surface 6 10 13 17 size auto factor 1
+mesh surface 6 10 13 17
+
+block 1 add surface 6 8 10 12 13 15 16 17
+block 1 name "matrix"
+block 2 add surface 19 
+block 2 name "matrix_top_mid"
+block 3 add surface 18 
+block 3 name "matrix_bottom_mid"
+
+nodeset 1 add curve 7 13 15  
+nodeset 1 name "top"
+nodeset 2 add curve 6 12 16 
+nodeset 2 name "bottom"
+nodeset 3 add curve 30 48 52
+nodeset 3 name "left"
+nodeset 4 add curve 19 37 39
+nodeset 4 name "right"
+nodeset 5 add curve 53
+nodeset 5 name "fracture_interface"
+
+
+

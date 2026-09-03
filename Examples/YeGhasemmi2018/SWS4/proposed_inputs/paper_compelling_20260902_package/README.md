@@ -62,7 +62,7 @@ Equivalent `submit_compelling_batch_XX_hpc.sh` launchers submit the individual S
 sbatch submit_all_remaining_hpc.sh
 ```
 
-It is a 14-task Slurm array with at most three simultaneous tasks (`--array=0-13%3`), and each task uses eight MPI ranks. It excludes `112_02_swt1_eta200gpa_s_ppfix` and `112_03_sw4_dt075_ppfix`, which completed locally. It includes the incomplete local runs, all previously unstarted 113--114 cases, the HPC-only size-3 mesh case, and all four 115-series elastic-closure tests. The tasks start from the beginning on HPC; partial workstation CSV and Exodus files are not restart files.
+It is a 14-task Slurm array with at most three simultaneous tasks (`--array=0-13%3`), and each task uses eight MPI ranks. It includes every remaining 112--115 case, including the SW-S4 mesh and extended-depressurization calculations. It excludes only `112_02_swt1_eta200gpa_s_ppfix` and `112_03_sw4_dt075_ppfix`, which completed locally. The included tasks start from the beginning on HPC; partial workstation CSV and Exodus files are not restart files.
 
 ## Outputs
 

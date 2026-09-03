@@ -3,8 +3,9 @@
 # Submit with:
 #   sbatch submit_all_remaining_hpc.sh
 #
-# Fourteen remaining cases are indexed below.  The %3 suffix limits the array
-# to three simultaneous jobs; the remaining tasks stay queued on the cluster.
+# Fourteen remaining cases are indexed below.  Only 112_02 and 112_03 are
+# excluded because they completed locally.  The %3 suffix limits the array to
+# three simultaneous jobs; the remaining tasks stay queued on the cluster.
 
 #SBATCH --job-name=orca_remaining
 #SBATCH --account=def-biaoli66

@@ -1,0 +1,86 @@
+[Tests]
+  design = 'OrcaMechInterfaceKernel.md OrcaCZMFluidPressureInterfaceKernel.md'
+  issues = '#czm-benchmarks'
+  # Two intersecting fractures -- a pressurized vertical crack terminating against a
+  # compressed, frictional horizontal one (GEOS intersectFrac / "TFrac"; reference
+  # solution from Phan et al. 2003, Int. J. Numer. Meth. Engng 57, 835-851).
+  #
+  #   vertical    x = 0,   y in [-50,+50]   100 MPa fluid pressure inside
+  #   horizontal  y = +50, x in [-25,+25]   frictional, mu = tan(30 deg), no cohesion
+  #   far field   sigma_yy = -100 MPa, sigma_xx = 0, rollers on every outer boundary
+  #
+  # sneddon/ exercises an OPEN interface and shear_compression/ a CLOSED SLIDING one.
+  # This is the case where the two MEET, and the junction is the whole point:
+  #
+  #  * The T-junction node must split into THREE pieces -- left flank, right flank, cap --
+  #    because the crack faces slide apart ALONG the horizontal fracture. Measured
+  #    aperture there is 136.1 mm against Phan's 137.2 (-0.76 %). A welded junction
+  #    reports ~0 instead and NOTHING else in the deck complains, which is why the
+  #    [Mesh] block splits the two fractures in two passes with a re-block between them:
+  #    BreakMeshByBlockGenerator's block_pairs mode refuses to split any node touching
+  #    more than two blocks.
+  #  * The peak aperture must EXCEED the isolated-crack closed form. Phan gives 282.2 mm
+  #    against Sneddon's 274.3; `aperture_over_sneddon` is scored for that reason.
+  #  * Nothing shears the horizontal fracture directly -- the far field is normal to it.
+  #    Its slip is induced entirely by the crack opening beneath it, so it must come out
+  #    ANTISYMMETRIC (`slip_asymmetry_h` ~ 1e-16 m) at the Coulomb limit.
+  #
+  # All four laws agree to within 0.3 % on every scored quantity.
+  #
+  # ~60k QUADSHELL4 elements, ~45 s each on 8 ranks, so these are ordinary (non-heavy)
+  # tests.
+  [barton_bandis]
+    type = CSVDiff
+    input = frac_intersection_barton_bandis.i
+    csvdiff = frac_intersection_barton_bandis_out.csv
+    min_parallel = 4
+    rel_err = 1e-5
+    # 1e-10, not the suite's usual 1e-30: `slip_asymmetry_h` is exactly zero by
+    # antisymmetry, so it carries nothing but round-off (~1e-16 m) and its sign flips with
+    # the rank count. Every physical column here is >= 1e-2, so nothing real is masked.
+    abs_zero = 1e-10
+    requirement = 'The Barton-Bandis FastAD law shall reproduce the aperture, normal '
+                  'traction and induced frictional slip of two intersecting fractures.'
+  []
+  [compression_tensile]
+    type = CSVDiff
+    input = frac_intersection_compression_tensile.i
+    csvdiff = frac_intersection_compression_tensile_out.csv
+    min_parallel = 4
+    rel_err = 1e-5
+    # 1e-10, not the suite's usual 1e-30: `slip_asymmetry_h` is exactly zero by
+    # antisymmetry, so it carries nothing but round-off (~1e-16 m) and its sign flips with
+    # the rank count. Every physical column here is >= 1e-2, so nothing real is masked.
+    abs_zero = 1e-10
+    requirement = 'The cohesive-contact-friction law shall reproduce the aperture, normal '
+                  'traction and induced frictional slip of two intersecting fractures.'
+  []
+  [bb_flow_rsf]
+    type = CSVDiff
+    input = frac_intersection_bb_flow_rsf.i
+    csvdiff = frac_intersection_bb_flow_rsf_out.csv
+    min_parallel = 4
+    rel_err = 1e-5
+    # 1e-10, not the suite's usual 1e-30: `slip_asymmetry_h` is exactly zero by
+    # antisymmetry, so it carries nothing but round-off (~1e-16 m) and its sign flips with
+    # the rank count. Every physical column here is >= 1e-2, so nothing real is masked.
+    abs_zero = 1e-10
+    requirement = 'The Barton-Bandis flow/rate-and-state law shall reproduce the aperture, '
+                  'normal traction and induced frictional slip of two intersecting '
+                  'fractures.'
+  []
+  [peak_shelf_tail]
+    type = CSVDiff
+    input = frac_intersection_peak_shelf_tail.i
+    csvdiff = frac_intersection_peak_shelf_tail_out.csv
+    min_parallel = 4
+    rel_err = 1e-5
+    # 1e-10, not the suite's usual 1e-30: `slip_asymmetry_h` is exactly zero by
+    # antisymmetry, so it carries nothing but round-off (~1e-16 m) and its sign flips with
+    # the rank count. Every physical column here is >= 1e-2, so nothing real is masked.
+    abs_zero = 1e-10
+    requirement = 'The peak-shelf-tail flow/rate-and-state law shall reproduce the '
+                  'aperture, normal traction and induced frictional slip of two '
+                  'intersecting fractures.'
+  []
+[]
