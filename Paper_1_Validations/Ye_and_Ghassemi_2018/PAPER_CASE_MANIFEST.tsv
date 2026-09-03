@@ -1,0 +1,39 @@
+category	specimen	model_or_series	case_id	role	status
+main_validation	SWT1	BB	107_01_swt1_coh27p2_apscale0p01512_ppfix	paper result	complete
+main_validation	SWT1	MC	SWT1_OrcaMohrCoulombContactTraction_pb04	paper result	complete; array override required
+main_validation	SWT2	BB	100_04_swt2_apscale0p0177_ppfix	paper result	complete; protocol concern
+main_validation	SWT2	MC	SWT2_OrcaMohrCoulombContactTraction_pb04	paper result	complete; array override required; protocol concern
+main_validation	SWS3	BB	100_06_sw3_resc1p30_unld0p00_ppfix	paper result	complete; fitted piston history
+main_validation	SWS3	MC	SWS3_OrcaMohrCoulombContactTraction_pb06	paper result	complete; array override required; fitted piston history
+main_validation	SWS4	BB	93_07_sw4_final_theta30_jrc5_ppfix	paper result	complete; fitted piston and confinement histories
+main_validation	SWS4	MC	SWS4_OrcaMohrCoulombContactTraction_center	paper result	complete; fitted piston and confinement histories
+mechanism_test	SWS4	BB	109_01_sw4_floor1nm_g028_ppfix	paper mechanism figure	complete
+mechanism_test	SWS4	BB	109_02_sw4_floor1nm_g042_ppfix	paper mechanism figure	complete
+mechanism_test	SWS4	BB	109_03_sw4_floor1nm_nodilation_ppfix	paper mechanism figure	complete
+mechanism_test	SWS3	BB	110_01_sw3_floor1nm_g040_ppfix	paper mechanism table and figure	complete
+mechanism_test	SWS3	BB	110_02_sw3_floor1nm_nodilation_ppfix	paper mechanism table and figure	complete
+mechanism_test	SWS3	BB	110_03_sw3_floor1nm_nogouge_ppfix	paper mechanism table and figure	complete
+mechanism_test	SWT1	BB	111_01_swt1_floor1nm_control_ppfix	paper mechanism table and figure	complete
+mechanism_test	SWT1	BB	111_02_swt1_floor1nm_nokinematic_ppfix	paper mechanism table and figure	complete
+mechanism_test	SWT2	BB	111_03_swt2_floor1nm_control_ppfix	paper mechanism table and figure	complete
+mechanism_test	SWT2	BB	111_04_swt2_floor1nm_nokinematic_ppfix	paper mechanism table and figure	complete
+extended_depressurization	SWT1	BB	115_01_swt1_extended_depressurization_ppfix	planned elastic-closure test	incomplete CSV; required end 4500 s
+extended_depressurization	SWT2	BB	115_02_swt2_extended_depressurization_ppfix	planned elastic-closure test	incomplete CSV; required end 3852.5 s
+extended_depressurization	SWS3	BB	115_03_sws3_extended_depressurization_ppfix	planned elastic-closure test	incomplete CSV; required end 5802.4 s
+extended_depressurization	SWS4	BB	115_04_sws4_extended_depressurization_ppfix	planned elastic-closure test	result missing
+protocol_consistency	SWT1	BB	116_01_swt1_bb_commonK796_protocol_ppfix	corrected-protocol comparison	complete; under review
+protocol_consistency	SWT1	MC	116_02_swt1_mc_commonK796_protocol_ppfix	corrected-protocol comparison	complete; under review
+protocol_consistency	SWT2	BB	116_03_swt2_bb_theta31_commonK796_protocol_ppfix	corrected-protocol comparison	complete; under review
+protocol_consistency	SWT2	MC	116_04_swt2_mc_theta31_commonK796_protocol_ppfix	corrected-protocol comparison	complete; under review
+protocol_consistency	SWS3	BB	116_05_sws3_bb_fixedpiston_commonK796_protocol_ppfix	corrected-protocol comparison	input only; result missing
+protocol_consistency	SWS3	MC	116_06_sws3_mc_fixedpiston_commonK796_protocol_ppfix	corrected-protocol comparison	input only; result missing
+protocol_consistency	SWS4	BB	116_07_sws4_bb_jrc1p19_fixedpiston_commonK796_ppfix	corrected-protocol comparison	complete; under review
+protocol_consistency	SWS4	MC	116_08_sws4_mc_fixedpiston_commonK796_protocol_ppfix	corrected-protocol comparison	complete; under review
+protocol_consistency	SWS4	BB	116_09_sws4_bb_jrc5_fixedpiston_commonK796_control	JRC control	complete; under review
+protocol_consistency	SWT2	BB	116_10_swt2_bb_theta31_commonK796_eqhold_ppfix	equilibrium-hold comparison	complete; under review
+protocol_consistency	SWT2	MC	116_11_swt2_mc_theta31_commonK796_eqhold_ppfix	equilibrium-hold comparison	complete; under review
+additional_sensitivity	SWT1	BB	112_01_swt1_dt0375_ppfix	time-step test	not in current paper
+additional_sensitivity	SWT1	BB	112_02_swt1_eta200gpa_s_ppfix	viscosity test	not in current paper
+additional_sensitivity	SWS3	BB	113_01_to_113_06	mechanism parameter sweep	partly complete; not in current paper
+additional_sensitivity	SWT2	BB	114_01_to_114_02	aperture-scale sweep	results not found; not in current paper
+
