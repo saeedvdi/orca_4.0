@@ -1,0 +1,182 @@
+[rc32631:255023:0:255023]      cma_ep.c:81   process_vm_readv(pid=255025 {0x163fb1c0,524288}-->{0x15508e212018,524288}) returned -1: No such process
+[rc32631:255030:0:255030]      cma_ep.c:81   process_vm_readv(pid=255025 {0x14f69f445010,524288}-->{0x15508f633140,524288}) returned -1: No such process
+[2026-09-03T02:22:50.326] error: Detected 1 oom_kill event in StepId=20132820.0. Some of the step tasks have been OOM Killed.
+srun: error: rc32631: task 1: Out Of Memory
+==== backtrace (tid: 255030) ====
+ 0 0x0000000000003760 uct_cma_ep_tx_error()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/uct/sm/scopy/cma/cma_ep.c:81
+ 1 0x0000000000003ae9 uct_cma_ep_tx()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/uct/sm/scopy/cma/cma_ep.c:114
+ 2 0x000000000001d6b4 uct_scopy_ep_progress_tx()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/uct/sm/scopy/base/scopy_ep.c:151
+ 3 0x000000000002011d ucs_arbiter_dispatch_nonempty()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/ucs/datastruct/arbiter.c:321
+ 4 0x000000000001d1e9 ucs_arbiter_dispatch()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/ucs/datastruct/arbiter.h:386
+ 5 0x00000000000208f9 ucs_callbackq_slow_proxy()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/ucs/datastruct/callbackq.c:404
+ 6 0x0000000000044b2a ucs_callbackq_dispatch()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/ucs/datastruct/callbackq.h:211
+ 7 0x0000000000044b2a uct_worker_progress()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/uct/api/uct.h:2768
+ 8 0x0000000000044b2a ucp_worker_progress()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/ucp/core/ucp_worker.c:2814
+ 9 0x0000000000033f2c opal_progress()  ???:0
+10 0x0000000000077240 ompi_request_default_test()  ???:0
+11 0x00000000000b175e MPI_Test()  ???:0
+12 0x0000000000051779 ompi_test_f()  ???:0
+13 0x00000000017d87d2 __dmumps_buf_MOD_dmumps_buf_freerequests()  dmumps_comm_buffer.F:0
+14 0x00000000017d8dc1 __dmumps_buf_MOD_dmumps_buf_size_available.constprop.0()  dmumps_comm_buffer.F:0
+15 0x00000000017e46c3 __dmumps_buf_MOD_dmumps_buf_send_contrib_type2()  ???:0
+16 0x00000000018f473c dmumps_maplig_()  ???:0
+17 0x000000000181cc48 dmumps_traiter_message_()  ???:0
+18 0x000000000181f0e9 dmumps_try_recvtreat_()  ???:0
+19 0x000000000195f098 __dmumps_fac_par_m_MOD_dmumps_fac_par()  ???:0
+20 0x00000000018d0be3 dmumps_fac_b_()  ???:0
+21 0x0000000001897b4f dmumps_fac_driver_()  ???:0
+22 0x0000000001827945 dmumps_()  ???:0
+23 0x00000000017b8127 dmumps_f77_()  ???:0
+24 0x00000000017b611f dmumps_c()  ???:0
+25 0x0000000000bdeb21 MatFactorNumeric_MUMPS()  mumps.c:0
+26 0x0000000000dc1013 MatLUFactorNumeric()  ???:0
+27 0x00000000012673b4 PCSetUp_LU()  lu.c:0
+28 0x000000000130e5da PCSetUp()  ???:0
+29 0x00000000011ccfa6 KSPSetUp()  ???:0
+30 0x00000000011ce848 KSPSolve_Private()  itfunc.c:0
+31 0x00000000011cfb28 KSPSolve()  ???:0
+32 0x000000000132de9e SNESSolve_NEWTONLS()  ls.c:0
+33 0x000000000135ace5 SNESSolve()  ???:0
+34 0x00000000010f398b libMesh::PetscNonlinearSolver<double>::solve()  ???:0
+35 0x0000000001170c0f libMesh::NonlinearImplicitSystem::solve()  ???:0
+36 0x0000000001af781f NonlinearSystem::solve()  ???:0
+37 0x000000000295092d FEProblemBase::solve()  ???:0
+38 0x0000000002ab26bf FEProblemSolve::solve()  ???:0
+39 0x0000000002ab1f25 FixedPointSolve::solveStep()  ???:0
+40 0x0000000002abd14f FixedPointSolve::solve()  ???:0
+41 0x000000000220a28b TimeStepper::step()  ???:0
+42 0x0000000002ab5bc4 TransientBase::takeStep()  ???:0
+43 0x0000000002aaed59 TransientBase::execute()  ???:0
+44 0x0000000002d5caf3 MooseApp::executeExecutioner()  ???:0
+45 0x0000000002d77de3 MooseApp::run()  ???:0
+46 0x000000000040dda9 Moose::main<OrcaTestApp>()  ???:0
+47 0x000000000002394a __libc_init_first()  ???:0
+48 0x0000000000023a05 __libc_start_main()  ???:0
+49 0x000000000040e011 _start()  ???:0
+=================================
+[rc32631:255030] *** Process received signal ***
+[rc32631:255030] Signal: Aborted (6)
+[rc32631:255030] Signal code:  (-6)
+[rc32631:255030] [ 0] /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib64/libc.so.6(+0x38790)[0x14f79c863790]
+[rc32631:255030] [ 1] /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib64/libc.so.6(+0x867ac)[0x14f79c8b17ac]
+[rc32631:255030] [ 2] /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib64/libc.so.6(gsignal+0x12)[0x14f79c8636f2]
+[rc32631:255030] [ 3] /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib64/libc.so.6(abort+0xd3)[0x14f79c84d4b2]
+[rc32631:255030] [ 4] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libucs.so.0(+0x26ffb)[0x14f798afcffb]
+[rc32631:255030] [ 5] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libucs.so.0(+0x2b226)[0x14f798b01226]
+[rc32631:255030] [ 6] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libucs.so.0(ucs_log_dispatch+0xdc)[0x14f798b0158c]
+[rc32631:255030] [ 7] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/ucx/libuct_cma.so.0(+0x3760)[0x14f7996b6760]
+[rc32631:255030] [ 8] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/ucx/libuct_cma.so.0(uct_cma_ep_tx+0x1b9)[0x14f7996b6ae9]
+[rc32631:255030] [ 9] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libuct.so.0(uct_scopy_ep_progress_tx+0x64)[0x14f79b6b06b4]
+[rc32631:255030] [10] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libucs.so.0(ucs_arbiter_dispatch_nonempty+0xad)[0x14f798af611d]
+[rc32631:255030] [11] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libuct.so.0(uct_scopy_iface_progress+0x79)[0x14f79b6b01e9]
+[rc32631:255030] [12] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libucs.so.0(+0x208f9)[0x14f798af68f9]
+[rc32631:255030] [13] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libucp.so.0(ucp_worker_progress+0x5a)[0x14f798b77b2a]
+[rc32631:255030] [14] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcc12/openmpi/4.1.5/lib/libopen-pal.so.40(opal_progress+0x2c)[0x14f79cd41f2c]
+[rc32631:255030] [15] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcc12/openmpi/4.1.5/lib/libmpi.so.40(ompi_request_default_test+0x30)[0x14f79ce77240]
+[rc32631:255030] [16] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcc12/openmpi/4.1.5/lib/libmpi.so.40(PMPI_Test+0x4e)[0x14f79ceb175e]
+[rc32631:255030] [17] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcc12/openmpi/4.1.5/lib/libmpi_mpifh.so.40(PMPI_Test_f+0x49)[0x14f79e7af779]
+[rc32631:255030] [18] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(+0x17d87d2)[0x14f7a17d87d2]
+[rc32631:255030] [19] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(+0x17d8dc1)[0x14f7a17d8dc1]
+[rc32631:255030] [20] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(__dmumps_buf_MOD_dmumps_buf_send_contrib_type2+0x243)[0x14f7a17e46c3]
+[rc32631:255030] [21] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_maplig_+0x19bc)[0x14f7a18f473c]
+[rc32631:255030] [22] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_traiter_message_+0x1548)[0x14f7a181cc48]
+[rc32631:255030] [23] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_try_recvtreat_+0xc09)[0x14f7a181f0e9]
+[rc32631:255030] [24] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(__dmumps_fac_par_m_MOD_dmumps_fac_par+0xc48)[0x14f7a195f098]
+[rc32631:255030] [25] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_fac_b_+0x11f3)[0x14f7a18d0be3]
+[rc32631:255030] [26] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_fac_driver_+0xb2df)[0x14f7a1897b4f]
+[rc32631:255030] [27] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_+0xc75)[0x14f7a1827945]
+[rc32631:255030] [28] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_f77_+0x16d7)[0x14f7a17b8127]
+[rc32631:255030] [29] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_c+0x101f)[0x14f7a17b611f]
+[rc32631:255030] *** End of error message ***
+==== backtrace (tid: 255023) ====
+ 0 0x0000000000003760 uct_cma_ep_tx_error()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/uct/sm/scopy/cma/cma_ep.c:81
+ 1 0x0000000000003ae9 uct_cma_ep_tx()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/uct/sm/scopy/cma/cma_ep.c:114
+ 2 0x000000000001d6b4 uct_scopy_ep_progress_tx()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/uct/sm/scopy/base/scopy_ep.c:151
+ 3 0x000000000002011d ucs_arbiter_dispatch_nonempty()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/ucs/datastruct/arbiter.c:321
+ 4 0x000000000001d1e9 ucs_arbiter_dispatch()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/ucs/datastruct/arbiter.h:386
+ 5 0x00000000000208f9 ucs_callbackq_slow_proxy()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/ucs/datastruct/callbackq.c:404
+ 6 0x0000000000044b2a ucs_callbackq_dispatch()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/ucs/datastruct/callbackq.h:211
+ 7 0x0000000000044b2a uct_worker_progress()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/uct/api/uct.h:2768
+ 8 0x0000000000044b2a ucp_worker_progress()  /tmp/ebuser/avx512/UCX/1.14.1/GCCcore-12.3.0/ucx-1.14.1/src/ucp/core/ucp_worker.c:2814
+ 9 0x0000000000033f2c opal_progress()  ???:0
+10 0x0000000000077240 ompi_request_default_test()  ???:0
+11 0x00000000000b175e MPI_Test()  ???:0
+12 0x0000000000051779 ompi_test_f()  ???:0
+13 0x00000000017d87d2 __dmumps_buf_MOD_dmumps_buf_freerequests()  dmumps_comm_buffer.F:0
+14 0x00000000017d8dc1 __dmumps_buf_MOD_dmumps_buf_size_available.constprop.0()  dmumps_comm_buffer.F:0
+15 0x00000000017e46c3 __dmumps_buf_MOD_dmumps_buf_send_contrib_type2()  ???:0
+16 0x00000000018f473c dmumps_maplig_()  ???:0
+17 0x000000000181cc48 dmumps_traiter_message_()  ???:0
+18 0x000000000181e414 dmumps_recv_and_treat_()  ???:0
+19 0x000000000181ecd3 dmumps_try_recvtreat_()  ???:0
+20 0x00000000018f4cbf dmumps_maplig_()  ???:0
+21 0x000000000181cc48 dmumps_traiter_message_()  ???:0
+22 0x000000000181f0e9 dmumps_try_recvtreat_()  ???:0
+23 0x000000000195f098 __dmumps_fac_par_m_MOD_dmumps_fac_par()  ???:0
+24 0x00000000018d0be3 dmumps_fac_b_()  ???:0
+25 0x0000000001897b4f dmumps_fac_driver_()  ???:0
+26 0x0000000001827945 dmumps_()  ???:0
+27 0x00000000017b8127 dmumps_f77_()  ???:0
+28 0x00000000017b611f dmumps_c()  ???:0
+29 0x0000000000bdeb21 MatFactorNumeric_MUMPS()  mumps.c:0
+30 0x0000000000dc1013 MatLUFactorNumeric()  ???:0
+31 0x00000000012673b4 PCSetUp_LU()  lu.c:0
+32 0x000000000130e5da PCSetUp()  ???:0
+33 0x00000000011ccfa6 KSPSetUp()  ???:0
+34 0x00000000011ce848 KSPSolve_Private()  itfunc.c:0
+35 0x00000000011cfb28 KSPSolve()  ???:0
+36 0x000000000132de9e SNESSolve_NEWTONLS()  ls.c:0
+37 0x000000000135ace5 SNESSolve()  ???:0
+38 0x00000000010f398b libMesh::PetscNonlinearSolver<double>::solve()  ???:0
+39 0x0000000001170c0f libMesh::NonlinearImplicitSystem::solve()  ???:0
+40 0x0000000001af781f NonlinearSystem::solve()  ???:0
+41 0x000000000295092d FEProblemBase::solve()  ???:0
+42 0x0000000002ab26bf FEProblemSolve::solve()  ???:0
+43 0x0000000002ab1f25 FixedPointSolve::solveStep()  ???:0
+44 0x0000000002abd14f FixedPointSolve::solve()  ???:0
+45 0x000000000220a28b TimeStepper::step()  ???:0
+46 0x0000000002ab5bc4 TransientBase::takeStep()  ???:0
+47 0x0000000002aaed59 TransientBase::execute()  ???:0
+48 0x0000000002d5caf3 MooseApp::executeExecutioner()  ???:0
+49 0x0000000002d77de3 MooseApp::run()  ???:0
+50 0x000000000040dda9 Moose::main<OrcaTestApp>()  ???:0
+51 0x000000000002394a __libc_init_first()  ???:0
+52 0x0000000000023a05 __libc_start_main()  ???:0
+53 0x000000000040e011 _start()  ???:0
+=================================
+[rc32631:255023] *** Process received signal ***
+[rc32631:255023] Signal: Aborted (6)
+[rc32631:255023] Signal code:  (103)
+[rc32631:255023] [ 0] /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib64/libc.so.6(+0x38790)[0x1552d0463790]
+[rc32631:255023] [ 1] /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib64/libc.so.6(+0x867ac)[0x1552d04b17ac]
+[rc32631:255023] [ 2] /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib64/libc.so.6(gsignal+0x12)[0x1552d04636f2]
+[rc32631:255023] [ 3] /cvmfs/soft.computecanada.ca/gentoo/2023/x86-64-v3/usr/lib64/libc.so.6(abort+0xd3)[0x1552d044d4b2]
+[rc32631:255023] [ 4] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libucs.so.0(+0x26ffb)[0x1552cc8fcffb]
+[rc32631:255023] [ 5] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libucs.so.0(+0x2b226)[0x1552cc901226]
+[rc32631:255023] [ 6] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libucs.so.0(ucs_log_dispatch+0xdc)[0x1552cc90158c]
+[rc32631:255023] [ 7] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/ucx/libuct_cma.so.0(+0x3760)[0x1552cf537760]
+[rc32631:255023] [ 8] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/ucx/libuct_cma.so.0(uct_cma_ep_tx+0x1b9)[0x1552cf537ae9]
+[rc32631:255023] [ 9] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libuct.so.0(uct_scopy_ep_progress_tx+0x64)[0x1552cd4e16b4]
+[rc32631:255023] [10] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libucs.so.0(ucs_arbiter_dispatch_nonempty+0xad)[0x1552cc8f611d]
+[rc32631:255023] [11] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libuct.so.0(uct_scopy_iface_progress+0x79)[0x1552cd4e11e9]
+[rc32631:255023] [12] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libucs.so.0(+0x208f9)[0x1552cc8f68f9]
+[rc32631:255023] [13] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcccore/ucx/1.14.1/lib/libucp.so.0(ucp_worker_progress+0x5a)[0x1552cc977b2a]
+[rc32631:255023] [14] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcc12/openmpi/4.1.5/lib/libopen-pal.so.40(opal_progress+0x2c)[0x1552d0941f2c]
+[rc32631:255023] [15] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcc12/openmpi/4.1.5/lib/libmpi.so.40(ompi_request_default_test+0x30)[0x1552d0a77240]
+[rc32631:255023] [16] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcc12/openmpi/4.1.5/lib/libmpi.so.40(PMPI_Test+0x4e)[0x1552d0ab175e]
+[rc32631:255023] [17] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/Compiler/gcc12/openmpi/4.1.5/lib/libmpi_mpifh.so.40(PMPI_Test_f+0x49)[0x1552d2bed779]
+[rc32631:255023] [18] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(+0x17d87d2)[0x1552d53d87d2]
+[rc32631:255023] [19] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(+0x17d8dc1)[0x1552d53d8dc1]
+[rc32631:255023] [20] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(__dmumps_buf_MOD_dmumps_buf_send_contrib_type2+0x243)[0x1552d53e46c3]
+[rc32631:255023] [21] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_maplig_+0x19bc)[0x1552d54f473c]
+[rc32631:255023] [22] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_traiter_message_+0x1548)[0x1552d541cc48]
+[rc32631:255023] [23] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_recv_and_treat_+0x604)[0x1552d541e414]
+[rc32631:255023] [24] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_try_recvtreat_+0x7f3)[0x1552d541ecd3]
+[rc32631:255023] [25] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_maplig_+0x1f3f)[0x1552d54f4cbf]
+[rc32631:255023] [26] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_traiter_message_+0x1548)[0x1552d541cc48]
+[rc32631:255023] [27] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_try_recvtreat_+0xc09)[0x1552d541f0e9]
+[rc32631:255023] [28] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(__dmumps_fac_par_m_MOD_dmumps_fac_par+0xc48)[0x1552d555f098]
+[rc32631:255023] [29] /cvmfs/soft.computecanada.ca/easybuild/software/2023/x86-64-v4/MPI/gcc12/openmpi4/petsc/3.23.4/lib/libpetsc.so.3.23(dmumps_fac_b_+0x11f3)[0x1552d54d0be3]
+[rc32631:255023] *** End of error message ***
+[2026-09-03T14:50:02.763] error: *** STEP 20132820.0 ON rc32631 CANCELLED AT 2026-09-03T14:50:02 DUE to SIGNAL Terminated ***
+[2026-09-03T14:50:02.763] error: *** JOB 20132820 ON rc32631 CANCELLED AT 2026-09-03T14:50:02 DUE to SIGNAL Terminated ***
