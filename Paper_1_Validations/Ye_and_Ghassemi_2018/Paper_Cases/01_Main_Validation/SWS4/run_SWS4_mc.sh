@@ -20,7 +20,7 @@ PROJECT_ROOT=${ORCA_ROOT:-/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/pr
 CASE_DIR=${PROJECT_ROOT}/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWS4
 cd "${CASE_DIR}"
 unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
-mkdir -p results_csv_stages results_exodus_stages logs
+mkdir -p logs
 
 # Paper's selected MC member for SWS4 is 'center' (array index 0); that is
 # the default above. Submit the full equal-budget sweep with:  sbatch --array=0-8
@@ -36,6 +36,11 @@ if (( IDX < 0 || IDX >= ${#LABELS[@]} )); then
   echo "SLURM_ARRAY_TASK_ID must be 0..8" >&2; exit 2
 fi
 STEM=SWS4_OrcaMohrCoulombContactTraction_${LABELS[$IDX]}
+
+# one self-contained folder per case (decks otherwise split the
+# artifacts across results_exodus/, results_csv/, results_checkpoint/)
+OUTDIR=results/${STEM}
+mkdir -p "${OUTDIR}" logs
 echo "deck : ${CASE_DIR}/SWS4_OrcaMohrCoulombContactTraction.i  (member ${LABELS[$IDX]})"
 srun --mpi=pmi2 -n 32 "${PROJECT_ROOT}/orca-opt" -i "SWS4_OrcaMohrCoulombContactTraction.i" \
   Outputs/chk/enable=false \
@@ -44,5 +49,6 @@ srun --mpi=pmi2 -n 32 "${PROJECT_ROOT}/orca-opt" -i "SWS4_OrcaMohrCoulombContact
   "Materials/czm_contact/friction_coefficient_smooth=${MU_SMOOTH[$IDX]}" \
   "Materials/czm_contact/cohesion_smooth=${C_SMOOTH[$IDX]}" \
   "Materials/czm_contact/roughness_decay_distance=${D_ROUGH[$IDX]}" \
-  "csv_file_base=results_csv_stages/${STEM}" \
-  "exodus_file_base=results_exodus_stages/${STEM}"
+  "csv_file_base=${OUTDIR}/${STEM}" \
+  "exodus_file_base=${OUTDIR}/${STEM}" \
+  "checkpoint_file_base=${OUTDIR}/${STEM}_chk"

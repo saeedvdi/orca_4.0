@@ -19,12 +19,18 @@ PROJECT_ROOT=${ORCA_ROOT:-/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/pr
 CASE_DIR=${PROJECT_ROOT}/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWT2
 cd "${CASE_DIR}"
 unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
-mkdir -p results_csv_stages results_exodus_stages logs
+mkdir -p logs
 
 STEM=SWT2_OrcaBartonBandisContactTractionFastADHardening
+
+# one self-contained folder per case (decks otherwise split the
+# artifacts across results_exodus/, results_csv/, results_checkpoint/)
+OUTDIR=results/${STEM}
+mkdir -p "${OUTDIR}" logs
 echo "deck : ${CASE_DIR}/${STEM}.i"
 echo "mesh : $(grep -m1 '^mesh_file' ${STEM}.i)"
 srun --mpi=pmi2 -n 32 "${PROJECT_ROOT}/orca-opt" -i "${STEM}.i" \
   Outputs/chk/enable=false \
-  "csv_file_base=results_csv_stages/${STEM}" \
-  "exodus_file_base=results_exodus_stages/${STEM}"
+  "csv_file_base=${OUTDIR}/${STEM}" \
+  "exodus_file_base=${OUTDIR}/${STEM}" \
+  "checkpoint_file_base=${OUTDIR}/${STEM}_chk"

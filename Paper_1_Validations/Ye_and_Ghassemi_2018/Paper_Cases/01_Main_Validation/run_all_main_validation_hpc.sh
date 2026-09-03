@@ -74,16 +74,23 @@ MESH=$(grep -m1 '^mesh_file' "${D}.i" | sed 's/#.*//; s/^[^=]*=[[:space:]]*//; s
 if [[ ! -f ${MESH} ]]; then echo "mesh not found from ${CASE_DIR}: ${MESH}" >&2; exit 2; fi
 
 unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
-mkdir -p results_csv_stages results_exodus_stages logs
+# One self-contained folder per case. The decks default to THREE separate
+# directories (results_exodus/, results_csv/, results_checkpoint/), which
+# scatters a single run's artifacts; all three bases are redirected here so
+# everything for a case lands together. file_base is CWD-relative in MOOSE,
+# which is why the cd above must happen first.
+OUTDIR=results/${O}
+mkdir -p "${OUTDIR}" logs
 
 echo "task ${IDX}: ${S} ${L}"
 echo "  deck : ${CASE_DIR}/${D}.i"
 echo "  mesh : ${MESH}"
-echo "  out  : results_exodus_stages/${O}"
+echo "  out  : ${CASE_DIR}/${OUTDIR}/"
 
 COMMON=(Outputs/chk/enable=false
-        "csv_file_base=results_csv_stages/${O}"
-        "exodus_file_base=results_exodus_stages/${O}")
+        "csv_file_base=${OUTDIR}/${O}"
+        "exodus_file_base=${OUTDIR}/${O}"
+        "checkpoint_file_base=${OUTDIR}/${O}_chk")
 
 if [[ ${L} == BB ]]; then
   srun --mpi=pmi2 -n 32 "${PROJECT_ROOT}/orca-opt" -i "${D}.i" "${COMMON[@]}"
