@@ -4,8 +4,8 @@ Two decks and a script that answer a question raised by the Ye & Ghassemi (2018)
 calibration: `fault_pressure_coefficient` is 0.86 on SW-S4, 0.87 on SW-S3 and 1.0 on
 SW-T1/T2 — **is there an analytical way to determine it, rather than fitting it?**
 
-The full argument is in
-[`../../YeGhasemmi2018/FRACTURE_PRESSURE_COEFFICIENT.md`](../../YeGhasemmi2018/FRACTURE_PRESSURE_COEFFICIENT.md).
+The full argument is in Section 4 of the authoritative
+[`theory.md`](../../../../Paper_1_Validations/General_Docs/Related_Theory/theory.md).
 This directory supplies the numerical half.
 
 ## The claim being tested

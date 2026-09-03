@@ -52,84 +52,84 @@ CASE_SETS = {
     "legacy": {
         "SWT1": {
             "BB": (
-                "Examples/YeGhasemmi2018/SWT1/Sweeps/results_csv_local/107_01_swt1_coh27p2_apscale0p01512_ppfix.csv",
-                "Examples/YeGhasemmi2018/SWT1/Sweeps/107_01_swt1_coh27p2_apscale0p01512_ppfix.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWT1/BB/107_01_swt1_coh27p2_apscale0p01512_ppfix.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWT1/BB/107_01_swt1_coh27p2_apscale0p01512_ppfix.i",
             ),
             "MC": (
-                "Examples/YeGhasemmi2018/SWT1/results_csv_mc_sweep_hpc/SWT1_OrcaMohrCoulombContactTraction_pb04.csv",
-                "Examples/YeGhasemmi2018/SWT1/SWT1_OrcaMohrCoulombContactTraction.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWT1/MC/SWT1_OrcaMohrCoulombContactTraction_pb04.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWT1/MC/SWT1_OrcaMohrCoulombContactTraction.i",
             ),
         },
         "SWT2": {
             "BB": (
-                "Examples/YeGhasemmi2018/SWT2/Sweeps/results_csv_hpc_rorqual/100_04_swt2_apscale0p0177_ppfix_hpc.csv",
-                "Examples/YeGhasemmi2018/SWT2/Sweeps/100_04_swt2_apscale0p0177_ppfix.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWT2/BB/100_04_swt2_apscale0p0177_ppfix_hpc.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWT2/BB/100_04_swt2_apscale0p0177_ppfix.i",
             ),
             "MC": (
-                "Examples/YeGhasemmi2018/SWT2/results_csv_mc_sweep_hpc/SWT2_OrcaMohrCoulombContactTraction_pb04.csv",
-                "Examples/YeGhasemmi2018/SWT2/SWT2_OrcaMohrCoulombContactTraction.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWT2/MC/SWT2_OrcaMohrCoulombContactTraction_pb04.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWT2/MC/SWT2_OrcaMohrCoulombContactTraction.i",
             ),
         },
         "SWS3": {
             "BB": (
-                "Examples/YeGhasemmi2018/SWS3/Sweeps/results_csv_hpc_rorqual/100_06_sw3_resc1p30_unld0p00_ppfix_hpc.csv",
-                "Examples/YeGhasemmi2018/SWS3/Sweeps/100_06_sw3_resc1p30_unld0p00_ppfix.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWS3/BB/100_06_sw3_resc1p30_unld0p00_ppfix_hpc.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWS3/BB/100_06_sw3_resc1p30_unld0p00_ppfix.i",
             ),
             "MC": (
-                "Examples/YeGhasemmi2018/SWS3/results_csv_mc_sweep_hpc/SWS3_OrcaMohrCoulombContactTraction_pb06.csv",
-                "Examples/YeGhasemmi2018/SWS3/SWS3_OrcaMohrCoulombContactTraction.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWS3/MC/SWS3_OrcaMohrCoulombContactTraction_pb06.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWS3/MC/SWS3_OrcaMohrCoulombContactTraction.i",
             ),
         },
         "SWS4": {
             "BB": (
-                "Examples/YeGhasemmi2018/SWS4/Sweeps/results_csv_hpc_rorqual/93_07_sw4_final_theta30_jrc5_ppfix_hpc.csv",
-                "Examples/YeGhasemmi2018/SWS4/Sweeps/93_07_sw4_final_theta30_jrc5_ppfix.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWS4/BB/93_07_sw4_final_theta30_jrc5_ppfix_hpc.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWS4/BB/93_07_sw4_final_theta30_jrc5_ppfix.i",
             ),
             "MC": (
-                "Examples/YeGhasemmi2018/SWS4/results_csv_mc_sweep_hpc/SWS4_OrcaMohrCoulombContactTraction_center.csv",
-                "Examples/YeGhasemmi2018/SWS4/SWS4_OrcaMohrCoulombContactTraction.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWS4/MC/SWS4_OrcaMohrCoulombContactTraction_center.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWS4/MC/SWS4_OrcaMohrCoulombContactTraction.i",
             ),
         },
     },
     "protocol116": {
         "SWT1": {
             "BB": (
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWT1/proposed_inputs/protocol_consistency_20260902/csv/116_01_swt1_bb_commonK796_protocol_ppfix.csv",
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWT1/116_01_swt1_bb_commonK796_protocol_ppfix.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWT1/results/116_01_swt1_bb_commonK796_protocol_ppfix.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWT1/inputs/116_01_swt1_bb_commonK796_protocol_ppfix.i",
             ),
             "MC": (
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWT1/proposed_inputs/protocol_consistency_20260902/csv/116_02_swt1_mc_commonK796_protocol_ppfix.csv",
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWT1/116_02_swt1_mc_commonK796_protocol_ppfix.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWT1/results/116_02_swt1_mc_commonK796_protocol_ppfix.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWT1/inputs/116_02_swt1_mc_commonK796_protocol_ppfix.i",
             ),
         },
         "SWT2": {
             "BB": (
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWT2/proposed_inputs/protocol_consistency_20260902/csv/116_03_swt2_bb_theta31_commonK796_protocol_ppfix.csv",
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWT2/116_03_swt2_bb_theta31_commonK796_protocol_ppfix.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWT2/results/116_03_swt2_bb_theta31_commonK796_protocol_ppfix.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWT2/inputs/116_03_swt2_bb_theta31_commonK796_protocol_ppfix.i",
             ),
             "MC": (
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWT2/proposed_inputs/protocol_consistency_20260902/csv/116_04_swt2_mc_theta31_commonK796_protocol_ppfix.csv",
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWT2/116_04_swt2_mc_theta31_commonK796_protocol_ppfix.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWT2/results/116_04_swt2_mc_theta31_commonK796_protocol_ppfix.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWT2/inputs/116_04_swt2_mc_theta31_commonK796_protocol_ppfix.i",
             ),
         },
         "SWS3": {
             "BB": (
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWS3/proposed_inputs/protocol_consistency_20260902/csv/116_05_sws3_bb_fixedpiston_commonK796_protocol_ppfix.csv",
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWS3/116_05_sws3_bb_fixedpiston_commonK796_protocol_ppfix.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWS3/results/116_05_sws3_bb_fixedpiston_commonK796_protocol_ppfix.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWS3/inputs/116_05_sws3_bb_fixedpiston_commonK796_protocol_ppfix.i",
             ),
             "MC": (
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWS3/proposed_inputs/protocol_consistency_20260902/csv/116_06_sws3_mc_fixedpiston_commonK796_protocol_ppfix.csv",
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWS3/116_06_sws3_mc_fixedpiston_commonK796_protocol_ppfix.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWS3/results/116_06_sws3_mc_fixedpiston_commonK796_protocol_ppfix.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWS3/inputs/116_06_sws3_mc_fixedpiston_commonK796_protocol_ppfix.i",
             ),
         },
         "SWS4": {
             "BB": (
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWS4/proposed_inputs/protocol_consistency_20260902/csv/116_07_sws4_bb_jrc1p19_fixedpiston_commonK796_ppfix.csv",
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWS4/116_07_sws4_bb_jrc1p19_fixedpiston_commonK796_ppfix.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWS4/results/116_07_sws4_bb_jrc1p19_fixedpiston_commonK796_ppfix.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWS4/inputs/116_07_sws4_bb_jrc1p19_fixedpiston_commonK796_ppfix.i",
             ),
             "MC": (
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWS4/proposed_inputs/protocol_consistency_20260902/csv/116_08_sws4_mc_fixedpiston_commonK796_protocol_ppfix.csv",
-                "Examples/YeGhasemmi2018/protocol_consistency_20260902/SWS4/116_08_sws4_mc_fixedpiston_commonK796_protocol_ppfix.i",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWS4/results/116_08_sws4_mc_fixedpiston_commonK796_protocol_ppfix.csv",
+                "Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/04_Protocol_Consistency_116_Under_Review/SWS4/inputs/116_08_sws4_mc_fixedpiston_commonK796_protocol_ppfix.i",
             ),
         },
     },

@@ -11,15 +11,16 @@ import numpy as np
 import pandas as pd
 
 
-ROOT = Path("/media/geomechanics/Data4TB/projects/orca_4.0")
-YE = ROOT / "Examples/YeGhasemmi2018"
+VALIDATION = Path(__file__).resolve().parents[2]
+ROOT = VALIDATION.parents[1]
+CASES = VALIDATION / "Paper_Cases/01_Main_Validation"
 OUT = Path(__file__).resolve().parents[1]
 
 BB = {
     "SW-T1": {
         "sample": "SWT1",
-        "csv": YE / "SWT1/results_csv/107_01_swt1_coh27p2_apscale0p01512_ppfix.csv",
-        "deck": YE / "SWT1/Sweeps/107_01_swt1_coh27p2_apscale0p01512_ppfix.i",
+        "csv": CASES / "SWT1/BB/107_01_swt1_coh27p2_apscale0p01512_ppfix.csv",
+        "deck": CASES / "SWT1/BB/107_01_swt1_coh27p2_apscale0p01512_ppfix.i",
         "a0_um": 1.63,
         "aperture_scale": 0.01512,
         "dilation_scale": 0.0,
@@ -27,8 +28,8 @@ BB = {
     },
     "SW-T2": {
         "sample": "SWT2",
-        "csv": YE / "SWT2/results_csv/100_04_swt2_apscale0p0177_ppfix_hpc.csv",
-        "deck": YE / "SWT2/Sweeps/100_04_swt2_apscale0p0177_ppfix.i",
+        "csv": CASES / "SWT2/BB/100_04_swt2_apscale0p0177_ppfix_hpc.csv",
+        "deck": CASES / "SWT2/BB/100_04_swt2_apscale0p0177_ppfix.i",
         "a0_um": 2.11,
         "aperture_scale": 0.0177,
         "dilation_scale": 0.0,
@@ -36,8 +37,8 @@ BB = {
     },
     "SW-S3": {
         "sample": "SWS3",
-        "csv": YE / "SWS3/results_csv/100_06_sw3_resc1p30_unld0p00_ppfix_hpc.csv",
-        "deck": YE / "SWS3/Sweeps/100_06_sw3_resc1p30_unld0p00_ppfix.i",
+        "csv": CASES / "SWS3/BB/100_06_sw3_resc1p30_unld0p00_ppfix_hpc.csv",
+        "deck": CASES / "SWS3/BB/100_06_sw3_resc1p30_unld0p00_ppfix.i",
         "a0_um": 1.22,
         "aperture_scale": 0.001,
         "dilation_scale": 0.038,
@@ -45,8 +46,8 @@ BB = {
     },
     "SW-S4": {
         "sample": "SWS4",
-        "csv": YE / "SWS4/results_csv/93_07_sw4_final_theta30_jrc5_ppfix_hpc.csv",
-        "deck": YE / "SWS4/Sweeps/93_07_sw4_final_theta30_jrc5_ppfix.i",
+        "csv": CASES / "SWS4/BB/93_07_sw4_final_theta30_jrc5_ppfix_hpc.csv",
+        "deck": CASES / "SWS4/BB/93_07_sw4_final_theta30_jrc5_ppfix.i",
         "a0_um": 0.74,
         "aperture_scale": 0.001,
         "dilation_scale": 0.0117,
@@ -57,23 +58,23 @@ BB = {
 MC = {
     "SW-T1": {
         "sample": "SWT1",
-        "csv": YE / "SWT1/results_csv_mc_sweep_hpc/SWT1_OrcaMohrCoulombContactTraction_pb04.csv",
-        "deck": YE / "SWT1/SWT1_OrcaMohrCoulombContactTraction.i",
+        "csv": CASES / "SWT1/MC/SWT1_OrcaMohrCoulombContactTraction_pb04.csv",
+        "deck": CASES / "SWT1/MC/SWT1_OrcaMohrCoulombContactTraction.i",
     },
     "SW-T2": {
         "sample": "SWT2",
-        "csv": YE / "SWT2/results_csv_mc_sweep_hpc/SWT2_OrcaMohrCoulombContactTraction_pb04.csv",
-        "deck": YE / "SWT2/SWT2_OrcaMohrCoulombContactTraction.i",
+        "csv": CASES / "SWT2/MC/SWT2_OrcaMohrCoulombContactTraction_pb04.csv",
+        "deck": CASES / "SWT2/MC/SWT2_OrcaMohrCoulombContactTraction.i",
     },
     "SW-S3": {
         "sample": "SWS3",
-        "csv": YE / "SWS3/results_csv_mc_sweep_hpc/SWS3_OrcaMohrCoulombContactTraction_pb06.csv",
-        "deck": YE / "SWS3/SWS3_OrcaMohrCoulombContactTraction.i",
+        "csv": CASES / "SWS3/MC/SWS3_OrcaMohrCoulombContactTraction_pb06.csv",
+        "deck": CASES / "SWS3/MC/SWS3_OrcaMohrCoulombContactTraction.i",
     },
     "SW-S4": {
         "sample": "SWS4",
-        "csv": YE / "SWS4/results_csv_mc_sweep_hpc/SWS4_OrcaMohrCoulombContactTraction_center.csv",
-        "deck": YE / "SWS4/SWS4_OrcaMohrCoulombContactTraction.i",
+        "csv": CASES / "SWS4/MC/SWS4_OrcaMohrCoulombContactTraction_center.csv",
+        "deck": CASES / "SWS4/MC/SWS4_OrcaMohrCoulombContactTraction.i",
     },
 }
 

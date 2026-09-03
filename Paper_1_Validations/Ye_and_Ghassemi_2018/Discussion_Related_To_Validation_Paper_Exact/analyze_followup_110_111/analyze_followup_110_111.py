@@ -11,10 +11,10 @@ import numpy as np
 import pandas as pd
 
 
-ORCA = Path("/media/geomechanics/Data4TB/projects/orca_4.0")
-RESULTS = ORCA / "Examples/YeGhasemmi2018/SWS4/proposed_inputs/results/results_csv"
+VALIDATION = Path(__file__).resolve().parents[2]
+ORCA = VALIDATION.parents[1]
+PAPER_CASES = VALIDATION / "Paper_Cases"
 ROOT = Path(__file__).resolve().parents[1]
-DECKS = ROOT / "proposed_inputs"
 GATE_PATH = ORCA / "scripts/table2_gate.py"
 
 CASES = {
@@ -35,17 +35,24 @@ CONTROL = {
 
 PARENTS = {
     "SWS3": (
-        ORCA / "Examples/YeGhasemmi2018/SWS3/results_csv/100_06_sw3_resc1p30_unld0p00_ppfix_hpc.csv",
-        ORCA / "Examples/YeGhasemmi2018/SWS3/Sweeps/100_06_sw3_resc1p30_unld0p00_ppfix.i",
+        PAPER_CASES / "01_Main_Validation/SWS3/BB/100_06_sw3_resc1p30_unld0p00_ppfix_hpc.csv",
+        PAPER_CASES / "01_Main_Validation/SWS3/BB/100_06_sw3_resc1p30_unld0p00_ppfix.i",
     ),
     "SWT1": (
-        ORCA / "Examples/YeGhasemmi2018/SWT1/results_csv/107_01_swt1_coh27p2_apscale0p01512_ppfix.csv",
-        ORCA / "Examples/YeGhasemmi2018/SWT1/Sweeps/107_01_swt1_coh27p2_apscale0p01512_ppfix.i",
+        PAPER_CASES / "01_Main_Validation/SWT1/BB/107_01_swt1_coh27p2_apscale0p01512_ppfix.csv",
+        PAPER_CASES / "01_Main_Validation/SWT1/BB/107_01_swt1_coh27p2_apscale0p01512_ppfix.i",
     ),
     "SWT2": (
-        ORCA / "Examples/YeGhasemmi2018/SWT2/results_csv/100_04_swt2_apscale0p0177_ppfix_hpc.csv",
-        ORCA / "Examples/YeGhasemmi2018/SWT2/Sweeps/100_04_swt2_apscale0p0177_ppfix.i",
+        PAPER_CASES / "01_Main_Validation/SWT2/BB/100_04_swt2_apscale0p0177_ppfix_hpc.csv",
+        PAPER_CASES / "01_Main_Validation/SWT2/BB/100_04_swt2_apscale0p0177_ppfix.i",
     ),
+}
+
+CASE_PATHS = {
+    stem: PAPER_CASES
+    / "02_Mechanism_Tests"
+    / ("SWS3_110" if stem.startswith("110_") else "SWT1_111" if "swt1" in stem else "SWT2_111")
+    for stem in CASES
 }
 
 
@@ -54,7 +61,7 @@ def load_gate():
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
-    module.find_deck = lambda csv_path, tag: DECKS / f"{csv_path.stem}.i"
+    module.find_deck = lambda csv_path, tag: CASE_PATHS[csv_path.stem] / "inputs" / f"{csv_path.stem}.i"
     return module
 
 
@@ -67,7 +74,7 @@ def build_metrics() -> tuple[pd.DataFrame, pd.DataFrame, dict[str, dict]]:
     scored: dict[str, dict] = {}
 
     for stem, (sample, label, variant) in CASES.items():
-        csv_path = RESULTS / f"{stem}.csv"
+        csv_path = CASE_PATHS[stem] / "results" / f"{stem}.csv"
         raw = pd.read_csv(csv_path)
         score = GATE.score_run(csv_path, sample, None, 0.15, "stage1", 55.0, "kinematic")
         nrmse = GATE.normalised_scores(score)
@@ -149,7 +156,7 @@ def compare_parents(scored: dict[str, dict]) -> pd.DataFrame:
             row = {
                 "sample": sample,
                 "parent_csv": str(parent_csv),
-                "relaxed_floor_control_csv": str(RESULTS / f"{control_stem}.csv"),
+                "relaxed_floor_control_csv": str(CASE_PATHS[control_stem] / "results" / f"{control_stem}.csv"),
                 "parent_flow_nRMSE_percent": parent_nrmse["Q_ml_min"],
                 "control_flow_nRMSE_percent": control_nrmse["Q_ml_min"],
                 "parent_five_channel_mean_nRMSE_percent": parent_nrmse["mean"],

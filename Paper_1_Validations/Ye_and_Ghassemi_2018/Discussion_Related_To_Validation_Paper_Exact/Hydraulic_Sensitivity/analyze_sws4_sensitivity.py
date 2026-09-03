@@ -15,47 +15,48 @@ except ModuleNotFoundError:  # Stage metrics remain available without Exodus fie
     Dataset = None
 
 
-ORCA = Path("/media/geomechanics/Data4TB/projects/orca_4.0")
-YE = ORCA / "Examples/YeGhasemmi2018"
-DECK = YE / "SWS4/Sweeps/93_07_sw4_final_theta30_jrc5_ppfix.i"
-RUN_DIR = YE / "SWS4/paper_revision_20260831_3case"
-FOLLOWUP_DIR = YE / "SWS4/proposed_inputs/paper_revision_20260901_followup"
+VALIDATION = Path(__file__).resolve().parents[2]
+ORCA = VALIDATION.parents[1]
+PAPER_CASES = VALIDATION / "Paper_Cases"
+DECK = PAPER_CASES / "01_Main_Validation/SWS4/BB/93_07_sw4_final_theta30_jrc5_ppfix.i"
+RUN_DIR = PAPER_CASES / "02_Mechanism_Tests/SWS4_Legacy_Ablations"
+FOLLOWUP_DIR = PAPER_CASES / "02_Mechanism_Tests/SWS4_109"
 OUT = Path(__file__).resolve().parents[1]
 
 RUNS = {
     "Calibrated BB": {
-        "csv": YE / "SWS4/results_csv/93_07_sw4_final_theta30_jrc5_ppfix_hpc.csv",
-        "exodus": YE / "SWS4/Sweeps/results_exodus_local/93_07_sw4_final_theta30_jrc5_ppfix.e",
+        "csv": PAPER_CASES / "01_Main_Validation/SWS4/BB/93_07_sw4_final_theta30_jrc5_ppfix_hpc.csv",
+        "exodus": None,
         "floor_m": 0.74e-6,
     },
     "No dilation": {
-        "csv": RUN_DIR / "csv/sws4_ab_no_dilation.csv",
-        "exodus": RUN_DIR / "exodus/sws4_ab_no_dilation.e",
+        "csv": RUN_DIR / "results/sws4_ab_no_dilation.csv",
+        "exodus": None,
         "floor_m": 0.74e-6,
     },
     "No gouge": {
-        "csv": RUN_DIR / "csv/sws4_ab_no_gouge.csv",
-        "exodus": RUN_DIR / "exodus/sws4_ab_no_gouge.e",
+        "csv": RUN_DIR / "results/sws4_ab_no_gouge.csv",
+        "exodus": None,
         "floor_m": 0.74e-6,
     },
     "Strong gouge, relaxed floor": {
-        "csv": RUN_DIR / "csv/sws4_loss_g056.csv",
-        "exodus": RUN_DIR / "exodus/sws4_loss_g056.e",
+        "csv": RUN_DIR / "results/sws4_loss_g056.csv",
+        "exodus": None,
         "floor_m": 1.0e-9,
     },
     "Calibrated gouge, relaxed floor": {
-        "csv": FOLLOWUP_DIR / "csv/109_01_sw4_floor1nm_g028_ppfix.csv",
-        "exodus": FOLLOWUP_DIR / "exodus/109_01_sw4_floor1nm_g028_ppfix.e",
+        "csv": FOLLOWUP_DIR / "results/109_01_sw4_floor1nm_g028_ppfix.csv",
+        "exodus": None,
         "floor_m": 1.0e-9,
     },
     "Intermediate gouge, relaxed floor": {
-        "csv": FOLLOWUP_DIR / "csv/109_02_sw4_floor1nm_g042_ppfix.csv",
-        "exodus": FOLLOWUP_DIR / "exodus/109_02_sw4_floor1nm_g042_ppfix.e",
+        "csv": FOLLOWUP_DIR / "results/109_02_sw4_floor1nm_g042_ppfix.csv",
+        "exodus": None,
         "floor_m": 1.0e-9,
     },
     "No hydraulic dilation, relaxed floor": {
-        "csv": FOLLOWUP_DIR / "csv/109_03_sw4_floor1nm_nodilation_ppfix.csv",
-        "exodus": FOLLOWUP_DIR / "exodus/109_03_sw4_floor1nm_nodilation_ppfix.e",
+        "csv": FOLLOWUP_DIR / "results/109_03_sw4_floor1nm_nodilation_ppfix.csv",
+        "exodus": None,
         "floor_m": 1.0e-9,
     },
 }
@@ -84,9 +85,9 @@ def sample_stages(csv_path: Path, times: list[float]) -> pd.DataFrame:
     return pd.DataFrame(rows).set_index("stage")
 
 
-def exodus_aperture(exodus_path: Path, times: list[float], floor_m: float) -> dict[int, dict]:
+def exodus_aperture(exodus_path: Path | None, times: list[float], floor_m: float) -> dict[int, dict]:
     output = {}
-    if Dataset is None:
+    if Dataset is None or exodus_path is None or not exodus_path.is_file():
         return output
     with Dataset(exodus_path) as dataset:
         exodus_time = np.asarray(dataset.variables["time_whole"][:], dtype=float)

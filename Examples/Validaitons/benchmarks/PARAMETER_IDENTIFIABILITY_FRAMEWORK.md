@@ -210,7 +210,8 @@ report.
 ## 3. Worked example — the fracture pressure coefficient `χ`
 
 This is the question the framework is most useful for, and it is treated in full in
-[`../../YeGhasemmi2018/FRACTURE_PRESSURE_COEFFICIENT.md`](../../YeGhasemmi2018/FRACTURE_PRESSURE_COEFFICIENT.md).
+Section 4 of the authoritative
+[`theory.md`](../../../Paper_1_Validations/General_Docs/Related_Theory/theory.md).
 The short version, because it illustrates every point above:
 
 * `χ` enters as `σ'_n = σ_n + χ p`, so the Coulomb strength is `τ_f = c + μ(σ_n + χ p)`.
