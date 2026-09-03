@@ -7,6 +7,7 @@
 #include "libmesh/partitioner.h"
 
 #include <algorithm>
+#include <functional>
 #include <limits>
 #include <tuple>
 
@@ -113,12 +114,32 @@ OrcaFaultInterface3DGenerator::generate()
 
   _primary_to_secondary_id.clear();
 
-  auto find_free_boundary_id = [this, &boundary_info]() -> boundary_id_type {
+  // FIX 6 (2026-09-03): ids handed out here must be remembered.
+  //
+  // Allocating a secondary sideset only calls boundary_info.sideset_name(id), which
+  // registers a NAME. The id itself does not enter boundary_info.get_boundary_ids() until
+  // a side is actually assigned to it, which happens much later. So on the SECOND sideset
+  // this lambda saw the first secondary id as still free and handed out the same id again:
+  // every secondary sideset collapsed into one boundary.
+  //
+  // The symptom was remote from the cause. The generator itself succeeded; the mesh then
+  // failed in libMesh's find_neighbors with "Periodic boundary neighbor not found"
+  // (periodic_boundaries.C:107), because add_disjoint_neighbor_boundary_pairs could not
+  // pair a primary face against a secondary boundary that now held both sides of both
+  // fractures. It only ever appeared with TWO OR MORE sidesets AND
+  // add_interface_on_two_sides = true -- a single fracture, which is all the Kalantar2025
+  // decks use, allocates once and is unaffected.
+  std::set<boundary_id_type> reserved_boundary_ids;
+  auto find_free_boundary_id = [this, &boundary_info, &reserved_boundary_ids]()
+      -> boundary_id_type {
     const auto & current_boundary_ids = boundary_info.get_boundary_ids();
     for (boundary_id_type free_id = 1; free_id < std::numeric_limits<boundary_id_type>::max();
          ++free_id)
-      if (current_boundary_ids.count(free_id) == 0)
+      if (current_boundary_ids.count(free_id) == 0 && reserved_boundary_ids.count(free_id) == 0)
+      {
+        reserved_boundary_ids.insert(free_id);
         return free_id;
+      }
     mooseError("OrcaFaultInterface3DGenerator: no free boundary IDs available.");
     return Moose::INVALID_BOUNDARY_ID;
   };
@@ -303,7 +324,7 @@ OrcaFaultInterface3DGenerator::generate()
     bnd_elems.push_back(BndElementData{mesh->elem_ptr(elem_id), side_id, bc_id});
 
   // Compute a stable per-boundary interface normal from actual face geometry before
-  // any node repointing occurs. This is used in stitchNodesToElems to make the
+  // any node repointing occurs. This is used in splitInterfaceNodes to make the
   // side-assignment decision robust on non-trivial (curved, oblique) fractures.
   _interface_normals.clear();
   for (const auto & bnd_elem : bnd_elems)
@@ -326,8 +347,7 @@ OrcaFaultInterface3DGenerator::generate()
 
   // Gather sideset nodes, duplicate them, and stitch duplicated nodes to one side.
   const auto bnd_node_ids = getSidesetNodes(bnd_elems, mesh_sideset_ids, *mesh);
-  const auto split_nodes_map = splitNodesOnInterface(bnd_node_ids, mesh);
-  stitchNodesToElems(split_nodes_map, node_to_elem_map, bnd_elems, mesh);
+  splitInterfaceNodes(bnd_node_ids, node_to_elem_map, bnd_elems, mesh);
 
   // Ensure the secondary interface sideset is populated on the opposite side of each
   // primary interface side.
@@ -445,17 +465,28 @@ OrcaFaultInterface3DGenerator::generate()
   return std::move(mesh);
 }
 
-std::set<dof_id_type>
-OrcaFaultInterface3DGenerator::exteriorNodes(const libMesh::MeshBase & mesh)
+std::set<std::pair<dof_id_type, dof_id_type>>
+OrcaFaultInterface3DGenerator::exteriorEdges(const libMesh::MeshBase & mesh)
 {
-  std::set<dof_id_type> exterior;
+  std::set<std::pair<dof_id_type, dof_id_type>> exterior;
   for (const auto & elem : mesh.active_element_ptr_range())
     for (const auto s : make_range(elem->n_sides()))
       if (!elem->neighbor_ptr(s))
       {
         const auto side_elem = elem->build_side_ptr(s);
-        for (const auto n : make_range(side_elem->n_nodes()))
-          exterior.insert(side_elem->node_id(n));
+        for (const auto e : make_range(side_elem->n_sides()))
+        {
+          const auto edge_local_nodes = side_elem->nodes_on_side(e);
+          if (edge_local_nodes.size() < 2)
+            continue;
+          dof_id_type n0 = side_elem->node_id(edge_local_nodes.front());
+          dof_id_type n1 = side_elem->node_id(edge_local_nodes.back());
+          if (n0 == n1)
+            continue;
+          if (n1 < n0)
+            std::swap(n0, n1);
+          exterior.insert(std::make_pair(n0, n1));
+        }
       }
   return exterior;
 }
@@ -466,18 +497,34 @@ OrcaFaultInterface3DGenerator::getSidesetNodes(
     const std::set<boundary_id_type> & mesh_sideset_ids,
     const libMesh::MeshBase & mesh) const
 {
+  using EdgeKey = std::pair<dof_id_type, dof_id_type>;
+
   BoundaryNodeSetMap bnd_node_ids;
+  std::map<boundary_id_type, std::map<EdgeKey, unsigned int>> edge_face_count;
+  std::map<boundary_id_type, std::map<EdgeKey, std::set<dof_id_type>>> edge_nodes;
 
-  // Computed once: which nodes sit on the outside of the specimen.
-  const std::set<dof_id_type> exterior_nodes =
-      (_split_only_interior_nodes || _preserve_front_nodes) ? exteriorNodes(mesh)
-                                                            : std::set<dof_id_type>();
+  // FIX 7: which (element, side) pairs each sideset actually carries.
+  //
+  // The interface faces below are de-duplicated so each is processed once. The old test,
+  // `if (elem->id() < neighbor->id()) continue;`, assumed the sideset holds BOTH sides of
+  // every face and keeps the higher-id copy. That is true of a sideset built from a
+  // nodeset, but NOT of one from SideSetsBetweenSubdomainsGenerator, which is ONE-SIDED:
+  // every face whose owner had the lower id was dropped, and with the usual element
+  // numbering that is all of them. The failure was silent -- the sidesets were still
+  // created with the right side counts, the interface kernels still assembled, the solve
+  // still converged, and the fracture came out welded with w_max exactly 0.
+  std::map<boundary_id_type, std::set<std::pair<dof_id_type, unsigned int>>> sideset_sides;
+  for (const auto & bnd_elem : bnd_elems)
+    sideset_sides[bnd_elem.bnd_id].insert(
+        std::make_pair(bnd_elem.elem->id(), static_cast<unsigned int>(bnd_elem.side)));
 
+  // ---------------------------------------------------------------------------------
+  // PASS 1: collect the candidate nodes and the edge topology of every interface.
+  // ---------------------------------------------------------------------------------
   for (const auto sideset_id : mesh_sideset_ids)
   {
-    using EdgeKey = std::pair<dof_id_type, dof_id_type>;
-    std::map<EdgeKey, unsigned int> edge_face_count;
-    std::map<EdgeKey, std::set<dof_id_type>> edge_nodes;
+    auto & face_count = edge_face_count[sideset_id];
+    auto & nodes_on_edge = edge_nodes[sideset_id];
 
     for (const auto & bnd_elem : bnd_elems)
       if (sideset_id == bnd_elem.bnd_id)
@@ -490,8 +537,14 @@ OrcaFaultInterface3DGenerator::getSidesetNodes(
         if (!neighbor)
           continue;
 
-        // Process each interface side only once.
-        if (elem->id() < neighbor->id())
+        // Process each interface face once. Skip this copy only when the partner copy is
+        // also in the sideset and will be processed instead; on a one-sided sideset this
+        // copy is the only one there is.
+        const auto neighbor_side = neighbor->which_neighbor_am_i(elem);
+        const bool partner_in_sideset =
+            neighbor_side != libMesh::invalid_uint &&
+            sideset_sides[sideset_id].count(std::make_pair(neighbor->id(), neighbor_side));
+        if (partner_in_sideset && elem->id() < neighbor->id())
           continue;
 
         std::unique_ptr<Elem> side_elem = elem->build_side_ptr(side);
@@ -501,7 +554,8 @@ OrcaFaultInterface3DGenerator::getSidesetNodes(
         for (const auto n : make_range(side_elem->n_nodes()))
           bnd_node_ids[sideset_id].insert(side_elem->node_id(n));
 
-        // Build 3D fracture-front topology from boundary edges of interface faces.
+        // Edge topology of the interface surface: an edge shared by two interface faces is
+        // interior to it, an edge touched once bounds it.
         for (const auto edge_local_side : make_range(side_elem->n_sides()))
         {
           const auto edge_local_nodes = side_elem->nodes_on_side(edge_local_side);
@@ -516,109 +570,262 @@ OrcaFaultInterface3DGenerator::getSidesetNodes(
             std::swap(n0, n1);
 
           const EdgeKey edge_key(n0, n1);
-          ++edge_face_count[edge_key];
+          ++face_count[edge_key];
 
-          auto & edge_node_set = edge_nodes[edge_key];
+          auto & edge_node_set = nodes_on_edge[edge_key];
           for (const auto local_edge_node : edge_local_nodes)
             edge_node_set.insert(side_elem->node_id(local_edge_node));
         }
       }
+  }
 
-    // FIX 5 (2026-09-02): front-node detection, rewritten to the criterion the FIX 3
-    // comment described but did not implement.
-    //
-    // History. The ORIGINAL code treated every edge with face_count == 1 as crack front.
-    // That is wrong for a through-going fracture: where the fracture daylights on the
-    // sample surface those edges also have face_count == 1, and welding them shut clamps
-    // the fracture at the specimen boundary. FIX 3 replaced it with a "does this node have
-    // a neighbour across the interface" test -- but that set is built by scanning the same
-    // faces, with the same filters, that built the candidate set, so the two sets are
-    // equal by construction and the removal was a no-op. Both preserve_front_nodes and
-    // split_only_interior_nodes were therefore INERT: setting them false gave a mesh with
-    // exactly the same node count as setting them true.
-    //
-    // The correct distinction is the one FIX 3's own comment states: a true crack-front
-    // edge bounds the interface surface (face_count == 1) AND lies inside the material.
-    // An edge with face_count == 1 whose nodes are all on the mesh exterior is where the
-    // fracture reaches the sample surface, and those nodes MUST be split.
-    //
-    //     face_count == 1, edge entirely on the mesh exterior  ->  daylighting  -> split
-    //     face_count == 1, edge not entirely on the exterior   ->  crack front  -> weld
-    //     face_count >  2                                      ->  junction     -> weld
-    //
-    // For a fracture that cuts the whole specimen -- every Kalantar2025 OG-SH/OG-SC/OG-T
-    // geometry -- every bounding edge lies on the cylindrical surface, so nothing is
-    // removed and the generated mesh is IDENTICAL to the one the old code produced.
-    // Verified by node count and by full mesh comparison; see
-    // Examples/Validaitons/benchmarks/mesh_generator_check/README.md.
-    if (_split_only_interior_nodes || _preserve_front_nodes)
+  if (!(_split_only_interior_nodes || _preserve_front_nodes))
+    return bnd_node_ids;
+
+  // ---------------------------------------------------------------------------------
+  // PASS 2: classify the bounding edges and weld the ones that are true crack fronts.
+  //
+  // FIX 5: this is the criterion the old FIX 3 comment described but did not implement.
+  //
+  // History. The ORIGINAL code treated every edge with face_count == 1 as crack front.
+  // That is wrong for a through-going fracture: where it daylights on the sample surface
+  // those edges also have face_count == 1, and welding them clamps the fracture at the
+  // specimen boundary. FIX 3 replaced it with a "does this node have a neighbour across
+  // the interface" test -- but that set was built by scanning the same faces, with the
+  // same filters, that built the candidate set, so the two were equal by construction and
+  // the removal was a no-op. Both options were therefore INERT: setting them false gave a
+  // mesh with exactly the same node count as setting them true.
+  //
+  // FIX 8 adds the third case. An edge that bounds one fracture may lie ON another one --
+  // a T-junction, where a branch terminates against a second fracture. That is not a crack
+  // front either: the material there IS already separated, and the two flanks have to be
+  // free to slide apart along the fracture they meet. Welding it pins the aperture and the
+  // slip to zero exactly at the junction, which is where they peak.
+  //
+  //     face_count == 1, edge lies IN an exterior face       -> daylighting -> split
+  //     face_count == 1, edge is an edge of another interface -> junction    -> split
+  //     face_count == 1, otherwise                            -> crack front -> weld
+  //     face_count >  2                                       -> junction    -> weld
+  //
+  // FIX 9 makes both tests EDGE-based rather than node-based. In a plane-strain model one
+  // element thick, EVERY node lies on the z-min or z-max face, so a node test calls every
+  // crack tip "exterior" and splits it -- which is exactly what it did, giving 2 node
+  // copies at each tip where there must be 1. The tip EDGE runs through the thickness at
+  // an interior (x, y) and is not an edge of any exterior face, so the edge test is
+  // correct at any thickness.
+  //
+  // For a fracture that cuts the whole specimen -- every Kalantar2025 OG-SH/OG-SC/OG-T
+  // geometry -- every bounding edge lies on the cylindrical surface, so nothing is removed
+  // and the generated mesh is IDENTICAL to the one the old code produced. Verified by node
+  // count and by MD5 of the coordinate and connectivity arrays; see
+  // Examples/Validaitons/benchmarks/mesh_generator_check/README.md.
+  const std::set<EdgeKey> exterior_edges = exteriorEdges(mesh);
+
+  for (const auto sideset_id : mesh_sideset_ids)
+  {
+    // Edges belonging to any OTHER interface in this request.
+    std::set<EdgeKey> other_interface_edges;
+    for (const auto & [other_id, other_edges] : edge_face_count)
+      if (other_id != sideset_id)
+        for (const auto & [edge_key, unused_count] : other_edges)
+        {
+          libmesh_ignore(unused_count);
+          other_interface_edges.insert(edge_key);
+        }
+
+    const auto & face_count = edge_face_count[sideset_id];
+    const auto & nodes_on_edge = edge_nodes[sideset_id];
+    std::set<dof_id_type> nodes_to_remove;
+
+    for (const auto & [edge_key, count] : face_count)
     {
-      std::set<dof_id_type> nodes_to_remove;
+      const auto edge_nodes_it = nodes_on_edge.find(edge_key);
+      if (edge_nodes_it == nodes_on_edge.end())
+        continue;
 
-      // Crack-front nodes: on a bounding edge of the interface surface that does not lie
-      // wholly on the specimen exterior.
-      for (const auto & [edge_key, face_count] : edge_face_count)
+      if (count == 1)
       {
-        if (face_count != 1)
+        // Daylighting on the specimen surface, or terminating against another fracture:
+        // either way the faces must be free to separate.
+        if (exterior_edges.count(edge_key) || other_interface_edges.count(edge_key))
           continue;
-
-        const auto edge_nodes_it = edge_nodes.find(edge_key);
-        if (edge_nodes_it == edge_nodes.end())
-          continue;
-
-        bool edge_is_on_exterior = true;
-        for (const auto node_id : edge_nodes_it->second)
-          if (!exterior_nodes.count(node_id))
-          {
-            edge_is_on_exterior = false;
-            break;
-          }
-
-        if (edge_is_on_exterior)
-          continue; // the fracture daylights here -- the faces must be free to separate
 
         for (const auto node_id : edge_nodes_it->second)
           nodes_to_remove.insert(node_id);
       }
-
-      if (_split_only_interior_nodes)
+      else if (count > 2 && _split_only_interior_nodes)
       {
-        // Non-manifold edges (face_count > 2) are junctions between fracture branches.
-        // NOTE: edge_face_count is rebuilt inside this per-sideset loop, so this only sees
-        // a junction WITHIN one sideset. Two fractures meeting as separate sidesets are
-        // not detected here -- and are rejected earlier anyway, because the generator does
-        // not support intersecting fractures.
-        for (const auto & [edge_key, face_count] : edge_face_count)
-          if (face_count > 2)
-          {
-            const auto edge_nodes_it = edge_nodes.find(edge_key);
-            if (edge_nodes_it != edge_nodes.end())
-              for (const auto node_id : edge_nodes_it->second)
-                nodes_to_remove.insert(node_id);
-          }
+        // A non-manifold edge WITHIN this one interface: branches of the same fracture
+        // meeting. Junctions between two SEPARATE sidesets are handled by the
+        // on_other_interface test above, since edge_face_count is per sideset.
+        for (const auto node_id : edge_nodes_it->second)
+          nodes_to_remove.insert(node_id);
       }
-
-      for (const auto node_id : nodes_to_remove)
-        bnd_node_ids[sideset_id].erase(node_id);
     }
+
+    for (const auto node_id : nodes_to_remove)
+      bnd_node_ids[sideset_id].erase(node_id);
   }
 
   return bnd_node_ids;
 }
 
-OrcaFaultInterface3DGenerator::SplitNodeMap
-OrcaFaultInterface3DGenerator::splitNodesOnInterface(const BoundaryNodeSetMap & bnd_node_ids,
-                                                 std::unique_ptr<MeshBase> & mesh) const
+void
+OrcaFaultInterface3DGenerator::splitInterfaceNodes(const BoundaryNodeSetMap & bnd_node_ids,
+                                                   NodeToElemMap & node_to_elem_map,
+                                                   const std::vector<BndElementData> & bnd_elems,
+                                                   std::unique_ptr<MeshBase> & mesh) const
 {
   auto & boundary_info = mesh->get_boundary_info();
-  SplitNodeMap split_nodes_map;
+  using FaceKey = std::pair<dof_id_type, unsigned int>;
 
-  for (const auto & [bnd_id, node_ids] : bnd_node_ids)
-    for (const auto node_id : node_ids)
+  // -----------------------------------------------------------------------------------
+  // Every interface face, from BOTH sides, across all requested sidesets. Two elements
+  // that touch across one of these are on opposite sides of a fracture.
+  // -----------------------------------------------------------------------------------
+  std::set<FaceKey> interface_faces;
+  for (const auto & bnd_elem : bnd_elems)
+  {
+    Elem * elem = bnd_elem.elem;
+    interface_faces.insert(std::make_pair(elem->id(), static_cast<unsigned int>(bnd_elem.side)));
+    Elem * neighbor = elem->neighbor_ptr(bnd_elem.side);
+    if (!neighbor)
+      continue;
+    const auto neighbor_side = neighbor->which_neighbor_am_i(elem);
+    if (neighbor_side != libMesh::invalid_uint)
+      interface_faces.insert(std::make_pair(neighbor->id(), neighbor_side));
+  }
+
+  // -----------------------------------------------------------------------------------
+  // PASS 1: move each sideset onto one side of its interface, and populate the secondary.
+  //
+  // Done BEFORE any node is repointed, so which_neighbor_am_i is asked only of intact
+  // connectivity. The old code did this inside the node loop and had to capture the
+  // neighbour index before calling set_node to dodge exactly that hazard (FIX 2).
+  //
+  // The convention is unchanged: the primary sideset ends up on the side the interface
+  // normal points AWAY from, the secondary on the side it points towards.
+  // -----------------------------------------------------------------------------------
+  for (const auto & bnd_elem : bnd_elems)
+  {
+    const auto bnd_id = bnd_elem.bnd_id;
+    Elem * elem = bnd_elem.elem;
+    const auto side = bnd_elem.side;
+    Elem * neighbor = elem->neighbor_ptr(side);
+    if (!neighbor)
+      continue;
+
+    const auto normal_it = _interface_normals.find(bnd_id);
+    const RealVectorValue interface_normal =
+        (normal_it != _interface_normals.end()) ? normal_it->second : RealVectorValue(0, 0, 1);
+
+    const Point delta = elem->vertex_average() - neighbor->vertex_average();
+    const Real delta_norm = delta.norm();
+    if (delta_norm == 0.0)
+      continue;
+    if (interface_normal * (delta / delta_norm) <= 0.0)
+      continue;
+
+    const auto neighbor_side = neighbor->which_neighbor_am_i(elem);
+    if (neighbor_side != libMesh::invalid_uint &&
+        !boundary_info.has_boundary_id(neighbor, neighbor_side, bnd_id))
+      boundary_info.add_side(neighbor, neighbor_side, bnd_id);
+
+    if (boundary_info.has_boundary_id(elem, side, bnd_id))
+      boundary_info.remove_side(elem, side, bnd_id);
+
+    if (_add_interface_on_two_sides)
     {
-      const Node * node = mesh->node_ptr(node_id);
-      if (!node)
+      const auto secondary_it = _primary_to_secondary_id.find(bnd_id);
+      if (secondary_it != _primary_to_secondary_id.end() &&
+          !boundary_info.has_boundary_id(elem, side, secondary_it->second))
+        boundary_info.add_side(elem, side, secondary_it->second);
+    }
+  }
+
+  // -----------------------------------------------------------------------------------
+  // PASS 2: split each interface node into one copy per connected piece of material.
+  // -----------------------------------------------------------------------------------
+  std::set<dof_id_type> nodes_to_split;
+  for (const auto & [bnd_id, node_ids] : bnd_node_ids)
+  {
+    libmesh_ignore(bnd_id);
+    nodes_to_split.insert(node_ids.begin(), node_ids.end());
+  }
+
+  for (const auto node_ref_id : nodes_to_split)
+  {
+    const Node * node = mesh->node_ptr(node_ref_id);
+    if (!node)
+      continue;
+
+    const auto node_to_elem_it = node_to_elem_map.find(node_ref_id);
+    if (node_to_elem_it == node_to_elem_map.end())
+      continue;
+    const std::vector<dof_id_type> & elem_ids = node_to_elem_it->second;
+    if (elem_ids.size() < 2)
+      continue;
+
+    // Union-find over the elements meeting at this node.
+    std::map<dof_id_type, dof_id_type> parent;
+    for (const auto id : elem_ids)
+      parent[id] = id;
+    std::function<dof_id_type(dof_id_type)> find = [&](dof_id_type a) {
+      while (parent[a] != a)
+        a = parent[a] = parent[parent[a]];
+      return a;
+    };
+    auto unite = [&](dof_id_type a, dof_id_type b) {
+      const auto ra = find(a), rb = find(b);
+      if (ra != rb)
+        parent[std::max(ra, rb)] = std::min(ra, rb);
+    };
+
+    const std::set<dof_id_type> elem_id_set(elem_ids.begin(), elem_ids.end());
+    for (const auto id : elem_ids)
+    {
+      Elem * elem = mesh->elem_ptr(id);
+      if (!elem)
         continue;
+      for (const auto s : make_range(elem->n_sides()))
+      {
+        Elem * neighbor = elem->neighbor_ptr(s);
+        if (!neighbor || !elem_id_set.count(neighbor->id()))
+          continue;
+        // A fracture face separates the two pieces.
+        if (interface_faces.count(std::make_pair(id, static_cast<unsigned int>(s))))
+          continue;
+        // Only faces touching THIS node say anything about connectivity at it.
+        bool side_has_node = false;
+        for (const auto local_side_node : elem->nodes_on_side(s))
+          if (elem->node_id(local_side_node) == node_ref_id)
+          {
+            side_has_node = true;
+            break;
+          }
+        if (!side_has_node)
+          continue;
+        unite(id, neighbor->id());
+      }
+    }
+
+    // Group by component, ordered so the result does not depend on map iteration order.
+    std::map<dof_id_type, std::vector<dof_id_type>> components;
+    for (const auto id : elem_ids)
+      components[find(id)].push_back(id);
+    if (components.size() < 2)
+      continue;
+
+    // The lowest-rooted component keeps the original node; every other gets a copy.
+    bool first = true;
+    for (const auto & [root, ids] : components)
+    {
+      libmesh_ignore(root);
+      if (first)
+      {
+        first = false;
+        continue;
+      }
 
       std::unique_ptr<Node> new_node = Node::build(*node, Node::invalid_id);
       new_node->processor_id() = node->processor_id();
@@ -629,137 +836,18 @@ OrcaFaultInterface3DGenerator::splitNodesOnInterface(const BoundaryNodeSetMap & 
       boundary_info.boundary_ids(node, node_boundary_ids);
       boundary_info.add_node(added_node, node_boundary_ids);
 
-      split_nodes_map[bnd_id][node_id] = added_node->id();
-    }
-
-  return split_nodes_map;
-}
-
-void
-OrcaFaultInterface3DGenerator::stitchNodesToElems(const SplitNodeMap & split_nodes_map,
-                                              NodeToElemMap & node_to_elem_map,
-                                              const std::vector<BndElementData> & bnd_elems,
-                                              std::unique_ptr<MeshBase> & mesh) const
-{
-  auto & boundary_info = mesh->get_boundary_info();
-
-  for (const auto & [bnd_id, node_id_map] : split_nodes_map)
-  {
-    // FIX 1 (shared): Use the pre-computed per-boundary interface normal rather than
-    // deriving it lazily inside the node loop. The original code declared 'normal'
-    // outside the node loop and only set it on the first element pair encountered,
-    // then reused it for every subsequent node. On oblique or non-planar fractures
-    // the first-encountered delta can point in any direction, causing all subsequent
-    // nodes to be assigned to the wrong side. Using the geometry-based normal computed
-    // in generate() before any node repointing ensures a consistent, correct direction
-    // for the entire boundary.
-    const auto normal_it = _interface_normals.find(bnd_id);
-    const RealVectorValue interface_normal =
-        (normal_it != _interface_normals.end()) ? normal_it->second : RealVectorValue(0, 0, 1);
-
-    for (const auto & [node_ref_id, node_new_id] : node_id_map)
-    {
-      const auto node_to_elem_it = node_to_elem_map.find(node_ref_id);
-      if (node_to_elem_it == node_to_elem_map.end())
-        continue;
-
-      const std::vector<dof_id_type> & elem_ids = node_to_elem_it->second;
-      std::set<dof_id_type> elem_ids_bnd;
-
-      // First treat elements that are explicitly on the target boundary.
-      for (const auto elem_id : elem_ids)
-        for (const auto & bnd_elem : bnd_elems)
-          if (bnd_elem.bnd_id == bnd_id && bnd_elem.elem->id() == elem_id)
+      for (const auto id : ids)
+      {
+        Elem * elem = mesh->elem_ptr(id);
+        if (!elem)
+          continue;
+        for (const auto i : make_range(elem->n_nodes()))
+          if (elem->node_id(i) == node_ref_id)
           {
-            Elem * elem = bnd_elem.elem;
-            const auto side = bnd_elem.side;
-            Elem * neighbor = elem->neighbor_ptr(side);
-
-            if (!neighbor)
-              continue;
-
-            const auto nodes_on_side = elem->nodes_on_side(side);
-            if (std::find(nodes_on_side.begin(), nodes_on_side.end(), elem->local_node(node_ref_id)) ==
-                nodes_on_side.end())
-              continue;
-
-            elem_ids_bnd.insert(elem_id);
-
-            const Point delta = elem->vertex_average() - neighbor->vertex_average();
-            const Real delta_norm = delta.norm();
-            if (delta_norm == 0.0)
-              continue;
-
-            const Real side_sign = interface_normal * (delta / delta_norm);
-            if (side_sign > 0.0)
-            {
-              // FIX 2 (shared): Capture the neighbor side index BEFORE calling
-              // set_node. After set_node the element's node list changes, and some
-              // libMesh versions compute which_neighbor_am_i via node-ID matching —
-              // which then fails to find the neighbor because the shared node has been
-              // replaced. Capturing the index first guarantees a valid result.
-              const auto neighbor_side = neighbor->which_neighbor_am_i(elem);
-
-              unsigned int local_node_id = libMesh::invalid_uint;
-              for (const auto i : make_range(elem->n_nodes()))
-                if (elem->node_id(i) == node_ref_id)
-                {
-                  local_node_id = i;
-                  break;
-                }
-
-              if (local_node_id != libMesh::invalid_uint)
-              {
-                Node * new_node = mesh->node_ptr(node_new_id);
-                elem->set_node(local_node_id, new_node);
-
-                // Use the pre-captured neighbor_side.
-                if (neighbor_side != libMesh::invalid_uint &&
-                    !boundary_info.has_boundary_id(neighbor, neighbor_side, bnd_id))
-                  boundary_info.add_side(neighbor, neighbor_side, bnd_id);
-
-                if (boundary_info.has_boundary_id(elem, side, bnd_id))
-                  boundary_info.remove_side(elem, side, bnd_id);
-
-                if (_add_interface_on_two_sides)
-                {
-                  const auto secondary_it = _primary_to_secondary_id.find(bnd_id);
-                  if (secondary_it != _primary_to_secondary_id.end() &&
-                      !boundary_info.has_boundary_id(elem, side, secondary_it->second))
-                    boundary_info.add_side(elem, side, secondary_it->second);
-                }
-              }
-            }
+            elem->set_node(i, added_node);
+            break;
           }
-
-      // Then treat connected elements that are not directly in the boundary side list.
-      for (const auto elem_id : elem_ids)
-        if (elem_ids_bnd.count(elem_id) == 0)
-        {
-          Elem * elem = mesh->elem_ptr(elem_id);
-
-          unsigned int local_node_id = libMesh::invalid_uint;
-          for (const auto i : make_range(elem->n_nodes()))
-            if (elem->node_id(i) == node_ref_id)
-            {
-              local_node_id = i;
-              break;
-            }
-
-          if (local_node_id == libMesh::invalid_uint)
-            continue;
-
-          const Point delta = elem->vertex_average() - elem->point(local_node_id);
-          const Real delta_norm = delta.norm();
-          if (delta_norm == 0.0)
-            continue;
-
-          if (interface_normal * (delta / delta_norm) > 0.0)
-          {
-            Node * new_node = mesh->node_ptr(node_new_id);
-            elem->set_node(local_node_id, new_node);
-          }
-        }
+      }
     }
   }
 }

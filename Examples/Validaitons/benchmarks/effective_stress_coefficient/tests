@@ -1,0 +1,26 @@
+[Tests]
+  design = 'OrcaCZMFluidPressureInterfaceKernel.md OrcaCZMInterfacePressure.md'
+  issues = '#czm-benchmarks'
+  # Fracture effective-stress coefficient: sigma'_n = sigma_n + chi p, chi = 1 - A_c/A.
+  # See README.md and ../../YeGhasemmi2018/FRACTURE_PRESSURE_COEFFICIENT.md.
+  [homogenized]
+    type = CSVDiff
+    input = chi_homogenized.i
+    csvdiff = chi_homogenized_out.csv
+    rel_err = 1e-6
+    abs_zero = 1e-10
+    requirement = 'The fluid-pressure interface kernel shall reproduce the effective '
+                  'normal stress sigma_n + chi p for the coefficient it is given.'
+  []
+  [resolved]
+    type = CSVDiff
+    input = chi_resolved.i
+    csvdiff = chi_resolved_out.csv
+    min_parallel = 2
+    rel_err = 1e-6
+    abs_zero = 1e-10
+    requirement = 'A fracture with explicitly resolved contact patches shall recover an '
+                  'effective-stress coefficient equal to one minus the real contact-area '
+                  'fraction, without that coefficient being supplied.'
+  []
+[]

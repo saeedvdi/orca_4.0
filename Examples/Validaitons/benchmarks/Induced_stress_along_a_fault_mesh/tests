@@ -25,6 +25,10 @@
     input = fault_verification_impermeable.i
     csvdiff = fault_verification_impermeable_out.csv
     min_parallel = 4
+    # 226k elements with a direct solve. ~50 s on 8 ranks, but the harness's default 300 s
+    # ceiling is not enough at 4 ranks under load: the permeable case timed out at exactly
+    # 300.0 s in a full-suite run on 2026-09-03 while passing when run on its own.
+    max_time = 900
     rel_err = 1e-5
     abs_zero = 1e-30
     requirement = 'The poromechanical coupling shall reproduce the analytic stress '
@@ -36,6 +40,10 @@
     input = fault_verification_permeable.i
     csvdiff = fault_verification_permeable_out.csv
     min_parallel = 4
+    # 226k elements with a direct solve. ~50 s on 8 ranks, but the harness's default 300 s
+    # ceiling is not enough at 4 ranks under load: the permeable case timed out at exactly
+    # 300.0 s in a full-suite run on 2026-09-03 while passing when run on its own.
+    max_time = 900
     rel_err = 1e-5
     abs_zero = 1e-30
     requirement = 'The poromechanical coupling shall reproduce the analytic stress '

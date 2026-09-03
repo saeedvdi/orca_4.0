@@ -11,6 +11,10 @@
   #
   # The gold therefore pins generator EQUIVALENCE, not just current behaviour: a
   # regression in either generator, or in the front-node logic, breaks this test.
+  #
+  # The deck also feeds the generator a ONE-SIDED sideset on purpose, so it guards FIX 7
+  # as well: before that, every interface face was dropped and the fracture came out welded
+  # with w_max exactly 0 and no error of any kind.
   [orca_generator]
     type = CSVDiff
     input = sneddon_orca_generator.i
@@ -22,5 +26,53 @@
                   'opening, effective crack length and traction-free open state to the '
                   'same accuracy as BreakMeshByBlockGenerator on the same mesh, keeping '
                   'the crack-front nodes welded.'
+  []
+
+  # Guards FIX 6 (a distinct secondary sideset id per fracture) and FIX 7 (one-sided
+  # sidesets) on a second, T-shaped geometry. Mesh-only: an id collision or a dropped
+  # interface face changes the sideset side counts and the node count, both of which
+  # Exodiff compares.
+  [two_fractures]
+    type = Exodiff
+    input = two_fracture_generator.i
+    cli_args = '--mesh-only'
+    exodiff = 'two_fracture_generator_in.e'
+    recover = false
+    requirement = 'OrcaFaultInterface3DGenerator shall build more than one fracture with '
+                  'two-sided interfaces from one-sided sidesets, giving each secondary '
+                  'sideset a distinct boundary id.'
+  []
+
+  # END-TO-END GENERATOR EQUIVALENCE ON A JUNCTION.
+  #
+  # The same T-fracture physics solved twice, cut once by OrcaFaultInterface3DGenerator and
+  # once by MOOSE's BreakMeshByBlockGenerator. Every postprocessor agrees to all printed
+  # digits, so the two gold files are numerically identical and either test failing means
+  # the generators have diverged.
+  #
+  # This is what caught FIX 10. The mesh-only tests were already passing -- the junction
+  # node had the right THREE copies -- but the partition was inverted: the two quadrants a
+  # fracture separates were welded together and the two it does not were split apart. The
+  # slip came out 3.5x too small and nothing errored.
+  [junction_orca]
+    type = CSVDiff
+    input = junction_physics_orca.i
+    csvdiff = junction_physics_orca_out.csv
+    min_parallel = 2
+    rel_err = 1e-6
+    abs_zero = 1e-10
+    requirement = 'OrcaFaultInterface3DGenerator shall reproduce the aperture, normal '
+                  'traction and induced slip of two intersecting fractures exactly as '
+                  'BreakMeshByBlockGenerator does on the same geometry.'
+  []
+  [junction_breakmesh]
+    type = CSVDiff
+    input = junction_physics_breakmesh.i
+    csvdiff = junction_physics_breakmesh_out.csv
+    min_parallel = 2
+    rel_err = 1e-6
+    abs_zero = 1e-10
+    requirement = 'The BreakMeshByBlockGenerator reference for the junction equivalence '
+                  'check shall remain fixed.'
   []
 []

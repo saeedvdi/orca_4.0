@@ -214,17 +214,20 @@ This is the question the framework is most useful for, and it is treated in full
 The short version, because it illustrates every point above:
 
 * `χ` enters as `σ'_n = σ_n + χ p`, so the Coulomb strength is `τ_f = c + μ(σ_n + χ p)`.
-* A multi-stage injection test measures `∂τ_f/∂p = μχ` — **the product, not `χ`**. So
-  `χ = 0.86` with `μ = 0.5774` is indistinguishable from `χ = 1` with `μ = 0.4965`
-  (`φ = 26.4°`) from slip data alone. `χ` is identifiable only if `μ` is fixed
-  independently, and in these decks `μ` is itself calibrated.
-* There *is* an analytical estimate: `χ = 1 − A_c/A`, and the plastic-asperity bound gives
-  `χ ≥ 1 − σ'_n/(3·UCS) = 0.933`. The values in use are 1.0 (SW-T) and 0.86–0.87 (SW-S);
-  the latter sits **below the physically attainable range**.
+* A strength envelope at **one** confining stress gives two observables (intercept, slope)
+  against three unknowns (`c`, `μ`, `χ`) — underdetermined. `χ = 0.86` with `μ = 0.5774` is
+  indistinguishable from `χ = 1` with `μ = 0.4965` (`φ = 26.4°`). **Two confining stresses
+  break the degeneracy**; Ye ran all four specimens at 30 MPa, so their data cannot.
+* There *is* an analytical constraint: `χ = 1 − A_c/A` exactly — verified numerically to
+  eight significant figures in
+  [`effective_stress_coefficient/`](effective_stress_coefficient/) — with the upper bound
+  `χ ≤ 1 − σ'_n/H` from the asperity hardness. It runs the opposite way to intuition:
+  `χ = 1` is the unattainable end, and the fitted 0.86 is comfortably inside.
 
 This is the framework working as intended: the closed form says which combination the data
-constrain, independent physics supplies the missing constraint, and the two together show
-that one of the fitted values is outside the feasible set.
+constrain, independent physics supplies a bound the data cannot, and the two together turn
+"0.86 is a fitted number" into "0.86 is admissible but undetermined, and one more confining
+stress would determine it".
 
 ---
 

@@ -282,10 +282,14 @@ fracture = lower_upper
     type = FunctionValuePostprocessor
     function = fluid_ramp
   []
+  # Written as p/(p^2+1) rather than 1/(p+1) so that it is EXACTLY zero while the fluid
+  # pressure is still zero. With a 1/(p+1) guard the ratio there is round-off divided by
+  # one -- a ~1e-7 number whose sign flips with the rank count, which fails CSVDiff on a
+  # solution that is otherwise identical. At p = 2e7 the two forms agree to rounding.
   [chi_measured]
     type = ParsedPostprocessor
     pp_names = 'sigma_n_interface pressure_applied'
-    expression = '(sigma_n_interface + ${sigma_far}) / (pressure_applied + 1.0)'
+    expression = '(sigma_n_interface + ${sigma_far}) * pressure_applied / (pressure_applied * pressure_applied + 1.0)'
   []
   [chi_set]
     type = ConstantPostprocessor

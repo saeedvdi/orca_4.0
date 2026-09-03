@@ -128,6 +128,11 @@ w_max_analytic = ${fparse 4.0 * (1.0 - poissons_ratio^2) * crack_pressure * half
   # OrcaFaultInterface3DGenerator splits along a SIDESET, not a block pair, so the
   # sideset has to be built first. Between two blocks it is the same surface
   # BreakMeshByBlockGenerator would have found.
+  #
+  # SideSetsBetweenSubdomainsGenerator produces a ONE-SIDED sideset, and that is deliberate
+  # here: until FIX 7 the generator dropped every face whose owner had the lower element id
+  # -- all of them -- and welded the fracture shut with w_max exactly 0 and no error of any
+  # kind. Leaving this one-sided makes the benchmark guard that fix.
   [fracture_sideset]
     type = SideSetsBetweenSubdomainsGenerator
     input = refine_crack_blocks
@@ -135,22 +140,9 @@ w_max_analytic = ${fparse 4.0 * (1.0 - poissons_ratio^2) * crack_pressure * half
     paired_block = 'matrix_top_mid'
     new_boundary = 'fracture_interface'
   []
-  # ...and it must be TWO-SIDED. OrcaFaultInterface3DGenerator processes each interface
-  # face once with `if (elem->id() < neighbor->id()) continue;`, which assumes the sideset
-  # carries BOTH sides of every face and keeps the higher-id copy. A one-sided sideset
-  # loses every face whose owner has the lower id -- here, all of them -- and the result is
-  # a fracture that is silently WELDED: the sidesets are still created, the interface
-  # kernels still assemble, and w_max comes out exactly 0.
-  [fracture_sideset_other]
-    type = SideSetsBetweenSubdomainsGenerator
-    input = fracture_sideset
-    primary_block = 'matrix_top_mid'
-    paired_block = 'matrix_bottom_mid'
-    new_boundary = 'fracture_interface'
-  []
   [fault_split_3d]
     type = OrcaFaultInterface3DGenerator
-    input = fracture_sideset_other
+    input = fracture_sideset
     sidesets = 'fracture_interface'
     preserve_front_nodes = true
     split_only_interior_nodes = true

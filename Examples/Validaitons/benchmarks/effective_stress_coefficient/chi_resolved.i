@@ -345,10 +345,12 @@ fracture = 'contact_patches void_patches'
     function = fluid_ramp
   []
   # THE RESULT. Recovered from a resolved calculation that was never told what chi is.
+  # p/(p^2+1) rather than 1/(p+1): exactly zero while the fluid pressure is zero, instead
+  # of a round-off-level number whose sign depends on the rank count.
   [chi_measured]
     type = ParsedPostprocessor
     pp_names = 'sigma_eff_resolved pressure_applied'
-    expression = '(sigma_eff_resolved + ${sigma_far}) / (pressure_applied + 1.0)'
+    expression = '(sigma_eff_resolved + ${sigma_far}) * pressure_applied / (pressure_applied * pressure_applied + 1.0)'
   []
   [chi_analytic]
     type = ParsedPostprocessor
