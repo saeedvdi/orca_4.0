@@ -576,4 +576,5 @@ sneddon_aperture_max = ${fparse 4.0 * (1.0 - poissons_ratio^2) * crack_pressure 
 ##########################################################
 [Outputs]
   csv = true
+  exodus = true
 []

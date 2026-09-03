@@ -325,7 +325,7 @@ OrcaFaultInterface3DGenerator::generate()
   }
 
   // Gather sideset nodes, duplicate them, and stitch duplicated nodes to one side.
-  const auto bnd_node_ids = getSidesetNodes(bnd_elems, mesh_sideset_ids);
+  const auto bnd_node_ids = getSidesetNodes(bnd_elems, mesh_sideset_ids, *mesh);
   const auto split_nodes_map = splitNodesOnInterface(bnd_node_ids, mesh);
   stitchNodesToElems(split_nodes_map, node_to_elem_map, bnd_elems, mesh);
 
@@ -445,12 +445,33 @@ OrcaFaultInterface3DGenerator::generate()
   return std::move(mesh);
 }
 
+std::set<dof_id_type>
+OrcaFaultInterface3DGenerator::exteriorNodes(const libMesh::MeshBase & mesh)
+{
+  std::set<dof_id_type> exterior;
+  for (const auto & elem : mesh.active_element_ptr_range())
+    for (const auto s : make_range(elem->n_sides()))
+      if (!elem->neighbor_ptr(s))
+      {
+        const auto side_elem = elem->build_side_ptr(s);
+        for (const auto n : make_range(side_elem->n_nodes()))
+          exterior.insert(side_elem->node_id(n));
+      }
+  return exterior;
+}
+
 OrcaFaultInterface3DGenerator::BoundaryNodeSetMap
 OrcaFaultInterface3DGenerator::getSidesetNodes(
     const std::vector<BndElementData> & bnd_elems,
-    const std::set<boundary_id_type> & mesh_sideset_ids) const
+    const std::set<boundary_id_type> & mesh_sideset_ids,
+    const libMesh::MeshBase & mesh) const
 {
   BoundaryNodeSetMap bnd_node_ids;
+
+  // Computed once: which nodes sit on the outside of the specimen.
+  const std::set<dof_id_type> exterior_nodes =
+      (_split_only_interior_nodes || _preserve_front_nodes) ? exteriorNodes(mesh)
+                                                            : std::set<dof_id_type>();
 
   for (const auto sideset_id : mesh_sideset_ids)
   {
@@ -503,59 +524,70 @@ OrcaFaultInterface3DGenerator::getSidesetNodes(
         }
       }
 
-    // FIX 3 (3D-only): The original code used edge face count == 1 to identify front
-    // nodes. On a fracture that reaches the sample boundary (as in the Ye 2018 triaxial
-    // geometry), those boundary-reaching edges also have face count 1 and are incorrectly
-    // excluded. We now additionally require that the edge is a manifold interior edge
-    // (face count == 2) to be kept when split_only_interior_nodes is true, but we do NOT
-    // exclude boundary-reaching nodes when only preserve_front_nodes is true — those
-    // nodes are on the sample surface, not on a true crack front.
+    // FIX 5 (2026-09-02): front-node detection, rewritten to the criterion the FIX 3
+    // comment described but did not implement.
     //
-    // The distinction: a true crack-front edge has face_count == 1 AND neither endpoint
-    // is on the sample exterior boundary (i.e. both endpoints are connected to elements
-    // on both sides of the fracture plane). We approximate this by also checking whether
-    // the edge endpoints have a neighbor element on the opposite side. For simplicity and
-    // robustness we use the same approach as the 2D generator: we check whether the node
-    // is connected to elements on both sides of the interface. A node connected only to
-    // elements on one side is a true boundary/front node and should not be split.
+    // History. The ORIGINAL code treated every edge with face_count == 1 as crack front.
+    // That is wrong for a through-going fracture: where the fracture daylights on the
+    // sample surface those edges also have face_count == 1, and welding them shut clamps
+    // the fracture at the specimen boundary. FIX 3 replaced it with a "does this node have
+    // a neighbour across the interface" test -- but that set is built by scanning the same
+    // faces, with the same filters, that built the candidate set, so the two sets are
+    // equal by construction and the removal was a no-op. Both preserve_front_nodes and
+    // split_only_interior_nodes were therefore INERT: setting them false gave a mesh with
+    // exactly the same node count as setting them true.
     //
-    // Implementation: collect all nodes; then remove nodes that appear ONLY in elements
-    // that are entirely on one side of the interface (i.e. no neighbor element across the
-    // fracture plane exists at that node). This is the true interior-node criterion.
+    // The correct distinction is the one FIX 3's own comment states: a true crack-front
+    // edge bounds the interface surface (face_count == 1) AND lies inside the material.
+    // An edge with face_count == 1 whose nodes are all on the mesh exterior is where the
+    // fracture reaches the sample surface, and those nodes MUST be split.
+    //
+    //     face_count == 1, edge entirely on the mesh exterior  ->  daylighting  -> split
+    //     face_count == 1, edge not entirely on the exterior   ->  crack front  -> weld
+    //     face_count >  2                                      ->  junction     -> weld
+    //
+    // For a fracture that cuts the whole specimen -- every Kalantar2025 OG-SH/OG-SC/OG-T
+    // geometry -- every bounding edge lies on the cylindrical surface, so nothing is
+    // removed and the generated mesh is IDENTICAL to the one the old code produced.
+    // Verified by node count and by full mesh comparison; see
+    // Examples/Validaitons/benchmarks/mesh_generator_check/README.md.
     if (_split_only_interior_nodes || _preserve_front_nodes)
     {
-      // For each candidate node, check if it is shared by at least one element pair
-      // where a neighbor exists across the interface. Nodes with no such pair are front/
-      // boundary nodes and should not be split.
-      std::set<dof_id_type> nodes_with_cross_neighbor;
-      for (const auto & bnd_elem : bnd_elems)
-        if (sideset_id == bnd_elem.bnd_id)
-        {
-          Elem * elem = bnd_elem.elem;
-          const auto side = bnd_elem.side;
-          Elem * neighbor = elem->neighbor_ptr(side);
-          if (!neighbor)
-            continue;
-          if (elem->id() < neighbor->id())
-            continue;
-
-          std::unique_ptr<Elem> side_elem = elem->build_side_ptr(side);
-          if (!side_elem)
-            continue;
-          for (const auto n : make_range(side_elem->n_nodes()))
-            nodes_with_cross_neighbor.insert(side_elem->node_id(n));
-        }
-
-      // Remove nodes that have no cross-neighbor (true front / boundary nodes).
       std::set<dof_id_type> nodes_to_remove;
-      for (const auto node_id : bnd_node_ids[sideset_id])
-        if (!nodes_with_cross_neighbor.count(node_id))
+
+      // Crack-front nodes: on a bounding edge of the interface surface that does not lie
+      // wholly on the specimen exterior.
+      for (const auto & [edge_key, face_count] : edge_face_count)
+      {
+        if (face_count != 1)
+          continue;
+
+        const auto edge_nodes_it = edge_nodes.find(edge_key);
+        if (edge_nodes_it == edge_nodes.end())
+          continue;
+
+        bool edge_is_on_exterior = true;
+        for (const auto node_id : edge_nodes_it->second)
+          if (!exterior_nodes.count(node_id))
+          {
+            edge_is_on_exterior = false;
+            break;
+          }
+
+        if (edge_is_on_exterior)
+          continue; // the fracture daylights here -- the faces must be free to separate
+
+        for (const auto node_id : edge_nodes_it->second)
           nodes_to_remove.insert(node_id);
+      }
 
       if (_split_only_interior_nodes)
       {
-        // Also remove non-manifold edge nodes (face_count > 2) for the strict interior
-        // criterion — these are T-junction or junction nodes.
+        // Non-manifold edges (face_count > 2) are junctions between fracture branches.
+        // NOTE: edge_face_count is rebuilt inside this per-sideset loop, so this only sees
+        // a junction WITHIN one sideset. Two fractures meeting as separate sidesets are
+        // not detected here -- and are rejected earlier anyway, because the generator does
+        // not support intersecting fractures.
         for (const auto & [edge_key, face_count] : edge_face_count)
           if (face_count > 2)
           {

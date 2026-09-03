@@ -1,0 +1,26 @@
+[Tests]
+  design = 'OrcaFaultInterface3DGenerator.md'
+  issues = '#czm-benchmarks'
+  # Verification of OrcaFaultInterface3DGenerator -- the generator every Kalantar2025 deck
+  # depends on -- against Sneddon's closed form. See README.md.
+  #
+  # Before the front-node fix this deck gave w_max_rel_error 0.12838 against
+  # BreakMeshByBlockGenerator's 0.05076 at the same refinement. It now gives 0.050759 --
+  # the two generators agree to the printed precision on the amplitude (-1.388 %), the
+  # fitted half-length (0.96195 m) and the traction-free open state.
+  #
+  # The gold therefore pins generator EQUIVALENCE, not just current behaviour: a
+  # regression in either generator, or in the front-node logic, breaks this test.
+  [orca_generator]
+    type = CSVDiff
+    input = sneddon_orca_generator.i
+    csvdiff = sneddon_orca_generator_out.csv
+    min_parallel = 4
+    rel_err = 1e-5
+    abs_zero = 1e-10
+    requirement = 'OrcaFaultInterface3DGenerator shall reproduce the Sneddon crack '
+                  'opening, effective crack length and traction-free open state to the '
+                  'same accuracy as BreakMeshByBlockGenerator on the same mesh, keeping '
+                  'the crack-front nodes welded.'
+  []
+[]

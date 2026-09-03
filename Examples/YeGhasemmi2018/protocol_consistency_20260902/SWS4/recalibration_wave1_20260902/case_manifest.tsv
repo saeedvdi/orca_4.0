@@ -1,0 +1,7 @@
+array_id	case_stem	weakening_exponent	characteristic_slip_distance_um	purpose
+0	117_01_sws4_jrc1p19_m1p60_dc74p5_protocol_ppfix	1.60	74.5	Exponent lower bracket at adopted distance
+1	117_02_sws4_jrc1p19_m1p90_dc74p5_protocol_ppfix	1.90	74.5	Central exponent candidate
+2	117_03_sws4_jrc1p19_m2p20_dc74p5_protocol_ppfix	2.20	74.5	Exponent upper bracket at adopted distance
+3	117_04_sws4_jrc1p19_m1p90_dc60_protocol_ppfix	1.90	60.0	Distance lower bracket at central exponent
+4	117_05_sws4_jrc1p19_m1p90_dc90_protocol_ppfix	1.90	90.0	Analytical Table-2 distance bracket
+5	117_06_sws4_jrc1p19_m1p90_dc105_protocol_ppfix	1.90	105.0	Distance upper bracket at central exponent

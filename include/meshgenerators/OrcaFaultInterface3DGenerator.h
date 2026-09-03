@@ -50,7 +50,13 @@ protected:
   };
 
   BoundaryNodeSetMap getSidesetNodes(const std::vector<BndElementData> & bnd_elems,
-                                     const std::set<boundary_id_type> & mesh_sideset_ids) const;
+                                     const std::set<boundary_id_type> & mesh_sideset_ids,
+                                     const libMesh::MeshBase & mesh) const;
+
+  /// Nodes lying on the exterior surface of the mesh, i.e. belonging to at least one
+  /// element side with no neighbor. Used to tell a true crack front (inside the material)
+  /// from the line where a through-going fracture daylights on the sample surface.
+  static std::set<dof_id_type> exteriorNodes(const libMesh::MeshBase & mesh);
 
   SplitNodeMap splitNodesOnInterface(const BoundaryNodeSetMap & bnd_node_ids,
                                      std::unique_ptr<MeshBase> & mesh) const;
