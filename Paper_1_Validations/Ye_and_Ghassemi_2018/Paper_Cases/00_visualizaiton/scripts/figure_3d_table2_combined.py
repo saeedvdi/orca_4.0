@@ -74,6 +74,15 @@ for _m in (mech, hyd):
     _m.FINAL_MC_RESULT_PATHS = _mc_paths()
 # ---------------------------------------------------------------------------
 
+# --- one y scale per panel ------------------------------------------------
+# The parent pairs SW-T1 with SW-T2 and SW-S3 with SW-S4 so that comparisons
+# within a family are direct. Across seven rows that flattens the smaller member
+# of each pair, because the specimens differ in range within a family as much as
+# the families differ from each other. Each panel therefore gets its own y scale.
+# The x axis stays common, since every column is the same ordered injection
+# pressure loading and unloading sequence.
+mech.TABLE2_SCALE_GROUPS = (("SWT1",), ("SWT2",), ("SWS3",), ("SWS4",))
+
 COMBINED_SPECS = mech.TABLE2_MECHANICAL_SPECS + hyd.TABLE2_HYDRAULIC_SPECS
 FIGURE_KEY = "table2_combined"
 # 7 rows on one page: AGU text height leaves ~8.8 in once the caption is set.

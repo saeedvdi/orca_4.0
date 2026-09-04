@@ -15,7 +15,7 @@ set -euo pipefail
 
 PROJECT_ROOT=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0
 CASE_STEM=107_01_swt1_coh27p2_apscale0p01512_ppfix
-CASE_DIR=${PROJECT_ROOT}/Examples/YeGhasemmi2018/SWT1
+CASE_DIR=${PROJECT_ROOT}Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWT1/BB/
 
 cd "${CASE_DIR}"
 unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU

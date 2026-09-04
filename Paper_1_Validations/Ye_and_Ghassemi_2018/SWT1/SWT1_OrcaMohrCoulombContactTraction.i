@@ -1,1 +1,1 @@
-../Paper_Cases/01_Main_Validation/SWT1/MC/SWT1_OrcaMohrCoulombContactTraction.i
+../Paper_Cases/00_visualizaiton/inputs/used_in_paper/01_main_validation/SWT1_OrcaMohrCoulombContactTraction.i
