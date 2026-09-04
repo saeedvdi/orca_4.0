@@ -653,9 +653,9 @@ mesh_flow_width_over_length_sw_s4 = 0.814819511514   # 93-series: SW-S4 had no m
 ml_per_m3_per_min = 6.0e7
 
 # --- output ---
-exodus_file_base = proposed_inputs/paper_compelling_20260902/exodus/115_04_sws4_extended_depressurization_paperjrc
-csv_file_base    = proposed_inputs/paper_compelling_20260902/csv/115_04_sws4_extended_depressurization_paperjrc
-checkpoint_file_base = paper_revision_20260901_followup/checkpoint/115_04_sws4_extended_depressurization_paperjrc
+exodus_file_base = results/results_exodus/115_04_sws4_extended_depressurization_paperjrc
+csv_file_base    = results/results_csv/115_04_sws4_extended_depressurization_paperjrc
+checkpoint_file_base = results/results/115_04_sws4_extended_depressurization_paperjrc
 
 ######################################################################################
 [GlobalParams]

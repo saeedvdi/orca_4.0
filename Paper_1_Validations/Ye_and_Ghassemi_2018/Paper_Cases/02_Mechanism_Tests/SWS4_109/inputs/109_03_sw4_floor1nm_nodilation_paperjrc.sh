@@ -10,6 +10,6 @@
 
 # Rebased onto the measured SW-S4 JRC of 1.19. Output stems end _paperjrc, so
 # nothing here overwrites the JRC 5.0 results.
-cd /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs
+cd /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/02_Mechanism_Tests/SWS4_109/inputs/
 
 srun --mpi=pmi2 -n 32 /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/orca-opt -i 109_03_sw4_floor1nm_nodilation_paperjrc.i

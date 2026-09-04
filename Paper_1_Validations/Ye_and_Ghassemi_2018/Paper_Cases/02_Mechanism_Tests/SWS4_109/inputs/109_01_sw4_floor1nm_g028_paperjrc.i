@@ -649,9 +649,9 @@ mesh_flow_width_over_length_sw_s4 = 0.814819511514   # 93-series: SW-S4 had no m
 ml_per_m3_per_min = 6.0e7
 
 # --- output ---
-exodus_file_base = /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/results/results_exodus/109_01_sw4_floor1nm_g028_paperjrc
-csv_file_base    = /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/results/results_csv/109_01_sw4_floor1nm_g028_paperjrc
-checkpoint_file_base = /home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Examples/YeGhasemmi2018/SWS4/proposed_inputs/results/results_exodus/109_01_sw4_floor1nm_g028_paperjrc
+exodus_file_base = results/results_exodus/109_01_sw4_floor1nm_g028_paperjrc
+csv_file_base    = results/results_csv/109_01_sw4_floor1nm_g028_paperjrc
+checkpoint_file_base = results/results_exodus/109_01_sw4_floor1nm_g028_paperjrc
 
 ######################################################################################
 [GlobalParams]
