@@ -79,9 +79,17 @@ reservoir_left_top = 100
 # The sampled compartment (x > x_fault, z = -100..+200) is NOT pressurized in this
 # case, so its extent does not appear below; see the permeable deck for that.
 
-# one-element-wide column immediately on the sampled side of the fault
+# Column immediately on the sampled side of the fault.  The reference reports stress AT
+# the fault plane, so the column the profile is read from has to sit next to it.  On the
+# unrefined mesh the band is one element wide and the sampler reports from that element's
+# centroid, half a coarse element (12.5 m) away from the fault.  That offset preserves the
+# shape of every profile but damps its amplitude, and it damps the components that vary
+# fastest across the fault the most.  Refining across the fault and then sampling only the
+# innermost refined column moves the reported centroid to 3.125 m.
 sample_band_width = 25
 sample_depth = 310
+near_fault_refinement = 2
+sampled_column_width = ${fparse sample_band_width / 2^near_fault_refinement}
 
 [GlobalParams]
   displacements = 'disp_x disp_y disp_z'
@@ -96,11 +104,28 @@ sample_depth = 310
   # taken with an ElementValueSampler. It must be ELEMENTAL: the total stress is
   # discontinuous across the reservoir boundary, and nodal averaging would smear the
   # jump precisely where the comparison is made.
-  [sample_band]
+  # Refine a symmetric collar around the fault so the sampled column can be narrow.
+  [refine_target]
     type = ParsedSubdomainMeshGenerator
     input = file_mesh
-    combinatorial_geometry = '(x - ${fault_slope} * z) > 0 '
+    combinatorial_geometry = '(x - ${fault_slope} * z) > -${sample_band_width} '
                              '& (x - ${fault_slope} * z) < ${sample_band_width} '
+                             '& z > -${sample_depth} & z < ${sample_depth}'
+    block_id = 90
+    block_name = near_fault_refine
+  []
+  [refine_near_fault]
+    type = RefineBlockGenerator
+    input = refine_target
+    block = 'near_fault_refine'
+    refinement = '${near_fault_refinement}'
+    enable_neighbor_refinement = true
+  []
+  [sample_band]
+    type = ParsedSubdomainMeshGenerator
+    input = refine_near_fault
+    combinatorial_geometry = '(x - ${fault_slope} * z) > 0 '
+                             '& (x - ${fault_slope} * z) < ${sampled_column_width} '
                              '& z > -${sample_depth} & z < ${sample_depth}'
     block_id = 99
     block_name = fault_sample_band
@@ -111,7 +136,7 @@ sample_depth = 310
     type = ParsedSubdomainMeshGenerator
     input = sample_band
     combinatorial_geometry = '(x - ${fault_slope} * z) < 0 '
-                             '& (x - ${fault_slope} * z) > -${sample_band_width} '
+                             '& (x - ${fault_slope} * z) > -${sampled_column_width} '
                              '& z > -${sample_depth} & z < ${sample_depth}'
     block_id = 98
     block_name = fault_sample_band_other
