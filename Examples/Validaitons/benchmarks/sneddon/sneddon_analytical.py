@@ -397,15 +397,55 @@ def plot(directory, profiles):
     fig.savefig(path, dpi=600)
     plt.close(fig)
 
+    # Residual figure.
+    #
+    # Every law that passes this benchmark returns the SAME profile, because a
+    # fully open crack carries no interface traction and the response is pure
+    # elasticity.  Drawing one series per law therefore puts two identical point
+    # clouds on top of each other, and the eye reads the result as two different
+    # curves that disagree.  That is the opposite of what the test shows.  The
+    # residual is drawn once instead, and the agreement between the laws is
+    # measured and stated on the figure.
+    #
+    # The residual alternates between two values at almost the same s.  Those are
+    # the two Gauss points of each interface element: the sampled spacing runs
+    # 0.01804 within an element against 0.03125 between elements, and
+    # 0.01804 / 0.03125 = 0.577 = 1 / sqrt(3), the two-point quadrature position.
+    # Splitting them is what makes the plot readable near the tips.
+    labels = list(profiles)
+    s0, w0 = profiles[labels[0]]
+    e0 = (w0 - crack_opening(s0)) * 1e6
+    spread = 0.0
+    for lbl in labels[1:]:
+        s1, w1 = profiles[lbl]
+        if len(s1) == len(s0) and np.allclose(s1, s0):
+            spread = max(spread, float(np.abs((w1 - crack_opening(s1)) * 1e6 - e0).max()))
+
+    keep = np.abs(s0) < 0.8 * HALF_LENGTH
+    w_ana = crack_opening(s0)
+    med = float(np.median(np.abs(w0[keep] - w_ana[keep]) / w_ana[keep])) * 100.0
+
     fig_e, axe = plt.subplots(figsize=(10.0, 7.5))
-    for label, (s, w) in profiles.items():
-        axe.plot(
-            s, (w - crack_opening(s)) * 1e6, ls="none", label=label, **style.get(label, {})
-        )
+    band = None
+    for lo, hi in ((-HALF_LENGTH, -0.8 * HALF_LENGTH), (0.8 * HALF_LENGTH, HALF_LENGTH)):
+        band = axe.axvspan(lo, hi, color="0.92", zorder=0, lw=0)
+    band.set_label(r"tips, excluded from the quoted error")
+    axe.plot(s0[0::2], e0[0::2], ls="none", marker="o", mfc="none", ms=6.5,
+             mew=1.2, color="tab:blue", label="first Gauss point of each element", zorder=3)
+    axe.plot(s0[1::2], e0[1::2], ls="none", marker="s", ms=4.5,
+             color="tab:orange", label="second Gauss point", zorder=3)
     axe.axhline(0.0, color="k", lw=0.8)
+    axe.text(0.03, 0.06,
+             f"{' and '.join(labels)} coincide to {spread:.1e} "
+             + r"$\mu$m" + "\n"
+             + f"median relative error over $|s|<0.8\\,b$: {med:.2f} per cent",
+             transform=axe.transAxes, ha="left", va="bottom", fontsize=12,
+             bbox=dict(fc="white", ec="0.75", lw=0.6, boxstyle="round,pad=0.4"))
     axe.set_xlabel("distance along crack $s$  (m)")
     axe.set_ylabel(r"numerical $-$ analytic  ($\mu$m)")
-    axe.legend(frameon=False)
+    axe.set_title("Sneddon pressurized-crack residual", pad=26)
+    axe.legend(frameon=False, loc="lower center", bbox_to_anchor=(0.5, 1.005),
+               ncol=3, fontsize=10.5, handletextpad=0.5, columnspacing=1.6)
     axe.grid(alpha=0.3)
     fig_e.tight_layout()
     path_e = os.path.join(directory, "sneddon_comparison_residual.png")
