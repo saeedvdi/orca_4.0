@@ -359,11 +359,20 @@ def plot(directory, profiles):
         }
     )
 
-    fig, (ax, axe) = plt.subplots(
-        2, 1, figsize=(10.0, 10.0), sharex=True, height_ratios=[2.2, 1.0]
-    )
+    # The laws agree to ~12 significant figures, so plotting every point of both
+    # series would stack identical markers on top of each other and the shape
+    # difference would be invisible.  Staggering which points each series draws
+    # (markevery with opposite phase) interleaves circles and squares along the
+    # curve instead of hiding one under the other, on top of making the squares
+    # themselves bigger, filled, and open-circle vs. filled-square in style.
+    style = {
+        "BBFast": dict(marker="o", ms=11.0, mfc="none", mew=1.8, markevery=(0, 2)),
+        "MC": dict(marker="s", ms=8.0, mfc="tab:orange", mew=0.0, alpha=0.9, markevery=(1, 2)),
+    }
 
     s_fine = np.linspace(-HALF_LENGTH, HALF_LENGTH, 400)
+
+    fig, ax = plt.subplots(figsize=(10.0, 7.5))
     ax.plot(
         s_fine,
         crack_opening(s_fine) * 1e3,
@@ -371,15 +380,10 @@ def plot(directory, profiles):
         lw=2.0,
         label=r"Sneddon  $w=\frac{4(1-\nu^2)p_f}{E}\sqrt{b^2-s^2}$",
     )
-    # The laws agree to ~12 significant figures, so equal-sized markers would hide
-    # every series but the last.  Shrinking each successive series keeps all of
-    # them visible and makes the agreement itself legible.
-    markers = ["o", "s", "^", "v"]
-    sizes = [7.0, 4.5, 2.8, 1.8]
-    for (label, (s, w)), m, ms in zip(profiles.items(), markers, sizes):
-        ax.plot(s, w * 1e3, m, ms=ms, mfc="none", alpha=0.85, label=label)
-        axe.plot(s, (w - crack_opening(s)) * 1e6, m, ms=ms, mfc="none", label=label)
+    for label, (s, w) in profiles.items():
+        ax.plot(s, w * 1e3, ls="none", label=label, **style.get(label, {}))
 
+    ax.set_xlabel("distance along crack $s$  (m)")
     ax.set_ylabel("crack opening $w$  (mm)")
     ax.set_title(
         "Sneddon pressurized-crack benchmark\n"
@@ -388,17 +392,27 @@ def plot(directory, profiles):
     )
     ax.legend(frameon=False)
     ax.grid(alpha=0.3)
+    fig.tight_layout()
+    path = os.path.join(directory, "sneddon_comparison.png")
+    fig.savefig(path, dpi=600)
+    plt.close(fig)
 
+    fig_e, axe = plt.subplots(figsize=(10.0, 7.5))
+    for label, (s, w) in profiles.items():
+        axe.plot(
+            s, (w - crack_opening(s)) * 1e6, ls="none", label=label, **style.get(label, {})
+        )
     axe.axhline(0.0, color="k", lw=0.8)
     axe.set_xlabel("distance along crack $s$  (m)")
     axe.set_ylabel(r"numerical $-$ analytic  ($\mu$m)")
+    axe.legend(frameon=False)
     axe.grid(alpha=0.3)
+    fig_e.tight_layout()
+    path_e = os.path.join(directory, "sneddon_comparison_residual.png")
+    fig_e.savefig(path_e, dpi=600)
+    plt.close(fig_e)
 
-    fig.tight_layout()
-    path = os.path.join(directory, "sneddon_comparison.png")
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    return path
+    return path, path_e
 
 
 def report(summary):
@@ -464,7 +478,9 @@ def main(argv=None):
     if p:
         print(f"  wrote {p}")
     if not args.no_plot and profiles:
-        print(f"  wrote {plot(args.dir, profiles)}")
+        path, path_e = plot(args.dir, profiles)
+        print(f"  wrote {path}")
+        print(f"  wrote {path_e}")
     return 0
 
 

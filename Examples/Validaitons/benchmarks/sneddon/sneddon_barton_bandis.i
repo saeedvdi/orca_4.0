@@ -88,7 +88,7 @@ w_max_analytic = ${fparse 4.0 * (1.0 - poissons_ratio^2) * crack_pressure * half
     type = RefineBlockGenerator
     input = set_top_mid
     block = 'matrix_bottom_mid matrix_top_mid'
-    refinement = '4 4'
+    refinement = '6 6'
   []
   [break]
     type = BreakMeshByBlockGenerator
