@@ -28,47 +28,51 @@ plt.rcParams.update(
 )
 
 
-PAPER_CASES = Path(__file__).resolve().parents[3]
-VALIDATION = PAPER_CASES.parent
-ORCA = VALIDATION.parents[1]
-DECK = PAPER_CASES / "01_Main_Validation/SWS4/BB/93_07_sw4_final_theta30_jrc5_ppfix.i"
+# This file sits at Paper_Cases/00_visualizaiton/scripts/, so index from there:
+#   parents[2] Paper_Cases, parents[3] Ye_and_Ghassemi_2018, parents[5] orca_4.0
+PAPER_CASES = Path(__file__).resolve().parents[2]
+VALIDATION = Path(__file__).resolve().parents[3]
+ORCA = Path(__file__).resolve().parents[5]
+DECK = PAPER_CASES / ("01_Main_Validation/SWS4/BB/"
+                      "89_01_sw4_bbfast_theta30_paperjrc_kernel_SV_biot0p6.i")
 RUN_DIR = PAPER_CASES / "02_Mechanism_Tests/SWS4_Legacy_Ablations"
 FOLLOWUP_DIR = PAPER_CASES / "02_Mechanism_Tests/SWS4_109"
 OUT = Path(__file__).resolve().parent
 
 RUNS = {
     "Calibrated BB": {
-        "csv": PAPER_CASES / "01_Main_Validation/SWS4/BB/93_07_sw4_final_theta30_jrc5_ppfix_hpc.csv",
+        "csv": PAPER_CASES / ("01_Main_Validation/SWS4/BB/"
+                              "89_01_sw4_bbfast_theta30_paperjrc_kernel_SV_biot0p6_hpc.csv"),
         "exodus": None,
         "floor_m": 0.74e-6,
     },
     "No dilation": {
-        "csv": RUN_DIR / "results/sws4_ab_no_dilation.csv",
+        "csv": FOLLOWUP_DIR / "inputs/results/results_csv/109_06_sw4_nodilation_floor074_paperjrc.csv",
         "exodus": None,
         "floor_m": 0.74e-6,
     },
     "No gouge": {
-        "csv": RUN_DIR / "results/sws4_ab_no_gouge.csv",
+        "csv": FOLLOWUP_DIR / "inputs/results/results_csv/109_04_sw4_nogouge_floor074_paperjrc.csv",
         "exodus": None,
         "floor_m": 0.74e-6,
     },
     "Strong gouge, relaxed floor": {
-        "csv": RUN_DIR / "results/sws4_loss_g056.csv",
+        "csv": FOLLOWUP_DIR / "inputs/results/results_csv/109_05_sw4_g056_floor1nm_paperjrc.csv",
         "exodus": None,
         "floor_m": 1.0e-9,
     },
     "Calibrated gouge, relaxed floor": {
-        "csv": FOLLOWUP_DIR / "results/109_01_sw4_floor1nm_g028_ppfix.csv",
+        "csv": FOLLOWUP_DIR / "inputs/results/results_csv/109_01_sw4_floor1nm_g028_paperjrc.csv",
         "exodus": None,
         "floor_m": 1.0e-9,
     },
     "Intermediate gouge, relaxed floor": {
-        "csv": FOLLOWUP_DIR / "results/109_02_sw4_floor1nm_g042_ppfix.csv",
+        "csv": FOLLOWUP_DIR / "inputs/results/results_csv/109_02_sw4_floor1nm_g042_paperjrc.csv",
         "exodus": None,
         "floor_m": 1.0e-9,
     },
     "No hydraulic dilation, relaxed floor": {
-        "csv": FOLLOWUP_DIR / "results/109_03_sw4_floor1nm_nodilation_ppfix.csv",
+        "csv": FOLLOWUP_DIR / "inputs/results/results_csv/109_03_sw4_floor1nm_nodilation_paperjrc.csv",
         "exodus": None,
         "floor_m": 1.0e-9,
     },
@@ -122,6 +126,14 @@ def build_metrics() -> pd.DataFrame:
     times = GATE.stage_times(schedule_x, schedule_y, 0.15)
     records = []
     for run_name, config in RUNS.items():
+        # Drop runs that stop before the last stage. They cannot be scored on the
+        # five channels and they break every downstream stage-6 and stage-11
+        # lookup, so exclude them here rather than half-way through the table.
+        end = float(pd.read_csv(config["csv"])["time"].max())
+        if end < times[10] - 1.0:
+            print(f"  SKIP {run_name}: reaches {end:.0f} s, last stage needs "
+                  f"{times[10]:.0f} s")
+            continue
         stages = sample_stages(config["csv"], times)
         score = GATE.score_run(config["csv"], "SWS4", None, 0.15, "stage1", 55.0, "kinematic")
         nrmse = GATE.normalised_scores(score)
@@ -189,7 +201,7 @@ def build_figure(metrics: pd.DataFrame) -> None:
     stages = np.arange(1, 12)
     axes[0].plot(stages, experiment, color=colors["Experiment"], marker="o", linewidth=2.0,
                  label="Experiment")
-    for run_name in RUNS:
+    for run_name in [r for r in RUNS if (metrics["run"] == r).any()]:
         selected = metrics.loc[metrics["run"] == run_name]
         linestyle = "--" if run_name == "Calibrated gouge, relaxed floor" else "-"
         marker = None if run_name == "Calibrated gouge, relaxed floor" else "o"
@@ -207,7 +219,7 @@ def build_figure(metrics: pd.DataFrame) -> None:
     peak = [float(experiment[5])]
     final = [float(experiment[10])]
     labels = ["Experiment"]
-    for run_name in RUNS:
+    for run_name in [r for r in RUNS if (metrics["run"] == r).any()]:
         selected = metrics.loc[metrics["run"] == run_name].set_index("stage")
         peak.append(selected.loc[6, "permeability_ratio"])
         final.append(selected.loc[11, "permeability_ratio"])
