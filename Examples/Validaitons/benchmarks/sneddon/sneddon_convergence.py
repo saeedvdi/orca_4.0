@@ -231,7 +231,21 @@ def main(argv=None):
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
-        fig, ax = plt.subplots(figsize=(6.6, 4.6))
+        plt.rcParams.update(
+            {
+                "font.family": "serif",
+                "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
+                "mathtext.fontset": "dejavuserif",
+                "font.size": 20,
+                "axes.titlesize": 22,
+                "axes.labelsize": 22,
+                "xtick.labelsize": 18,
+                "ytick.labelsize": 18,
+                "legend.fontsize": 18,
+            }
+        )
+
+        fig, ax = plt.subplots(figsize=(10.0, 7.5))
         for key, marker, label in (
             ("w_max_rel_error", "o", r"$w_{\max}$"),
             ("fitted_amplitude_rel_error", "s", "fitted amplitude $A$"),
@@ -248,12 +262,12 @@ def main(argv=None):
         )
         ax.set_xlabel("element size at the crack tip $h$  (m)")
         ax.set_ylabel("relative error  (%)")
-        ax.set_title("Sneddon — crack-tip mesh convergence", fontsize=11)
+        ax.set_title("Sneddon — crack-tip mesh convergence")
         ax.grid(alpha=0.3, which="both")
-        ax.legend(frameon=False, fontsize=9)
+        ax.legend(frameon=False)
         fig.tight_layout()
         out_png = os.path.join(HERE, "sneddon_convergence.png")
-        fig.savefig(out_png, dpi=150)
+        fig.savefig(out_png, dpi=600)
         plt.close(fig)
         print(f"  wrote {out_png}")
     except ImportError:

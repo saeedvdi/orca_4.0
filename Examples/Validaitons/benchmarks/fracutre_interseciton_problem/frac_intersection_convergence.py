@@ -270,7 +270,21 @@ def main(argv=None):
     except ImportError:
         return 0
 
-    fig, ax = plt.subplots(figsize=(6.8, 4.8))
+    plt.rcParams.update(
+        {
+            "font.family": "serif",
+            "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
+            "mathtext.fontset": "dejavuserif",
+            "font.size": 20,
+            "axes.titlesize": 22,
+            "axes.labelsize": 22,
+            "xtick.labelsize": 18,
+            "ytick.labelsize": 18,
+            "legend.fontsize": 18,
+        }
+    )
+
+    fig, ax = plt.subplots(figsize=(10.0, 7.5))
     for key, marker, label in (
         ("aperture_rms_pct", "o", "aperture"),
         ("traction_rms_pct", "s", "normal traction"),
@@ -280,12 +294,12 @@ def main(argv=None):
         ax.loglog(h, [r[key] for r in rows], marker + "-", label=label)
     ax.set_xlabel("fracture element size $h$  (m)")
     ax.set_ylabel("RMS error vs Phan et al.  (% of span)")
-    ax.set_title("T-fracture — fracture mesh convergence", fontsize=11)
+    ax.set_title("T-fracture — fracture mesh convergence")
     ax.grid(alpha=0.3, which="both")
-    ax.legend(frameon=False, fontsize=9)
+    ax.legend(frameon=False)
     fig.tight_layout()
     out_png = os.path.join(HERE, "frac_intersection_convergence.png")
-    fig.savefig(out_png, dpi=150)
+    fig.savefig(out_png, dpi=600)
     plt.close(fig)
     print(f"  wrote {out_png}")
     return 0

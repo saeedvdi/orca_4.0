@@ -74,7 +74,9 @@ Requires numpy and matplotlib only.
 Outputs, written next to this script:
     fault_verification_comparison_summary.csv   per case and component: errors
     fault_verification_comparison_profile.csv   depth, reference and computed
-    fault_verification_comparison.png           three-panel profile figure
+    fault_verification_comparison_xx.png        d sigma_xx profile figure
+    fault_verification_comparison_zz.png        d sigma_zz profile figure
+    fault_verification_comparison_xz.png        d sigma_xz profile figure
 """
 
 import argparse
@@ -256,11 +258,27 @@ def plot(profiles, ref):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    fig, axes = plt.subplots(1, 3, figsize=(13.5, 6.4), sharey=True)
+    plt.rcParams.update(
+        {
+            "font.family": "serif",
+            "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
+            "mathtext.fontset": "dejavuserif",
+            "font.size": 20,
+            "axes.titlesize": 22,
+            "axes.labelsize": 22,
+            "xtick.labelsize": 18,
+            "ytick.labelsize": 18,
+            "legend.fontsize": 18,
+        }
+    )
+
     colors = {"impermeable": "tab:orange", "permeable": "tab:green"}
     markers = {"impermeable": "o", "permeable": "s"}
+    stems = {"xx": "xx", "zz": "zz", "xz": "xz"}
 
-    for ax, (key, varname, label) in zip(axes, COMPONENTS):
+    paths = []
+    for key, varname, label in COMPONENTS:
+        fig, ax = plt.subplots(figsize=(9.0, 7.5))
         for case, prof in profiles.items():
             ax.plot(
                 ref[:, REF_COLUMNS[case][key]],
@@ -282,21 +300,22 @@ def plot(profiles, ref):
                     label=f"Orca — {case}",
                 )
         ax.set_xlabel(label + "  (MPa)")
+        ax.set_ylabel("depth along the fault, $z$  (m)")
         ax.grid(alpha=0.3)
-        ax.set_ylim(-300, 300)
-    axes[0].set_ylabel("depth along the fault, $z$  (m)")
-    axes[0].legend(frameon=False, fontsize=8.5, loc="upper left")
-    fig.suptitle(
-        "Induced stresses on a fault bounding a pressurized displaced reservoir\n"
-        f"$E$={YOUNGS_MODULUS/1e9:g} GPa, $\\nu$={POISSONS_RATIO:g}, "
-        f"$\\alpha$={BIOT:.2f}, $\\Delta p$={PRESSURE_BUILDUP/1e6:g} MPa",
-        fontsize=11,
-    )
-    fig.tight_layout()
-    path = os.path.join(HERE, "fault_verification_comparison.png")
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    return path
+        ax.set_ylim(-300, 380)
+        ax.legend(frameon=False, loc="upper left", fontsize=15)
+        ax.set_title(
+            "Induced stresses on a fault bounding a pressurized displaced reservoir\n"
+            f"$E$={YOUNGS_MODULUS/1e9:g} GPa, $\\nu$={POISSONS_RATIO:g}, "
+            f"$\\alpha$={BIOT:.2f}, $\\Delta p$={PRESSURE_BUILDUP/1e6:g} MPa",
+            fontsize=14,
+        )
+        fig.tight_layout()
+        path = os.path.join(HERE, f"fault_verification_comparison_{stems[key]}.png")
+        fig.savefig(path, dpi=600)
+        plt.close(fig)
+        paths.append(path)
+    return paths
 
 
 def main(argv=None):
@@ -367,7 +386,8 @@ def main(argv=None):
     print(f"  wrote {write_summary(records)}")
     print(f"  wrote {write_profiles(profiles, ref)}")
     if not args.no_plot:
-        print(f"  wrote {plot(profiles, ref)}")
+        for path in plot(profiles, ref):
+            print(f"  wrote {path}")
     return 0
 
 

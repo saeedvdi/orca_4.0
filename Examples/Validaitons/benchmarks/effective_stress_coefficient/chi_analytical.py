@@ -296,8 +296,21 @@ def main(argv=None):
         print("  matplotlib not available — skipping the figure")
         return 0
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.5, 5.0))
+    plt.rcParams.update(
+        {
+            "font.family": "serif",
+            "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
+            "mathtext.fontset": "dejavuserif",
+            "font.size": 20,
+            "axes.titlesize": 22,
+            "axes.labelsize": 22,
+            "xtick.labelsize": 18,
+            "ytick.labelsize": 18,
+            "legend.fontsize": 18,
+        }
+    )
 
+    fig1, ax1 = plt.subplots(figsize=(10.0, 7.5))
     c = np.linspace(0.0, 0.35, 200)
     ax1.plot(c, 1.0 - c, "-", color="0.25", lw=2, label=r"$\chi = 1 - A_c/A$  (exact)")
     if results:
@@ -306,10 +319,16 @@ def main(argv=None):
                  "o", ms=9, mfc="tab:orange", mec="k", label="Orca, resolved patches")
     ax1.set_xlabel(r"real contact area fraction  $A_c/A$")
     ax1.set_ylabel(r"effective stress coefficient  $\chi$")
-    ax1.set_title("Verification: the identity holds", fontsize=11)
+    ax1.set_title("Verification: the identity holds")
     ax1.grid(alpha=0.3)
-    ax1.legend(frameon=False, fontsize=9)
+    ax1.legend(frameon=False)
+    fig1.tight_layout()
+    out1 = os.path.join(HERE, "chi_bounds_verification.png")
+    fig1.savefig(out1, dpi=600)
+    plt.close(fig1)
+    print(f"  wrote {out1}")
 
+    fig2, ax2 = plt.subplots(figsize=(10.0, 7.5))
     sig = np.linspace(1e6, 45e6, 200)
     ax2.plot(sig / 1e6, chi_plastic(sig, 3.0 * UCS), "-", color="tab:red", lw=2,
              label=r"upper bound, $H=3\,$UCS $=450$ MPa")
@@ -317,26 +336,24 @@ def main(argv=None):
              label=r"upper bound, $H=5$ GPa")
     ax2.fill_between(sig / 1e6, 0.0, chi_plastic(sig, 3.0 * UCS),
                      color="tab:green", alpha=0.10)
-    ax2.text(15, 0.875, "attainable\n($H=3\\,$UCS)", fontsize=9, color="tab:green", ha="center")
+    ax2.text(15, 0.875, "attainable\n($H=3\\,$UCS)", fontsize=16, color="tab:green", ha="center")
     for name, chi in IN_USE:
         ax2.axhline(chi, color="0.5", lw=0.8, ls="-." if chi < 0.9 else "-", alpha=0.8)
-        ax2.text(44.5, chi + 0.002, f"{name}  {chi:.3f}", fontsize=8, ha="right", va="bottom")
+        ax2.text(44.5, chi + 0.002, f"{name}  {chi:.3f}", fontsize=14, ha="right", va="bottom")
     ax2.axvline(30.0, color="0.3", lw=0.8)
-    ax2.text(30.4, 0.845, "Ye 2018\nconfining", fontsize=8, color="0.3")
+    ax2.text(30.4, 0.845, "Ye 2018\nconfining", fontsize=14, color="0.3")
     ax2.set_xlabel(r"effective normal stress  $\sigma'_n$  (MPa)")
     ax2.set_ylabel(r"$\chi$")
-    ax2.set_ylim(0.84, 1.005)
+    ax2.set_ylim(0.84, 1.03)
     ax2.set_xlim(0, 45)
-    ax2.set_title("Bounds, and the values in use", fontsize=11)
+    ax2.set_title("Bounds, and the values in use")
     ax2.grid(alpha=0.3)
-    ax2.legend(frameon=False, fontsize=9, loc="lower left")
-
-    fig.suptitle("Fracture effective-stress coefficient — verification and bounds", fontsize=12)
-    fig.tight_layout(rect=(0, 0, 1, 0.94))
-    out = os.path.join(HERE, "chi_bounds.png")
-    fig.savefig(out, dpi=150)
-    plt.close(fig)
-    print(f"  wrote {out}")
+    ax2.legend(frameon=False, loc="lower left")
+    fig2.tight_layout()
+    out2 = os.path.join(HERE, "chi_bounds_values.png")
+    fig2.savefig(out2, dpi=600)
+    plt.close(fig2)
+    print(f"  wrote {out2}")
     return 0
 
 

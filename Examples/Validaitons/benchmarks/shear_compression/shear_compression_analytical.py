@@ -60,9 +60,11 @@ to read the fracture half-length straight from the mesh, and the script falls
 back to the sampled extent when it is not.
 
 Outputs, written next to this script:
-    shear_compression_comparison_summary.csv   per law: scalars, errors, shape fit
-    shear_compression_comparison_profile.csv   s, analytic and numerical slip
-    shear_compression_comparison.png           profile overlay, error, normal stress
+    shear_compression_comparison_summary.csv     per law: scalars, errors, shape fit
+    shear_compression_comparison_profile.csv     s, analytic and numerical slip
+    shear_compression_comparison_slip.png        profile overlay
+    shear_compression_comparison_residual.png    numerical - analytic error
+    shear_compression_comparison_sigma_n.png     normal stress
 """
 
 import argparse
@@ -438,12 +440,40 @@ def plot(directory, profiles, geom):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    psi_mesh, b_mesh, _ = geom
-    fig, (ax, axe, axn) = plt.subplots(
-        3, 1, figsize=(7.2, 9.4), sharex=True, height_ratios=[2.2, 1.0, 1.2]
+    plt.rcParams.update(
+        {
+            "font.family": "serif",
+            "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
+            "mathtext.fontset": "dejavuserif",
+            "font.size": 20,
+            "axes.titlesize": 22,
+            "axes.labelsize": 22,
+            "xtick.labelsize": 18,
+            "ytick.labelsize": 18,
+            "legend.fontsize": 18,
+        }
     )
 
+    # BBFast is an open blue circle, MC a filled orange square, and the two
+    # series' points are staggered (opposite markevery phase) so the shape
+    # difference stays visible instead of one marker hiding under the other.
+    style = {
+        "BBFast": dict(marker="o", ms=11.0, mfc="none", mew=1.8, markevery=(0, 2)),
+        "MC": dict(marker="s", ms=8.0, mfc="tab:orange", mec="tab:orange", mew=0.0, alpha=0.9,
+                   markevery=(1, 2)),
+        "BB flow/RSF": dict(marker="^", ms=6.0, mfc="none", alpha=0.7),
+        "Peak-shelf-tail": dict(marker="v", ms=5.0, mfc="none", alpha=0.7),
+    }
+
+    psi_mesh, b_mesh, _ = geom
+    default_style = dict(marker="o", ms=4.5, mfc="none", alpha=0.65)
+
     s_fine = np.linspace(-b_mesh, b_mesh, 400)
+    s_deck = np.linspace(-DECK_HALF_LENGTH, DECK_HALF_LENGTH, 400)
+
+    paths = []
+
+    fig, ax = plt.subplots(figsize=(10.0, 7.5))
     ax.plot(
         s_fine,
         slip_profile(s_fine, psi_mesh, b_mesh) * 1e3,
@@ -451,7 +481,6 @@ def plot(directory, profiles, geom):
         lw=2.0,
         label=f"analytic, as-meshed  ($\\psi$={psi_mesh:.3f}°, $b$={b_mesh:.4f} m)",
     )
-    s_deck = np.linspace(-DECK_HALF_LENGTH, DECK_HALF_LENGTH, 400)
     ax.plot(
         s_deck,
         slip_profile(s_deck, DECK_INCLINATION_DEG, DECK_HALF_LENGTH) * 1e3,
@@ -460,37 +489,47 @@ def plot(directory, profiles, geom):
         lw=1.6,
         label=f"analytic, deck constants  ($\\psi$={DECK_INCLINATION_DEG:g}°, $b$={DECK_HALF_LENGTH:g} m)",
     )
-    # The laws agree to ~12 significant figures, so equal-sized markers would hide
-    # every series but the last.  Shrinking each successive series keeps all of
-    # them visible and makes the agreement itself legible.
-    markers = ["o", "s", "^", "v"]
-    sizes = [7.0, 4.5, 2.8, 1.8]
-    for (label, p), m, ms in zip(profiles.items(), markers, sizes):
-        ax.plot(p["s"], p["slip"] * 1e3, m, ms=ms, mfc="none", alpha=0.85, label=label)
-        axe.plot(
-            p["s"],
-            (p["slip"] - slip_profile(p["s"], psi_mesh, b_mesh)) * 1e6,
-            m,
-            ms=ms,
-            mfc="none",
-            label=label,
-        )
-        axn.plot(p["s"], p["sigma_n"] / 1e6, m, ms=ms, mfc="none", label=label)
-
+    for label, p in profiles.items():
+        ax.plot(p["s"], p["slip"] * 1e3, ls="none", label=label, **style.get(label, default_style))
+    ax.set_xlabel("distance along fracture $s$  (m)")
     ax.set_ylabel("tangential slip $g_t$  (mm)")
     ax.set_title(
         "Inclined fracture under compression\n"
         f"$E$={YOUNGS_MODULUS/1e9:g} GPa,  $\\nu$={POISSONS_RATIO:g},  "
         f"$\\sigma$={REMOTE_COMPRESSION/1e6:g} MPa,  $\\theta$={FRICTION_ANGLE_DEG:g}°",
-        fontsize=11,
+        fontsize=16,
     )
-    ax.legend(frameon=False, fontsize=8.5)
+    ax.legend(frameon=False)
     ax.grid(alpha=0.3)
+    fig.tight_layout()
+    path = os.path.join(directory, "shear_compression_comparison_slip.png")
+    fig.savefig(path, dpi=600)
+    plt.close(fig)
+    paths.append(path)
 
+    fig_e, axe = plt.subplots(figsize=(10.0, 7.5))
+    for label, p in profiles.items():
+        axe.plot(
+            p["s"],
+            (p["slip"] - slip_profile(p["s"], psi_mesh, b_mesh)) * 1e6,
+            ls="none",
+            label=label,
+            **style.get(label, default_style),
+        )
     axe.axhline(0.0, color="k", lw=0.8)
-    axe.set_ylabel(r"numerical $-$ analytic" "\n" r"(as-meshed, $\mu$m)")
+    axe.set_xlabel("distance along fracture $s$  (m)")
+    axe.set_ylabel(r"numerical $-$ analytic (as-meshed, $\mu$m)")
+    axe.legend(frameon=False)
     axe.grid(alpha=0.3)
+    fig_e.tight_layout()
+    path_e = os.path.join(directory, "shear_compression_comparison_residual.png")
+    fig_e.savefig(path_e, dpi=600)
+    plt.close(fig_e)
+    paths.append(path_e)
 
+    fig_n, axn = plt.subplots(figsize=(10.0, 7.5))
+    for label, p in profiles.items():
+        axn.plot(p["s"], p["sigma_n"] / 1e6, ls="none", label=label, **style.get(label, default_style))
     axn.axhline(
         normal_stress(psi_mesh) / 1e6,
         color="k",
@@ -506,14 +545,15 @@ def plot(directory, profiles, geom):
     )
     axn.set_xlabel("distance along fracture $s$  (m)")
     axn.set_ylabel(r"$\sigma_n$  (MPa)")
-    axn.legend(frameon=False, fontsize=8.5)
+    axn.legend(frameon=False)
     axn.grid(alpha=0.3)
+    fig_n.tight_layout()
+    path_n = os.path.join(directory, "shear_compression_comparison_sigma_n.png")
+    fig_n.savefig(path_n, dpi=600)
+    plt.close(fig_n)
+    paths.append(path_n)
 
-    fig.tight_layout()
-    path = os.path.join(directory, "shear_compression_comparison.png")
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
-    return path
+    return paths
 
 
 def report(summary, geom):
@@ -603,7 +643,8 @@ def main(argv=None):
     if p:
         print(f"  wrote {p}")
     if not args.no_plot and profiles:
-        print(f"  wrote {plot(args.dir, profiles, geom)}")
+        for path in plot(args.dir, profiles, geom):
+            print(f"  wrote {path}")
     return 0
 
 

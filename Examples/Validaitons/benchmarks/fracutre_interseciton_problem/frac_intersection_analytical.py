@@ -81,8 +81,8 @@ then
     python frac_intersection_analytical.py --models barton_bandis compression_tensile
 
 Writes frac_intersection_comparison_summary.csv, frac_intersection_comparison_profile.csv
-and frac_intersection_comparison.png next to itself.  Requires numpy; matplotlib only for
-the figure.
+and one figure per panel (frac_intersection_comparison_aperture.png,
+_traction.png, _slip.png) next to itself.  Requires numpy; matplotlib only for the figures.
 """
 
 import argparse
@@ -448,18 +448,43 @@ def main(argv=None):
         print("  matplotlib not available — skipping the figure")
         return 0
 
-    fig, axes = plt.subplots(1, 3, figsize=(16.5, 5.0))
-    markers = ["o", "s", "^", "v"]
+    plt.rcParams.update(
+        {
+            "font.family": "serif",
+            "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
+            "mathtext.fontset": "dejavuserif",
+            "font.size": 20,
+            "axes.titlesize": 22,
+            "axes.labelsize": 22,
+            "xtick.labelsize": 18,
+            "ytick.labelsize": 18,
+            "legend.fontsize": 18,
+        }
+    )
+
+    # BBFast and MC are the pair this suite compares most often, so they get a
+    # pronounced, staggered marker style (open circle vs. filled square, offset
+    # sampling) rather than being buried under the flat-marker cycle used for
+    # the two extra laws.
+    style = {
+        "BBFast": dict(marker="o", ms=11.0, mfc="none", mew=1.8, alpha=1.0, markevery=(0, 2)),
+        "MC": dict(marker="s", ms=8.0, mfc="tab:orange", mec="tab:orange", mew=0.0, alpha=0.9,
+                   markevery=(1, 2)),
+        "BB flow/RSF": dict(marker="^", ms=6.0, mfc="none", alpha=0.7),
+        "Peak-shelf-tail": dict(marker="v", ms=5.0, mfc="none", alpha=0.7),
+    }
 
     panels = [
         ("aperture_vertical", "vertical fracture position $y$  (m)", "aperture  (mm)",
-         "Vertical fracture — aperture"),
+         "Vertical fracture — aperture", "aperture"),
         ("normal_traction_horizontal", "horizontal fracture position $x$  (m)",
-         "normal traction  (MPa)", "Horizontal fracture — normal traction"),
+         "normal traction  (MPa)", "Horizontal fracture — normal traction", "traction"),
         ("slip_horizontal", "horizontal fracture position $x$  (m)", "slip  (mm)",
-         "Horizontal fracture — slip"),
+         "Horizontal fracture — slip", "slip"),
     ]
-    for ax, (curve, xlabel, ylabel, title) in zip(axes, panels):
+    paths = []
+    for curve, xlabel, ylabel, title, stem in panels:
+        fig, ax = plt.subplots(figsize=(9.0, 7.5))
         key = {"aperture_vertical": "aperture", "normal_traction_horizontal": "traction",
                "slip_horizontal": "slip"}[curve]
         rx, rv = ref[key]
@@ -470,17 +495,16 @@ def main(argv=None):
                         label="Phan et al. (2003)" if side < 0 else None)
         else:
             ax.plot(rx, rv, "-", color="0.25", lw=2.5, label="Phan et al. (2003)")
-        for i, (model, label, _) in enumerate(MODELS):
+        for model, label, _ in MODELS:
             rows = [r for r in profile_rows if r["model"] == label and r["curve"] == curve]
             if not rows:
                 continue
             ax.plot(
                 [r["coordinate_m"] for r in rows],
                 [r["numerical"] for r in rows],
-                markers[i % len(markers)],
-                ms=4,
-                alpha=0.65,
+                ls="none",
                 label=f"Orca — {label}",
+                **style.get(label, dict(marker="o", ms=4, mfc="none", alpha=0.65)),
             )
         if key == "aperture":
             yy = np.linspace(-b, b, 201)
@@ -488,19 +512,15 @@ def main(argv=None):
                     "--", color="tab:red", lw=1.2, label="Sneddon (isolated crack)")
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
-        ax.set_title(title, fontsize=11)
+        ax.set_title(title)
         ax.grid(alpha=0.3)
-        ax.legend(frameon=False, fontsize=8)
-
-    fig.suptitle(
-        "Two intersecting fractures — Orca vs Phan et al. (2003) boundary-element solution",
-        fontsize=12,
-    )
-    fig.tight_layout(rect=(0, 0, 1, 0.95))
-    out = os.path.join(HERE, "frac_intersection_comparison.png")
-    fig.savefig(out, dpi=150)
-    plt.close(fig)
-    print(f"  wrote {out}")
+        ax.legend(frameon=False)
+        fig.tight_layout()
+        out = os.path.join(HERE, f"frac_intersection_comparison_{stem}.png")
+        fig.savefig(out, dpi=600)
+        plt.close(fig)
+        print(f"  wrote {out}")
+        paths.append(out)
     return 0
 
 
