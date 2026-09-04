@@ -1,15 +1,16 @@
-# Input decks moved
+# Input decks restored
 
-The `.i` decks formerly in this folder now live in a single location, so that
-no deck is duplicated:
+The `.i` decks are back in this folder, beside the outputs and submit scripts
+they belong with. The `00_visualizaiton/inputs/` consolidation was undone on
+2026-09-04.
 
-    Paper_Cases/00_visualizaiton/inputs/
+Two groups deliberately stayed in `00_visualizaiton/inputs/`:
 
-They are split into `used_in_paper/` and `not_used_in_paper/` according to
-whether any figure or table in the submitted manuscript or its supporting
-information depends on them. See `00_visualizaiton/README.md` for the
-figure-to-deck map.
+  * every SW-T1 deck, because a local SW-T1 run was in progress;
+  * the analytical benchmark decks, which came from
+    `Examples/Validaitons/benchmarks/` rather than from here.
 
-What remains here is output: results, CSVs, Exodus databases, logs and the
-submit scripts. The submit scripts have been repointed at the new deck
-location and were verified to resolve both their deck and its mesh.
+Each folder carries a `mesh/` link so every deck resolves its mesh in place.
+The single-specimen submit scripts were repointed back. Two orchestrators,
+`run_all_main_validation_hpc.sh` and `run_rerun_failed_meshcases.sh`, still
+point at the consolidated path because they drive SW-T1 as well as the others.
