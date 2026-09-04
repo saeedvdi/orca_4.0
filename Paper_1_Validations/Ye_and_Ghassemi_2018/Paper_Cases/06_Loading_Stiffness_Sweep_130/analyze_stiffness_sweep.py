@@ -63,10 +63,29 @@ def main():
         k = np.array([o[0] for o in out]); r = np.array([o[1]['peak_drop_rate'] for o in out])
         good = (k > 0) & (r > 0)
         if good.sum() > 2:
-            p = np.polyfit(np.log10(k[good]), np.log10(r[good]), 1)
-            print(f"power-law fit: peak stress-drop rate ~ k_p^{p[0]:.2f}")
-            print("(slope near 0 would mean the frame does not control the drop; "
-                  "a clear positive slope is the paper's point)")
+            # The response is not a single power law.  It splits into a compliant
+            # branch that slips and a stiff branch that does not, so a fit taken
+            # across the whole range is fitted through a bifurcation and its
+            # exponent is meaningless.  Locate the largest jump first, then report
+            # each branch on its own terms.
+            kk, rr = k[good], r[good]
+            o = np.argsort(kk); kk, rr = kk[o], rr[o]
+            step = int(np.argmax(np.abs(np.diff(np.log10(rr)))))
+            lo, hi = rr[:step + 1], rr[step + 1:]
+            print(f"\nstability transition between k_p = {kk[step]:.3e} and "
+                  f"{kk[step + 1]:.3e} Pa/m")
+            print(f"  compliant branch (k_p <= {kk[step]:.2e}): "
+                  f"peak rate {lo.min():.2f}-{lo.max():.2f} MPa/s")
+            print(f"  stiff branch     (k_p >= {kk[step + 1]:.2e}): "
+                  f"peak rate {hi.min():.2f}-{hi.max():.2f} MPa/s, "
+                  f"varying {100 * (hi.max() - hi.min()) / hi.max():.0f}% over a "
+                  f"{kk[-1] / kk[step + 1]:.0f}x stiffness range")
+            print(f"  ratio across the transition: {lo.max() / hi.max():.0f}x")
+            if len(lo) > 2:
+                p = np.polyfit(np.log10(kk[:step + 1]), np.log10(lo), 1)
+                print(f"  compliant-branch power law: peak rate ~ k_p^{p[0]:.2f}")
+            print("(the frame controls whether a burst occurs at all, which is the "
+                  "paper's point; a fit across the whole range is not meaningful)")
         try:
             import matplotlib; matplotlib.use("Agg")
             import matplotlib.pyplot as plt
