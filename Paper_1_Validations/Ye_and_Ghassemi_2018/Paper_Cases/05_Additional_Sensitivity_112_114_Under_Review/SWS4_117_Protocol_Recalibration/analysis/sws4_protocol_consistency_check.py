@@ -234,9 +234,12 @@ def _make_history_figure(histories: dict[str, pd.DataFrame], validation_dir: Pat
 def run_analysis(base: str | Path | None = None, *, write_outputs: bool = True,
                  make_figures: bool = True) -> dict[str, object]:
     """Run the check and return notebook-friendly DataFrames and output paths."""
-    base = Path(base).resolve() if base else Path(__file__).resolve().parent
-    result_dir = base / "proposed_inputs" / "protocol_consistency_20260902" / "csv"
-    validation_dir = base / "SWS4"
+    output_root = Path(base).resolve() if base else Path(__file__).resolve().parent
+    paper_cases = Path(__file__).resolve().parents[3]
+    protocol_case = paper_cases / "04_Protocol_Consistency_116_Under_Review" / "SWS4"
+    result_dir = protocol_case / "results"
+    input_dir = protocol_case / "inputs"
+    validation_dir = paper_cases / "01_Main_Validation" / "SWS4" / "experimental"
     csv_paths = sorted(result_dir.glob("116_0[789]*.csv"))
     if len(csv_paths) != 3:
         raise FileNotFoundError(f"Expected three 116_07--116_09 CSVs in {result_dir}; found {len(csv_paths)}")
@@ -249,7 +252,7 @@ def run_analysis(base: str | Path | None = None, *, write_outputs: bool = True,
 
     for csv_path in csv_paths:
         case = csv_path.stem
-        deck = base / f"{case}.i"
+        deck = input_dir / f"{case}.i"
         schedule_time, schedule_pressure = parse_schedule(deck)
         stage_times = table2_stage_times(schedule_time, schedule_pressure)
         if common_stage_times is None:
@@ -350,15 +353,19 @@ def run_analysis(base: str | Path | None = None, *, write_outputs: bool = True,
     peak_final = stages.loc[stages["stage"].isin([6, 11])].copy()
     peak_final["state"] = np.where(peak_final["stage"] == 6, "peak injection", "final unloading")
 
-    stage_figure = base / "SWS4_protocol_consistency_Table2.png"
-    history_figure = base / "SWS4_protocol_consistency_histories.png"
+    figure_dir = output_root / "figures"
+    derived_dir = output_root / "results"
+    stage_figure = figure_dir / "SWS4_protocol_consistency_Table2.png"
+    history_figure = figure_dir / "SWS4_protocol_consistency_histories.png"
     if make_figures:
+        figure_dir.mkdir(parents=True, exist_ok=True)
         _make_stage_figure(stages, list(histories), stage_figure)
         _make_history_figure(histories, validation_dir, common_stage_times[0], history_figure)
     if write_outputs:
-        stages.to_csv(base / "SWS4_protocol_consistency_stage_values.csv", index=False)
-        metrics.to_csv(base / "SWS4_protocol_consistency_metrics.csv", index=False)
-        health.to_csv(base / "SWS4_protocol_consistency_health.csv", index=False)
+        derived_dir.mkdir(parents=True, exist_ok=True)
+        stages.to_csv(derived_dir / "SWS4_protocol_consistency_stage_values.csv", index=False)
+        metrics.to_csv(derived_dir / "SWS4_protocol_consistency_metrics.csv", index=False)
+        health.to_csv(derived_dir / "SWS4_protocol_consistency_health.csv", index=False)
 
     return {
         "stages": stages,

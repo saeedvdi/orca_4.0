@@ -12,9 +12,9 @@ import pandas as pd
 
 
 HERE = Path(__file__).resolve().parent
-PARENT = HERE.parent
-if str(PARENT) not in sys.path:
-    sys.path.insert(0, str(PARENT))
+CASE_ROOT = HERE.parent
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
 
 import sws4_protocol_consistency_check as common
 
@@ -24,10 +24,7 @@ def find_results(requested: str | None) -> Path:
     if requested:
         candidates.append(Path(requested).expanduser().resolve())
     candidates.extend([
-        HERE / "peak_screen",
-        HERE / "csv",
-        PARENT / "proposed_inputs" / "sws4_recalibration_wave1_20260902" / "peak_screen",
-        PARENT / "proposed_inputs" / "sws4_recalibration_wave1_20260902" / "csv",
+        CASE_ROOT / "results",
     ])
     for candidate in candidates:
         if candidate.is_dir() and any(candidate.glob("117_*.csv")):
@@ -41,7 +38,7 @@ def score(results_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     stage_frames = []
     for csv_path in sorted(results_dir.glob("117_*.csv")):
         case = csv_path.stem
-        deck = HERE / f"{case}.i"
+        deck = CASE_ROOT / "inputs" / f"{case}.i"
         schedule_t, schedule_p = common.parse_schedule(deck)
         stage_times = common.table2_stage_times(schedule_t, schedule_p)[:6]
         data = pd.read_csv(csv_path).apply(pd.to_numeric, errors="coerce")
@@ -110,6 +107,7 @@ def main() -> None:
     print(ranking.to_string(index=False, float_format=lambda value: f"{value:.4g}"))
     if args.output:
         output = Path(args.output).expanduser().resolve()
+        output.parent.mkdir(parents=True, exist_ok=True)
         ranking.to_csv(output, index=False)
         stages.to_csv(output.with_name(output.stem + "_stage_values.csv"), index=False)
         print(f"Wrote {output}")

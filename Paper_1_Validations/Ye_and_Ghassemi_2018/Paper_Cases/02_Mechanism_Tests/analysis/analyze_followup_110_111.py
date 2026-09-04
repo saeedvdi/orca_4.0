@@ -11,10 +11,10 @@ import numpy as np
 import pandas as pd
 
 
-VALIDATION = Path(__file__).resolve().parents[2]
+PAPER_CASES = Path(__file__).resolve().parents[2]
+VALIDATION = PAPER_CASES.parent
 ORCA = VALIDATION.parents[1]
-PAPER_CASES = VALIDATION / "Paper_Cases"
-ROOT = Path(__file__).resolve().parents[1]
+OUT = Path(__file__).resolve().parent
 GATE_PATH = ORCA / "scripts/table2_gate.py"
 
 CASES = {
@@ -204,7 +204,7 @@ def build_figure(stages: pd.DataFrame) -> None:
         ax.legend(frameon=False, fontsize=8)
 
     axes[0].set_ylabel("Permeability / stage-1 permeability")
-    figure_dir = ROOT / "Figures"
+    figure_dir = OUT / "figures"
     figure_dir.mkdir(exist_ok=True)
     fig.savefig(figure_dir / "Figure_Followup_110_111_Mechanism_Tests.pdf", bbox_inches="tight")
     fig.savefig(figure_dir / "Figure_Followup_110_111_Mechanism_Tests.png", dpi=300,
@@ -215,9 +215,11 @@ def build_figure(stages: pd.DataFrame) -> None:
 def main() -> None:
     stages, summary, scored = build_metrics()
     parent_comparison = compare_parents(scored)
-    stages.to_csv(ROOT / "followup_110_111_stage_metrics.csv", index=False)
-    summary.to_csv(ROOT / "followup_110_111_summary_metrics.csv", index=False)
-    parent_comparison.to_csv(ROOT / "followup_110_111_parent_control_comparison.csv", index=False)
+    result_dir = OUT / "results"
+    result_dir.mkdir(exist_ok=True)
+    stages.to_csv(result_dir / "followup_110_111_stage_metrics.csv", index=False)
+    summary.to_csv(result_dir / "followup_110_111_summary_metrics.csv", index=False)
+    parent_comparison.to_csv(result_dir / "followup_110_111_parent_control_comparison.csv", index=False)
     build_figure(stages)
     cols = [
         "sample", "variant", "stages_reached", "peak_flow_ml_min", "final_flow_ml_min",

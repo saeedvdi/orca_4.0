@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Score the 112--115 paper-strengthening runs after they complete.
+"""Score the available 112--115 paper-strengthening runs.
 
 The loading-only selections are made programmatically before unloading scores
 are read into the selection table, preventing accidental unloading-data leakage.
@@ -14,12 +14,11 @@ import numpy as np
 import pandas as pd
 
 
-ROOT = Path("/home/geomechanics/Documents/ChatGPT/Orca_4.0")
-ORCA = Path("/media/geomechanics/Data4TB/projects/orca_4.0")
-YG = ORCA / "Examples/YeGhasemmi2018"
+HERE = Path(__file__).resolve().parent
+SENSITIVITY = HERE.parent
+PAPER_CASES = SENSITIVITY.parent
+ORCA = PAPER_CASES.parents[2]
 GATE_PATH = ORCA / "scripts/table2_gate.py"
-RUN_REL = Path("proposed_inputs/paper_compelling_20260902")
-COMMON_RESULTS = YG / "SWS4/proposed_inputs/results/results_csv"
 
 
 CASES = {
@@ -29,25 +28,11 @@ CASES = {
     "111_03_swt2_floor1nm_control_ppfix": ("SWT2", "control", "base"),
     "112_01_swt1_dt0375_ppfix": ("SWT1", "time step / 2", "robustness"),
     "112_02_swt1_eta200gpa_s_ppfix": ("SWT1", "viscosity / 2", "robustness"),
-    "112_03_sw4_dt075_ppfix": ("SWS4", "time step / 2", "robustness"),
-    "112_04_sw4_mesh3_ppfix": ("SWS4", "nominal size-3 mesh", "robustness"),
     "113_01_sw3_dscale0304_ppfix": ("SWS3", "dilation -20%", "identifiability"),
     "113_02_sw3_dscale0456_ppfix": ("SWS3", "dilation +20%", "identifiability"),
     "113_03_sw3_gouge032_ppfix": ("SWS3", "gouge loss -20%", "identifiability"),
     "113_04_sw3_gouge048_ppfix": ("SWS3", "gouge loss +20%", "identifiability"),
     "113_05_sw3_closure096_ppfix": ("SWS3", "hydraulic closure -20%", "identifiability"),
-    "113_06_sw3_closure144_ppfix": ("SWS3", "hydraulic closure +20%", "identifiability"),
-    "114_01_swt2_ascale01416_ppfix": ("SWT2", "aperture scale -20%", "prediction"),
-    "114_02_swt2_ascale02124_ppfix": ("SWT2", "aperture scale +20%", "prediction"),
-    "115_01_swt1_extended_depressurization_ppfix": (
-        "SWT1", "extended post-slip depressurization", "closure diagnostic"
-    ),
-    "115_02_swt2_extended_depressurization_ppfix": (
-        "SWT2", "extended post-slip depressurization", "closure diagnostic"
-    ),
-    "115_03_sws3_extended_depressurization_ppfix": (
-        "SWS3", "extended post-slip depressurization", "closure diagnostic"
-    ),
     "115_04_sws4_extended_depressurization_ppfix": (
         "SWS4", "extended post-slip depressurization", "closure diagnostic"
     ),
@@ -67,12 +52,6 @@ SWS3_SELECTION = (
     "113_03_sw3_gouge032_ppfix",
     "113_04_sw3_gouge048_ppfix",
     "113_05_sw3_closure096_ppfix",
-    "113_06_sw3_closure144_ppfix",
-)
-SWT2_SELECTION = (
-    BASE["SWT2"],
-    "114_01_swt2_ascale01416_ppfix",
-    "114_02_swt2_ascale02124_ppfix",
 )
 
 
@@ -88,16 +67,37 @@ GATE = load_gate()
 
 
 def csv_path(stem: str, sample: str) -> Path:
-    if stem == "109_01_sw4_floor1nm_g028_ppfix":
-        return YG / "SWS4/proposed_inputs/paper_revision_20260901_followup/csv" / f"{stem}.csv"
-    if stem in {"110_01_sw3_floor1nm_g040_ppfix", "111_01_swt1_floor1nm_control_ppfix",
-                "111_03_swt2_floor1nm_control_ppfix"}:
-        return COMMON_RESULTS / f"{stem}.csv"
-    return YG / sample / RUN_REL / "csv" / f"{stem}.csv"
+    if stem.startswith("109_"):
+        return PAPER_CASES / "02_Mechanism_Tests/SWS4_109/results" / f"{stem}.csv"
+    if stem.startswith("110_"):
+        return PAPER_CASES / "02_Mechanism_Tests/SWS3_110/results" / f"{stem}.csv"
+    if stem.startswith("111_"):
+        folder = "SWT1_111" if sample == "SWT1" else "SWT2_111"
+        return PAPER_CASES / "02_Mechanism_Tests" / folder / "results" / f"{stem}.csv"
+    if stem.startswith("112_"):
+        return SENSITIVITY / "SWT1_112/results" / f"{stem}.csv"
+    if stem.startswith("113_"):
+        return SENSITIVITY / "SWS3_113/results" / f"{stem}.csv"
+    if stem.startswith("115_"):
+        return PAPER_CASES / "03_Extended_Depressurization_115/results" / f"{stem}.csv"
+    raise KeyError(stem)
 
 
 def deck_path(stem: str, sample: str) -> Path:
-    return YG / sample / "proposed_inputs" / f"{stem}.i"
+    if stem.startswith("109_"):
+        return PAPER_CASES / "02_Mechanism_Tests/SWS4_109/inputs" / f"{stem}.i"
+    if stem.startswith("110_"):
+        return PAPER_CASES / "02_Mechanism_Tests/SWS3_110/inputs" / f"{stem}.i"
+    if stem.startswith("111_"):
+        folder = "SWT1_111" if sample == "SWT1" else "SWT2_111"
+        return PAPER_CASES / "02_Mechanism_Tests" / folder / "inputs" / f"{stem}.i"
+    if stem.startswith("112_"):
+        return SENSITIVITY / "SWT1_112/inputs" / f"{stem}.i"
+    if stem.startswith("113_"):
+        return SENSITIVITY / "SWS3_113/inputs" / f"{stem}.i"
+    if stem.startswith("115_"):
+        return PAPER_CASES / "03_Extended_Depressurization_115/inputs" / f"{stem}.i"
+    raise KeyError(stem)
 
 
 def split_nrmse(result: dict, key: str, start: int, stop: int) -> float:
@@ -195,9 +195,6 @@ def loading_only_selection(summary: pd.DataFrame, stems: tuple[str, ...], test_n
 
 def extended_depressurization() -> pd.DataFrame:
     cases = {
-        "SWT1": ("115_01_swt1_extended_depressurization_ppfix", 3700.0, 4100.0, 4500.0),
-        "SWT2": ("115_02_swt2_extended_depressurization_ppfix", 3052.5, 3452.5, 3852.5),
-        "SWS3": ("115_03_sws3_extended_depressurization_ppfix", 5002.4, 5402.4, 5802.4),
         "SWS4": ("115_04_sws4_extended_depressurization_ppfix", 3700.0, 4100.0, 4500.0),
     }
     rows = []
@@ -246,15 +243,16 @@ def main() -> None:
     closure = extended_depressurization()
     selection = pd.concat(
         [
-            loading_only_selection(summary, SWS3_SELECTION, "SW-S3 seven-candidate loading selection"),
-            loading_only_selection(summary, SWT2_SELECTION, "SW-T2 aperture-scale loading selection"),
+            loading_only_selection(summary, SWS3_SELECTION, "SW-S3 available-candidate loading selection"),
         ],
         ignore_index=True,
     )
-    summary.to_csv(ROOT / "compelling_matrix_summary.csv", index=False)
-    robust.to_csv(ROOT / "compelling_matrix_robustness.csv", index=False)
-    selection.to_csv(ROOT / "compelling_matrix_loading_unloading_selection.csv", index=False)
-    closure.to_csv(ROOT / "compelling_matrix_extended_depressurization.csv", index=False)
+    output_dir = HERE / "results"
+    output_dir.mkdir(exist_ok=True)
+    summary.to_csv(output_dir / "available_sensitivity_summary.csv", index=False)
+    robust.to_csv(output_dir / "available_sensitivity_robustness.csv", index=False)
+    selection.to_csv(output_dir / "available_sensitivity_loading_selection.csv", index=False)
+    closure.to_csv(output_dir / "available_sws4_extended_depressurization.csv", index=False)
 
     print("\nLoading-only selections (unloading score revealed after selection):")
     print(selection.loc[selection["selected_from_loading_only"]].to_string(index=False))

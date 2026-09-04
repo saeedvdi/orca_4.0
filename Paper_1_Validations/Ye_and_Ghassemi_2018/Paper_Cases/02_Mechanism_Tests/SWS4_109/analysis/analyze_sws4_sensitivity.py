@@ -15,13 +15,13 @@ except ModuleNotFoundError:  # Stage metrics remain available without Exodus fie
     Dataset = None
 
 
-VALIDATION = Path(__file__).resolve().parents[2]
+PAPER_CASES = Path(__file__).resolve().parents[3]
+VALIDATION = PAPER_CASES.parent
 ORCA = VALIDATION.parents[1]
-PAPER_CASES = VALIDATION / "Paper_Cases"
 DECK = PAPER_CASES / "01_Main_Validation/SWS4/BB/93_07_sw4_final_theta30_jrc5_ppfix.i"
 RUN_DIR = PAPER_CASES / "02_Mechanism_Tests/SWS4_Legacy_Ablations"
 FOLLOWUP_DIR = PAPER_CASES / "02_Mechanism_Tests/SWS4_109"
-OUT = Path(__file__).resolve().parents[1]
+OUT = Path(__file__).resolve().parent
 
 RUNS = {
     "Calibrated BB": {
@@ -213,7 +213,7 @@ def build_figure(metrics: pd.DataFrame) -> None:
 
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, ncol=4, loc="outside lower center", frameon=False)
-    figure_dir = OUT / "Figures"
+    figure_dir = OUT / "figures"
     figure_dir.mkdir(exist_ok=True)
     fig.savefig(figure_dir / "Figure_SWS4_Hydraulic_Sensitivity.pdf", bbox_inches="tight")
     fig.savefig(figure_dir / "Figure_SWS4_Hydraulic_Sensitivity.png", dpi=300, bbox_inches="tight")
@@ -222,7 +222,9 @@ def build_figure(metrics: pd.DataFrame) -> None:
 
 def main() -> None:
     metrics = build_metrics()
-    metrics.to_csv(OUT / "sws4_hydraulic_sensitivity_metrics.csv", index=False)
+    result_dir = OUT / "results"
+    result_dir.mkdir(exist_ok=True)
+    metrics.to_csv(result_dir / "sws4_hydraulic_sensitivity_metrics.csv", index=False)
     build_figure(metrics)
     summary = metrics.loc[metrics["stage"].isin([1, 6, 11]), [
         "run", "stage", "permeability_ratio", "hydraulic_aperture_um",
