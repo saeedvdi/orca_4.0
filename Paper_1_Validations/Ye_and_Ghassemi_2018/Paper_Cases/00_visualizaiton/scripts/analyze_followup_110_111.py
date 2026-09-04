@@ -10,6 +10,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+# Manuscript figure style: serif text and math so these panels match the rest of
+# the paper's figures, and 600 dpi on every raster export. Times New Roman is not
+# installed here, so Nimbus Roman (its metric-compatible URW clone) leads the stack.
+plt.rcParams.update(
+    {
+        "font.family": "serif",
+        "font.serif": ["Nimbus Roman", "Times New Roman", "DejaVu Serif", "serif"],
+        "mathtext.fontset": "stix",
+        "figure.dpi": 600,
+        "savefig.dpi": 600,
+    }
+)
+
 
 PAPER_CASES = Path(__file__).resolve().parents[2]
 VALIDATION = PAPER_CASES.parent
@@ -56,12 +69,30 @@ CASE_PATHS = {
 }
 
 
+# The SW-T1 decks stay in the consolidated 00_visualizaiton/inputs tree while a
+# local SW-T1 run is in progress (see 02_Mechanism_Tests/DECKS_MOVED.md), so the
+# per-case inputs/ folder can legitimately be empty. Fall back to that tree.
+CONSOLIDATED_INPUTS = (
+    PAPER_CASES / "00_visualizaiton/inputs/used_in_paper/02_mechanism_tests"
+)
+
+
+def _deck_for(stem: str) -> Path:
+    candidate = CASE_PATHS[stem] / "inputs" / f"{stem}.i"
+    if candidate.is_file():
+        return candidate
+    fallback = CONSOLIDATED_INPUTS / f"{stem}.i"
+    if fallback.is_file():
+        return fallback
+    raise FileNotFoundError(f"no deck for {stem} in {candidate.parent} or {CONSOLIDATED_INPUTS}")
+
+
 def load_gate():
     spec = importlib.util.spec_from_file_location("table2_gate_followup", GATE_PATH)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
     spec.loader.exec_module(module)
-    module.find_deck = lambda csv_path, tag: CASE_PATHS[csv_path.stem] / "inputs" / f"{csv_path.stem}.i"
+    module.find_deck = lambda csv_path, tag: _deck_for(csv_path.stem)
     return module
 
 
@@ -207,7 +238,7 @@ def build_figure(stages: pd.DataFrame) -> None:
     figure_dir = OUT / "figures"
     figure_dir.mkdir(exist_ok=True)
     fig.savefig(figure_dir / "Figure_Followup_110_111_Mechanism_Tests.pdf", bbox_inches="tight")
-    fig.savefig(figure_dir / "Figure_Followup_110_111_Mechanism_Tests.png", dpi=300,
+    fig.savefig(figure_dir / "Figure_Followup_110_111_Mechanism_Tests.png", dpi=600,
                 bbox_inches="tight")
     plt.close(fig)
 

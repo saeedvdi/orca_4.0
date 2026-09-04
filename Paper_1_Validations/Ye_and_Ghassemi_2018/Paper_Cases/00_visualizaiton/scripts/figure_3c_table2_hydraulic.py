@@ -603,13 +603,13 @@ def _figure_table2_specimens(
             if row_index == 0:
                 ax.set_title(DISPLAY_NAME[sample], pad=5.0, fontweight="bold")
             if row_index == len(specs) - 1:
-                ax.set_xlabel("Table 2 injection pressure (MPa)")
+                ax.set_xlabel("Injection pressure (MPa)")
             else:
                 ax.tick_params(axis="x", labelbottom=False)
 
     figure.legend(
         handles=(
-            Line2D([], [], color=BLACK, marker="o", markersize=3.4, label="Ye & Ghassemi (2018), Table 2"),
+            Line2D([], [], color=BLACK, marker="o", markersize=3.4, label="Ye & Ghassemi (2018), experiment"),
             Line2D([], [], color=BLUE, marker="^", markersize=3.4, label="Barton-Bandis simulation"),
             Line2D([], [], color=ORANGE, marker="^", markersize=3.4, label="Mohr-Coulomb simulation"),
             Line2D([], [], color=GRAY, linestyle="-", marker="o", markerfacecolor=GRAY, markersize=3.4, label="Loading"),

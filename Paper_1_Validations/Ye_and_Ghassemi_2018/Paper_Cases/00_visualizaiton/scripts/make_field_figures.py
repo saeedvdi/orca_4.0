@@ -64,7 +64,8 @@ def apply_agu_style():
     for cand in ("Times New Roman", "Nimbus Roman", "Liberation Serif",
                  "TeX Gyre Termes", "FreeSerif", "DejaVu Serif"):
         try:
-            if cand.lower() in findfont(FontProperties(family=cand)).lower().replace("-", ""):
+            if cand.lower().replace(" ", "") in findfont(
+                    FontProperties(family=cand)).lower().replace("-", ""):
                 fam = cand
                 break
         except Exception:

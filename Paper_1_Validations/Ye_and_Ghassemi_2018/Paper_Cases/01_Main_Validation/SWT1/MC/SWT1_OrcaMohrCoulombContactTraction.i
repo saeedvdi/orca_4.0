@@ -1,0 +1,1 @@
+../../../00_visualizaiton/inputs/used_in_paper/01_main_validation/SWT1_OrcaMohrCoulombContactTraction.i

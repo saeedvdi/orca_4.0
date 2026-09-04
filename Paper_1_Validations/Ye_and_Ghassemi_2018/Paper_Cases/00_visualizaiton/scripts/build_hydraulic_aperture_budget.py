@@ -10,9 +10,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+# Manuscript figure style: serif text and math so these panels match the rest of
+# the paper's figures, and 600 dpi on every raster export. Times New Roman is not
+# installed here, so Nimbus Roman (its metric-compatible URW clone) leads the stack.
+plt.rcParams.update(
+    {
+        "font.family": "serif",
+        "font.serif": ["Nimbus Roman", "Times New Roman", "DejaVu Serif", "serif"],
+        "mathtext.fontset": "stix",
+        "figure.dpi": 600,
+        "savefig.dpi": 600,
+    }
+)
+
 
 ROOT = Path("/media/geomechanics/Data4TB/projects/orca_4.0")
-YE = ROOT / "Examples/YeGhasemmi2018"
+# The campaign folders were reorganised from Examples/YeGhasemmi2018 to
+# Paper_1_Validations/Ye_and_Ghassemi_2018. Both layouts are identical below the
+# sample directory, so prefer whichever root still carries the results.
+_YE_ROOTS = (ROOT / "Paper_1_Validations/Ye_and_Ghassemi_2018",
+             ROOT / "Examples/YeGhasemmi2018")
+YE = next((r for r in _YE_ROOTS if (r / "SWT1/results_csv").is_dir()), _YE_ROOTS[-1])
 OUT = Path(__file__).resolve().parents[1]
 
 BB = {
@@ -188,7 +206,7 @@ def build_figure() -> None:
     figure_dir = OUT / "Figures"
     figure_dir.mkdir(exist_ok=True)
     fig.savefig(figure_dir / "Figure_Hydraulic_Aperture_Budget.pdf", bbox_inches="tight")
-    fig.savefig(figure_dir / "Figure_Hydraulic_Aperture_Budget.png", dpi=300, bbox_inches="tight")
+    fig.savefig(figure_dir / "Figure_Hydraulic_Aperture_Budget.png", dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 

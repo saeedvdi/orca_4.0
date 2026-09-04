@@ -14,6 +14,19 @@ try:
 except ModuleNotFoundError:  # Stage metrics remain available without Exodus field sampling.
     Dataset = None
 
+# Manuscript figure style: serif text and math so these panels match the rest of
+# the paper's figures, and 600 dpi on every raster export. Times New Roman is not
+# installed here, so Nimbus Roman (its metric-compatible URW clone) leads the stack.
+plt.rcParams.update(
+    {
+        "font.family": "serif",
+        "font.serif": ["Nimbus Roman", "Times New Roman", "DejaVu Serif", "serif"],
+        "mathtext.fontset": "stix",
+        "figure.dpi": 600,
+        "savefig.dpi": 600,
+    }
+)
+
 
 PAPER_CASES = Path(__file__).resolve().parents[3]
 VALIDATION = PAPER_CASES.parent
@@ -216,7 +229,7 @@ def build_figure(metrics: pd.DataFrame) -> None:
     figure_dir = OUT / "figures"
     figure_dir.mkdir(exist_ok=True)
     fig.savefig(figure_dir / "Figure_SWS4_Hydraulic_Sensitivity.pdf", bbox_inches="tight")
-    fig.savefig(figure_dir / "Figure_SWS4_Hydraulic_Sensitivity.png", dpi=300, bbox_inches="tight")
+    fig.savefig(figure_dir / "Figure_SWS4_Hydraulic_Sensitivity.png", dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 

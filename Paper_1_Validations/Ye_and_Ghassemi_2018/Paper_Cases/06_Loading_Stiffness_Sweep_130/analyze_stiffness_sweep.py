@@ -89,6 +89,18 @@ def main():
         try:
             import matplotlib; matplotlib.use("Agg")
             import matplotlib.pyplot as plt
+            # Manuscript figure style: serif text and math so these panels match the rest of
+            # the paper's figures, and 600 dpi on every raster export. Times New Roman is not
+            # installed here, so Nimbus Roman (its metric-compatible URW clone) leads the stack.
+            plt.rcParams.update(
+                {
+                    "font.family": "serif",
+                    "font.serif": ["Nimbus Roman", "Times New Roman", "DejaVu Serif", "serif"],
+                    "mathtext.fontset": "stix",
+                    "figure.dpi": 600,
+                    "savefig.dpi": 600,
+                }
+            )
             fig, ax = plt.subplots(1, 2, figsize=(7.2, 2.9))
             ax[0].loglog(k, r, "o-", color="#1f77b4")
             ax[0].axhline(YG_DROP_RATE, ls="--", c="k", lw=0.8)
@@ -104,7 +116,7 @@ def main():
                 a.axvline(K0, color="0.6", lw=0.8, ls=":")
                 a.tick_params(labelsize=6); a.grid(alpha=0.3, lw=0.4)
             fig.tight_layout()
-            fig.savefig("Figure_Stiffness_Sweep.pdf"); fig.savefig("Figure_Stiffness_Sweep.png", dpi=200)
+            fig.savefig("Figure_Stiffness_Sweep.pdf"); fig.savefig("Figure_Stiffness_Sweep.png", dpi=600)
             print("wrote Figure_Stiffness_Sweep.pdf")
         except ImportError:
             pass

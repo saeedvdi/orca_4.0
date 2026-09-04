@@ -550,7 +550,7 @@ def figure_hydraulic_response(
         handles=(
             Line2D([], [], color=BLUE, linewidth=1.25, label="Selected BBFast simulation"),
             Line2D([], [], color=BLACK, linestyle="none", marker="o", markerfacecolor="white", markersize=3.3, label="Measured $d_n$ or $Q$"),
-            Line2D([], [], color=GRAY, linestyle="none", marker="D", markerfacecolor="white", markersize=3.2, label="Table 2 $a_h$ (derived from $Q$; informational)"),
+            Line2D([], [], color=GRAY, linestyle="none", marker="D", markerfacecolor="white", markersize=3.2, label="Experimental $a_h$ (derived from $Q$; informational)"),
         ),
         loc="upper center",
         bbox_to_anchor=(0.53, 0.985),

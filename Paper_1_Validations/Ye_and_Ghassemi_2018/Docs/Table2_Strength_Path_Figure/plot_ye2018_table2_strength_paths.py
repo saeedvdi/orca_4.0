@@ -172,6 +172,10 @@ PATH_STYLE = {
     "MC": dict(color="#0072B2", linestyle="--", marker="s", linewidth=1.15),
 }
 
+# The series key is the internal name of the measured stage list; the figure
+# labels it by what it is, the reported experimental result.
+PATH_LABEL = {"Table 2": "Experiment", "BB": "BB", "MC": "MC"}
+
 # Last loading-stage treated as the nominal pre-failure branch. These limits
 # follow the specimen-specific onset windows used in the Ye validation audit.
 PREFailure_LAST_STAGE = {"SWT1": 5, "SWT2": 5, "SWS3": 5, "SWS4": 3}
@@ -622,7 +626,7 @@ def add_slope_box(ax: plt.Axes, sample: str, frame: pd.DataFrame, case_set: str)
     ].iloc[0]
     text = (
         "Slopes, $m=\\mathrm{d}\\tau/\\mathrm{d}\\sigma_n'$\n"
-        f"Table 2: pre {measured['pre_failure_slope']:.2f}; unload {measured['unloading_slope']:.2f}\n"
+        f"Experiment: pre {measured['pre_failure_slope']:.2f}; unload {measured['unloading_slope']:.2f}\n"
         f"BB: peak tangent {env['BB_peak_tangent_slope']:.2f}; residual {env['BB_post_weakening_slope']:.2f}\n"
         f"MC: rough {env['MC_rough_slope']:.2f}; smooth {env['MC_smooth_slope']:.2f}"
     )
@@ -655,7 +659,8 @@ def common_legend(figure: plt.Figure, y: float) -> None:
     handles = [
         Line2D([], [], color=PATH_STYLE[name]["color"],
                linestyle=PATH_STYLE[name]["linestyle"], marker=PATH_STYLE[name]["marker"],
-               markerfacecolor="white", markersize=4.2, linewidth=1.2, label=name)
+               markerfacecolor="white", markersize=4.2, linewidth=1.2,
+               label=PATH_LABEL[name])
         for name in ("Table 2", "BB", "MC")
     ]
     handles.extend([
