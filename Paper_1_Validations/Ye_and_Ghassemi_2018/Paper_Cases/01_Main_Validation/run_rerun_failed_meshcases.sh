@@ -14,6 +14,7 @@
 # launcher, so these results are interchangeable with tasks 0-7. Each case
 # writes one self-contained folder, results/<case>/.
 #
+# Decks and meshes now live under 00_visualizaiton/inputs.
 # The mesh preflight below prints the working directory and the contents of
 # mesh/ when it fails, so a second miss is diagnosable from the log alone.
 # Equivalent one-liner if you prefer the original launcher:
@@ -34,7 +35,7 @@
 set -euo pipefail
 
 PROJECT_ROOT=${ORCA_ROOT:-/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0}
-BASE_DIR=${PROJECT_ROOT}/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation
+BASE_DIR=${PROJECT_ROOT}/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/00_visualizaiton/inputs/used_in_paper/01_main_validation
 IDX=${SLURM_ARRAY_TASK_ID:-0}
 
 SPEC=(SWS3 SWS3 SWS4)
@@ -53,7 +54,7 @@ if (( IDX < 0 || IDX >= ${#SPEC[@]} )); then
 fi
 
 S=${SPEC[$IDX]}; L=${LAW[$IDX]}; D=${DECK[$IDX]}; O=${STEM[$IDX]}
-CASE_DIR=${BASE_DIR}/${S}
+CASE_DIR=${BASE_DIR}
 echo "rerun idx ${IDX} (was task ${ORIG[$IDX]}): ${S} ${L}"
 
 if [[ ! -d ${CASE_DIR} ]]; then echo "missing case dir: ${CASE_DIR}" >&2; exit 2; fi

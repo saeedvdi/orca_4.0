@@ -42,7 +42,7 @@
 set -euo pipefail
 
 PROJECT_ROOT=${ORCA_ROOT:-/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0}
-BASE_DIR=${PROJECT_ROOT}/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation
+BASE_DIR=${PROJECT_ROOT}/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/00_visualizaiton/inputs/used_in_paper/01_main_validation
 IDX=${SLURM_ARRAY_TASK_ID:-0}
 
 SPEC=(SWT1 SWT2 SWS3 SWS4 SWT1 SWT2 SWS3 SWS4)
@@ -61,7 +61,7 @@ if (( IDX < 0 || IDX >= ${#SPEC[@]} )); then
 fi
 
 S=${SPEC[$IDX]}; L=${LAW[$IDX]}; D=${DECK[$IDX]}; O=${STEM[$IDX]}
-CASE_DIR=${BASE_DIR}/${S}
+CASE_DIR=${BASE_DIR}
 
 if [[ ! -d ${CASE_DIR} ]]; then echo "missing case dir: ${CASE_DIR}" >&2; exit 2; fi
 cd "${CASE_DIR}"

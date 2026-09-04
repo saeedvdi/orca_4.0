@@ -3,7 +3,7 @@
 # The deck is staged beside mesh/ so its input-relative `mesh_file` resolves.
 # Override the repo root without editing this file:  ORCA_ROOT=/path sbatch ...
 #SBATCH --job-name=bb_swt2
-#SBATCH --chdir=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWT2
+#SBATCH --chdir=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/00_visualizaiton/inputs/used_in_paper/01_main_validation
 #SBATCH --account=def-biaoli66
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
@@ -16,7 +16,7 @@
 set -euo pipefail
 
 PROJECT_ROOT=${ORCA_ROOT:-/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0}
-CASE_DIR=${PROJECT_ROOT}/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/01_Main_Validation/SWT2
+CASE_DIR=${PROJECT_ROOT}/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/00_visualizaiton/inputs/used_in_paper/01_main_validation
 cd "${CASE_DIR}"
 unset SLURM_MEM_PER_NODE SLURM_MEM_PER_CPU SLURM_MEM_PER_GPU
 mkdir -p logs
