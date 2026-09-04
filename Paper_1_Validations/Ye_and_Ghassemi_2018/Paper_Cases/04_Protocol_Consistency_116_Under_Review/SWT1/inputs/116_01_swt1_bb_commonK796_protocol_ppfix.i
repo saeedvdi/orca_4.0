@@ -2070,7 +2070,6 @@ checkpoint_file_base = proposed_inputs/protocol_consistency_20260902/checkpoint/
   [exodus]
     type = Exodus
     file_base = ${exodus_file_base}
-    execute_on = 'INITIAL TIMESTEP_END'
     sync_only = true
     sync_times = "0 68.3333333 370 402.5 675 707.5 980 1012.5 1260 1300 1565 1602.5 1900 1930 2165 2192.5 2455 2485 2755 2787.5 3055 3090 3500"
 

@@ -2476,7 +2476,6 @@ checkpoint_file_base = proposed_inputs/sws4_recalibration_wave1_20260902/checkpo
   [exodus]
     type = Exodus
     file_base = ${exodus_file_base}
-    execute_on = 'INITIAL TIMESTEP_END'
     sync_only = true
     sync_times = "0 88.0695771 319.78644 419.383237 639.222106 713.035275 947.447989 1018.41614 1255.68177 1330.62241 1535.88024 1632.36945 1788.0289 1900.88513 2113.63729 2212.32235 2439.25753 2516.5855 2742.42001 2829.46122 3028.75301 3131.76413 3404.83669"
   []

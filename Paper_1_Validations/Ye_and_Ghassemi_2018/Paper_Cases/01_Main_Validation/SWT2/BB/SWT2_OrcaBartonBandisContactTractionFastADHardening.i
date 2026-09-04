@@ -1971,7 +1971,6 @@ checkpoint_file_base = results_checkpoint/SWT2_OrcaBartonBandisContactTractionFa
   [exodus]
     type = Exodus
     file_base = ${exodus_file_base}
-    execute_on = 'INITIAL TIMESTEP_END'
     sync_only = true
     sync_times = '0 83.3333333 480 522.5 995 1032.5 1360 1410 1755 1802.5 2145 2212.5 2500 2505 2560 2565 2605 2610 2650 2655 2705 2715 2852.5'
   []
