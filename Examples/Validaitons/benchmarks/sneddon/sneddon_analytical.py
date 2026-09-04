@@ -341,8 +341,26 @@ def plot(directory, profiles):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
+    # Figure is only ever meant to show the two laws asked for most often; any
+    # extra laws computed via --all are kept in the CSVs but dropped here.
+    profiles = {lbl: profiles[lbl] for lbl in MODELS if lbl in profiles}
+
+    plt.rcParams.update(
+        {
+            "font.family": "serif",
+            "font.serif": ["Times New Roman", "DejaVu Serif", "serif"],
+            "mathtext.fontset": "dejavuserif",
+            "font.size": 20,
+            "axes.titlesize": 22,
+            "axes.labelsize": 22,
+            "xtick.labelsize": 18,
+            "ytick.labelsize": 18,
+            "legend.fontsize": 18,
+        }
+    )
+
     fig, (ax, axe) = plt.subplots(
-        2, 1, figsize=(7.2, 7.0), sharex=True, height_ratios=[2.2, 1.0]
+        2, 1, figsize=(10.0, 10.0), sharex=True, height_ratios=[2.2, 1.0]
     )
 
     s_fine = np.linspace(-HALF_LENGTH, HALF_LENGTH, 400)
@@ -366,10 +384,9 @@ def plot(directory, profiles):
     ax.set_title(
         "Sneddon pressurized-crack benchmark\n"
         f"$E$={YOUNGS_MODULUS/1e9:g} GPa,  $\\nu$={POISSONS_RATIO:g},  "
-        f"$p_f$={CRACK_PRESSURE/1e6:g} MPa,  $b$={HALF_LENGTH:g} m",
-        fontsize=11,
+        f"$p_f$={CRACK_PRESSURE/1e6:g} MPa,  $b$={HALF_LENGTH:g} m"
     )
-    ax.legend(frameon=False, fontsize=9)
+    ax.legend(frameon=False)
     ax.grid(alpha=0.3)
 
     axe.axhline(0.0, color="k", lw=0.8)
