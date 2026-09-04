@@ -1,6 +1,22 @@
+# GENERATED loading-stiffness sweep member 03.
+# Parent: 01_Main_Validation/SWT1/SWT1_OrcaBartonBandisContactTractionFastADHardening.i
+# CONTROL MEMBER: values set byte-exact to the parent deck, not recompensated,
+# so this run must reproduce the paper's SW-T1 case identically.
+# ONLY the axial boundary stiffness is varied: k_p = 4.123000e+11 Pa/m (1 x calibrated).
+# axial_pres_initial and axial_pres_final are RECOMPENSATED so the preload state is
+# unchanged: the boundary is a spring, so the commanded displacement must absorb
+# sigma/k. Using u = u_z* + sigma/k with u_z* = -2.907742887e-04 m and
+# sigma_preload = -1.81593e+08 Pa, both taken from the calibrated run's
+# machine_spring_gap_m_pp. Without this the sweep would vary preload AND stiffness.
+# Deck gate to re-check (see parent header): at t=55 s cumulative_plastic_slip_pp
+# must be 0, and the first 8 MPa hold should give differential stress ~147 MPa and
+# shear stress ~67.5 MPa. A member that misses the gate needs axial_pres_final
+# iterated, because the compensation above is first order in the specimen response.
+
 # =============================================================================
 # 107_01 SWT1 EVENT-TIMING PROBE -- peak cohesion 27.20 MPa
 # Parent: 106_01_swt1_apscale0p01512_ppfix.i
+# Actual file before rename and Exodus file change is 107_01_swt1_coh27p2_apscale0p01512_ppfix
 #
 # Scientific question: can a small peak-strength increase delay the abrupt
 # slip/stress drop toward the digitized main transition at about 1725 s without
@@ -274,7 +290,7 @@
 #       whenever the mesh, penalty, elastic properties, or boundary setup changes.
 ################################################################################
 
-mesh_file = ../mesh/ye2018_sw_T1_mesh_size_5.e
+mesh_file = mesh/ye2018_sw_T1_mesh_size_5.e
 sample_radius = 0.02526
 sample_area = 0.00200454848465
 bulk_sin_theta = 0.5299192642332049          # 93-series: sin(32.0 deg), THIS specimen's fracture angle.
@@ -343,9 +359,9 @@ paper_flow_width_over_length = 0.814323680496
 mesh_flow_width_over_length = 0.814323680496
 ml_per_m3_per_min = 6.0e7
 
-exodus_file_base = results_exodus_local/107_01_swt1_coh27p2_apscale0p01512_ppfix
-csv_file_base    = results_csv_local/107_01_swt1_coh27p2_apscale0p01512_ppfix
-checkpoint_file_base = results_checkpoint_local/107_01_swt1_coh27p2_apscale0p01512_ppfix
+exodus_file_base = results_exodus/SWT1_OrcaBartonBandisContactTractionFastADHardening
+csv_file_base    = results_csv/SWT1_OrcaBartonBandisContactTractionFastADHardening
+checkpoint_file_base = results_checkpoint/SWT1_OrcaBartonBandisContactTractionFastADHardening
 
 [GlobalParams]
   displacements = 'disp_x disp_y disp_z'
@@ -2054,8 +2070,9 @@ checkpoint_file_base = results_checkpoint_local/107_01_swt1_coh27p2_apscale0p015
   [exodus]
     type = Exodus
     file_base = ${exodus_file_base}
-    execute_on = 'TIMESTEP_END FINAL'
-    time_step_interval = 10
+    sync_only = true
+    sync_times = "0 68.3333333 370 402.5 675 707.5 980 1012.5 1260 1300 1565 1602.5 1900 1930 2165 2192.5 2455 2485 2755 2787.5 3055 3090 3500"
+
   []
   [chk]
     type = Checkpoint
