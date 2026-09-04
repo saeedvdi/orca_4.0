@@ -14,7 +14,7 @@
 # quantity of interest is the time derivative of differential stress through the
 # slip burst, not the field.
 #SBATCH --job-name=swt1_ksweep
-#SBATCH --chdir=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/00_visualizaiton/inputs/not_used_in_paper/06_loading_stiffness_sweep_130
+#SBATCH --chdir=/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/06_Loading_Stiffness_Sweep_130
 #SBATCH --account=def-biaoli66
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
@@ -27,7 +27,7 @@
 
 set -euo pipefail
 PROJECT_ROOT=${ORCA_ROOT:-/home/saeedvdi/links/projects/def-biaoli66/saeedvdi/projects/orca_4.0}
-CASE_DIR=${PROJECT_ROOT}/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/00_visualizaiton/inputs/not_used_in_paper/06_loading_stiffness_sweep_130
+CASE_DIR=${PROJECT_ROOT}/Paper_1_Validations/Ye_and_Ghassemi_2018/Paper_Cases/06_Loading_Stiffness_Sweep_130
 cd "${CASE_DIR}"
 
 DECKS=(130_01_swt1_kp1p000e11 130_02_swt1_kp2p000e11 130_03_swt1_kp4p123e11 130_04_swt1_kp1p000e12 130_05_swt1_kp3p000e12 130_06_swt1_kp1p000e13 130_07_swt1_kp1p000e14)
